@@ -5,7 +5,7 @@ import { sessionOptions, SessionData } from '@/lib/session'
 
 const PUBLIC_ROUTES = ['/login', '/']
 
-export async function middleware(request: NextRequest) {
+export async function proxy(request: NextRequest) {
   const response = NextResponse.next()
 
   const session = await getIronSession<SessionData>(
