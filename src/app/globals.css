@@ -60,6 +60,10 @@ html {
     @apply flex h-36.25 w-full cursor-pointer flex-col justify-between gap-1 rounded-4xl bg-white p-5 tablet:p-6;
   }
 
+  .points-container {
+    @apply flex min-h-screen w-full flex-col justify-start bg-khaki-90 px-6 py-24 tablet:px-16 tablet:py-42 desktop:px-24 desktop:py-52;
+  }
+
   /* Display / Hero text variants */
   .display-48 {
     @apply text-3xl leading-tight font-medium tablet:text-4xl desktop:text-5xl;

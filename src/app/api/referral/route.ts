@@ -79,8 +79,6 @@ export async function POST(request: Request) {
       throw error
     }
 
-    console.dir(data)
-
     ses.hasReferral = true
     await ses.save()
     return jsonResponse(true, { message: 'Referral code applied' }, 201)
