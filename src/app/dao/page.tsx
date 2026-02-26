@@ -46,7 +46,7 @@ export default function DaoPage() {
         </header>
 
         <section className="space-y-6">
-          <AnimatedTabs items={tabs} />
+          {/* <AnimatedTabs items={tabs} /> */}
           <DAOList />
         </section>
       </div>

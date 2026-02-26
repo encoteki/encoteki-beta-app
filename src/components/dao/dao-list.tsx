@@ -1,63 +1,78 @@
-/* eslint-disable @typescript-eslint/no-explicit-any */
 'use client'
 
-import { useEffect, useState } from 'react'
-import { ProposalType, DaoType } from '../../enums/dao-types.enum'
+import { useEffect, useMemo, useState } from 'react'
+import { DaoType, ProposalType } from '../../enums/dao-types.enum'
 import Badge from '../../ui/badge'
 import { useDaoCtx } from '../../contexts/dao.context'
 import EmptyDao from './empty-list'
 import { Skeleton } from '@/ui/skeleton'
 import URL_ROUTES from '@/constants/url-route'
+import { mockProposals } from '@/constants/dao/mock-proposals'
+import { MockProposal } from '@/types/dao.types'
 
-const mockProposal = [
-  {
-    code: 'D001',
-    type: ProposalType.DONATION,
-  },
-  {
-    code: 'P001',
-    type: ProposalType.PROPOSAL,
-  },
-  {
-    code: 'BP001',
-    type: ProposalType.BUSINESS,
-  },
-  {
-    code: 'P002',
-    type: ProposalType.PROPOSAL,
-  },
-  {
-    code: 'D002',
-    type: ProposalType.DONATION,
-  },
-  {
-    code: 'BP002',
-    type: ProposalType.BUSINESS,
-  },
-]
+/**
+ * Compute a human-readable "time remaining" or "X days ago" string.
+ */
+function getTimeLabel(endTime: string): string {
+  const now = new Date()
+  const end = new Date(endTime)
+  const diffMs = end.getTime() - now.getTime()
+
+  if (diffMs <= 0) return 'Voting ended'
+
+  const hours = Math.floor(diffMs / (1000 * 60 * 60))
+  const minutes = Math.floor((diffMs % (1000 * 60 * 60)) / (1000 * 60))
+  const seconds = Math.floor((diffMs % (1000 * 60)) / 1000)
+
+  return `Voting ends in ${String(hours).padStart(2, '0')}:${String(minutes).padStart(2, '0')}:${String(seconds).padStart(2, '0')}`
+}
+
+function getCreatedLabel(createdAt: string): string {
+  const now = new Date()
+  const created = new Date(createdAt)
+  const diffDays = Math.floor(
+    (now.getTime() - created.getTime()) / (1000 * 60 * 60 * 24),
+  )
+
+  if (diffDays === 0) return 'Today'
+  if (diffDays === 1) return '1 day ago'
+  return `${diffDays} days ago`
+}
+
+/**
+ * Map DaoType tabs to which ProposalTypes to show.
+ */
+const TAB_FILTER: Record<DaoType, ProposalType[]> = {
+  [DaoType.GOVERNANCE]: [ProposalType.DONATION, ProposalType.PROPOSAL],
+  [DaoType.BUSINESS_PROPOSAL]: [ProposalType.BUSINESS],
+}
 
 export function DAOList() {
-  const [proposal, setProposal] = useState<Array<any>>([])
+  const [proposals, setProposals] = useState<MockProposal[]>([])
   const [loading, setLoading] = useState<boolean>(true)
 
   const { daoType } = useDaoCtx()
 
+  const filtered = useMemo(() => {
+    const allowedTypes = TAB_FILTER[daoType] || []
+    return mockProposals.filter((p) => allowedTypes.includes(p.type))
+  }, [daoType])
+
   useEffect(() => {
     setLoading(true)
-    if (daoType === DaoType.GOVERNANCE) {
-      setProposal(mockProposal)
-    } else {
-      setProposal([])
-    }
-    setLoading(false)
-  }, [daoType])
+    // Simulate async fetch
+    const timer = setTimeout(() => {
+      setProposals(filtered)
+      setLoading(false)
+    }, 300)
+    return () => clearTimeout(timer)
+  }, [filtered])
 
   return (
     <>
-      <section className="h-[calc(145px*3+32px*3)] overflow-hidden">
+      <section className="min-h-[calc(145px*3+32px*3)] overflow-hidden">
         {loading && (
           <>
-            {' '}
             {Array.from({ length: 3 }).map((_, i) => (
               <div
                 key={`skeleton-${i}`}
@@ -74,30 +89,30 @@ export function DAOList() {
           </>
         )}
 
-        {proposal.length == 0 ? (
-          <>
-            <EmptyDao />
-          </>
+        {!loading && proposals.length === 0 ? (
+          <EmptyDao />
         ) : (
           <>
-            {proposal.map((item: any, index: number) => {
-              return (
-                <div
-                  key={index}
-                  className="proposal-card mb-8 transition-shadow duration-500 hover:shadow-lg"
-                  onClick={() =>
-                    (window.location.href = `${URL_ROUTES.DAO}/${item.code}`)
-                  }
-                >
-                  <Badge type={item.type} />
-                  <h3 className="font-medium">Which animal to donate to?</h3>
-                  <div className="flex justify-between">
-                    <p className="text-neutral-30">Voting ends in 19:00:00</p>
-                    <p className="text-neutral-30">3 days ago</p>
-                  </div>
+            {proposals.map((item, index) => (
+              <div
+                key={`${item.code}-${index}`}
+                className="proposal-card mb-8 transition-shadow duration-500 hover:shadow-lg"
+                onClick={() =>
+                  (window.location.href = `${URL_ROUTES.DAO}/${item.code}`)
+                }
+              >
+                <Badge type={item.type} />
+                <h3 className="font-medium">{item.name}</h3>
+                <div className="flex justify-between">
+                  <p className="text-neutral-30">
+                    {getTimeLabel(item.endTime)}
+                  </p>
+                  <p className="text-neutral-30">
+                    {getCreatedLabel(item.createdAt)}
+                  </p>
                 </div>
-              )
-            })}
+              </div>
+            ))}
           </>
         )}
       </section>
