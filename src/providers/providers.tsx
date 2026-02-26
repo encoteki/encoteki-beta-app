@@ -2,6 +2,7 @@
 
 import { AppProvider } from '@/contexts/app.context'
 import { Web3Provider } from './web3.providers'
+import { SessionGuard } from '@/components/session-guard'
 
 export default function Providers({
   children,
@@ -10,7 +11,10 @@ export default function Providers({
 }>) {
   return (
     <Web3Provider>
-      <AppProvider>{children}</AppProvider>
+      <AppProvider>
+        <SessionGuard />
+        {children}
+      </AppProvider>
     </Web3Provider>
   )
 }

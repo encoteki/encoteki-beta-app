@@ -36,6 +36,7 @@ export async function POST(request: Request) {
       address: userAddress,
     }
     session.hasReferral = !!referralData
+    session.createdAt = Date.now()
     session.nonce = undefined
 
     await session.save()
