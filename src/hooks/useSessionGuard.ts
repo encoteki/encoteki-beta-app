@@ -12,7 +12,7 @@ import { useUser } from './useUser'
  * Should be mounted once near the top of the component tree.
  */
 export function useSessionGuard() {
-  const { isConnected } = useConnection()
+  const { isConnected, status } = useConnection()
   const disconnect = useDisconnect()
   const { isLoggedIn, expiresAt, mutate } = useUser()
   const logoutTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
@@ -75,11 +75,14 @@ export function useSessionGuard() {
   }, [isLoggedIn, expiresAt, performLogout])
 
   // --- Wallet disconnect detection ---
-  // If the user is logged in via session but wallet is no longer connected,
+  // If the user is logged in via session but wallet is definitively disconnected,
   // clear the session to keep them in sync.
+  // We check `status === 'disconnected'` instead of `!isConnected` to avoid
+  // false triggers during wagmi's 'reconnecting' state (e.g., after page reload
+  // when wagmi is re-establishing the connection from persisted storage).
   useEffect(() => {
-    if (isLoggedIn && !isConnected) {
+    if (isLoggedIn && status === 'disconnected') {
       performLogout()
     }
-  }, [isLoggedIn, isConnected, performLogout])
+  }, [isLoggedIn, status, performLogout])
 }
