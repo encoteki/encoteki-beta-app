@@ -12,7 +12,8 @@ export async function submitReferralCode(code: string) {
   if (!code || code.length !== 6 || !/^[A-Z0-9]+$/.test(code)) {
     return {
       success: false,
-      error: 'Kode tidak valid. Harus 6 karakter alphanumeric kapital.',
+      error:
+        'Invalid code format. Code must be 6 characters letters and numbers only.',
     }
   }
 
@@ -26,7 +27,7 @@ export async function submitReferralCode(code: string) {
     if (existingCode) {
       return {
         success: false,
-        error: 'Code exists, try other',
+        error: 'Code exists, try again with a different code.',
       }
     }
 
@@ -44,7 +45,7 @@ export async function submitReferralCode(code: string) {
       return { success: false, error: 'Failed to create referral code' }
     }
 
-    return { success: true, message: 'Successfully claim referral code' }
+    return { success: true, message: 'Successfully claimed referral code' }
   } catch (error) {
     return { success: false, error: 'Internal Server Error' }
   }
