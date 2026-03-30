@@ -3,6 +3,7 @@
 import { useEffect, useRef, useCallback } from 'react'
 import { useDisconnect, useConnection } from 'wagmi'
 import { useUser } from './useUser'
+import { destroySession } from '@/actions/auth'
 
 /**
  * Session guard that automatically logs out the user when:
@@ -24,7 +25,7 @@ export function useSessionGuard() {
 
     try {
       // Clear server session
-      await fetch('/api/session', { method: 'DELETE' })
+      await destroySession()
 
       // Disconnect wallet if still connected
       if (isConnected) {

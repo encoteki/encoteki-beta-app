@@ -1,22 +1,22 @@
 import { ProposalType } from '@/enums/dao-types.enum'
 import { MockProposal } from '@/types/dao.types'
-import { CHAIN_IDS } from '@/constants/contracts/payments'
+import { getChainId } from '@/constants/contracts/tsb'
+
+const BASE_ID = getChainId('BASE')
+const ARB_ID = getChainId('ARBITRUM')
 
 /**
  * Chain label mapping for display purposes.
  */
 export const CHAIN_LABELS: Record<number, string> = {
-  [CHAIN_IDS.BASE.SEPOLIA]: 'Base',
-  [CHAIN_IDS.ARBITRUM.SEPOLIA]: 'Arbitrum',
+  [BASE_ID]: 'Base',
+  [ARB_ID]: 'Arbitrum',
 }
 
 /**
  * Supported chain IDs for vote counting.
  */
-export const SUPPORTED_VOTE_CHAINS = [
-  CHAIN_IDS.BASE.SEPOLIA,
-  CHAIN_IDS.ARBITRUM.SEPOLIA,
-]
+export const SUPPORTED_VOTE_CHAINS = [BASE_ID, ARB_ID]
 
 // ============================================
 // MOCK PROPOSALS — 3 types with vote simulation
@@ -38,32 +38,32 @@ const donationProposal: MockProposal = {
       label: 'Sumatran Tiger',
       votes: 15,
       votesByChain: {
-        [CHAIN_IDS.BASE.SEPOLIA]: 9,
-        [CHAIN_IDS.ARBITRUM.SEPOLIA]: 6,
+        [BASE_ID]: 9,
+        [ARB_ID]: 6,
       },
     },
     {
       label: 'Javan Rhino',
       votes: 12,
       votesByChain: {
-        [CHAIN_IDS.BASE.SEPOLIA]: 7,
-        [CHAIN_IDS.ARBITRUM.SEPOLIA]: 5,
+        [BASE_ID]: 7,
+        [ARB_ID]: 5,
       },
     },
     {
       label: 'Komodo Dragon',
       votes: 8,
       votesByChain: {
-        [CHAIN_IDS.BASE.SEPOLIA]: 3,
-        [CHAIN_IDS.ARBITRUM.SEPOLIA]: 5,
+        [BASE_ID]: 3,
+        [ARB_ID]: 5,
       },
     },
     {
       label: 'Bornean Orangutan',
       votes: 12,
       votesByChain: {
-        [CHAIN_IDS.BASE.SEPOLIA]: 8,
-        [CHAIN_IDS.ARBITRUM.SEPOLIA]: 4,
+        [BASE_ID]: 8,
+        [ARB_ID]: 4,
       },
     },
   ],
@@ -88,24 +88,24 @@ const governanceProposal: MockProposal = {
       label: 'Sustainable Cafe',
       votes: 20,
       votesByChain: {
-        [CHAIN_IDS.BASE.SEPOLIA]: 12,
-        [CHAIN_IDS.ARBITRUM.SEPOLIA]: 8,
+        [BASE_ID]: 12,
+        [ARB_ID]: 8,
       },
     },
     {
       label: 'Slow Fashion',
       votes: 10,
       votesByChain: {
-        [CHAIN_IDS.BASE.SEPOLIA]: 4,
-        [CHAIN_IDS.ARBITRUM.SEPOLIA]: 6,
+        [BASE_ID]: 4,
+        [ARB_ID]: 6,
       },
     },
     {
       label: 'Refurbished Goods',
       votes: 5,
       votesByChain: {
-        [CHAIN_IDS.BASE.SEPOLIA]: 2,
-        [CHAIN_IDS.ARBITRUM.SEPOLIA]: 3,
+        [BASE_ID]: 2,
+        [ARB_ID]: 3,
       },
     },
   ],
@@ -130,24 +130,24 @@ const businessProposal: MockProposal = {
       label: 'Accept partnership (10% royalty share)',
       votes: 8,
       votesByChain: {
-        [CHAIN_IDS.BASE.SEPOLIA]: 5,
-        [CHAIN_IDS.ARBITRUM.SEPOLIA]: 3,
+        [BASE_ID]: 5,
+        [ARB_ID]: 3,
       },
     },
     {
       label: 'Counter-offer (5% royalty share)',
       votes: 14,
       votesByChain: {
-        [CHAIN_IDS.BASE.SEPOLIA]: 9,
-        [CHAIN_IDS.ARBITRUM.SEPOLIA]: 5,
+        [BASE_ID]: 9,
+        [ARB_ID]: 5,
       },
     },
     {
       label: 'Decline partnership',
       votes: 6,
       votesByChain: {
-        [CHAIN_IDS.BASE.SEPOLIA]: 2,
-        [CHAIN_IDS.ARBITRUM.SEPOLIA]: 4,
+        [BASE_ID]: 2,
+        [ARB_ID]: 4,
       },
     },
   ],

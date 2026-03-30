@@ -1,0 +1,373 @@
+import { StaticImageData } from 'next/image'
+import { Abi, Address, Hex } from 'viem'
+import { tsbhub_abi, tsbsatellite_abi } from './abi'
+
+import ETHIcon from '@/assets/icons/tokens/eth.webp'
+import IDRXIcon from '@/assets/icons/tokens/idrx.webp'
+import LSKIcon from '@/assets/icons/tokens/lisk.webp'
+import USDCIcon from '@/assets/icons/tokens/usdc.png'
+import USDTIcon from '@/assets/icons/tokens/tether.svg'
+import ARBIcon from '@/assets/icons/tokens/arb.svg'
+import MANTAIcon from '@/assets/icons/tokens/manta.png'
+
+// ============================================
+// ENVIRONMENT
+// ============================================
+
+const APP_ENV = process.env.NEXT_PUBLIC_APP_ENV || 'development'
+export const IS_PRODUCTION = APP_ENV === 'production'
+
+// ============================================
+// TOKEN TYPES
+// ============================================
+
+export type TokenSymbol =
+  | 'ETH'
+  | 'USDC'
+  | 'USDT'
+  | 'IDRX'
+  | 'LSK'
+  | 'ARB'
+  | 'MANTA'
+
+// Static data (Name, Logo, Decimals)
+export interface TokenMetadata {
+  symbol: TokenSymbol
+  name: string
+  decimals: number
+  logo: StaticImageData
+  isNative?: boolean
+}
+
+// Full object used by UI (includes Cost + Chain Data)
+export interface Token extends TokenMetadata {
+  cost: number
+  address: Hex
+  chainId: number
+}
+
+// ============================================
+// MINT PRICING
+// ============================================
+export const MINT_PRICES: Record<TokenSymbol, number> = {
+  ETH: 0.0001,
+  LSK: 40,
+  ARB: 5,
+  MANTA: 300,
+  USDC: 1,
+  USDT: 1,
+  IDRX: 300000,
+}
+
+// ============================================
+// TOKEN METADATA
+// ============================================
+
+const TOKEN_META: Record<TokenSymbol, TokenMetadata> = {
+  ETH: {
+    symbol: 'ETH',
+    name: 'Ether',
+    decimals: 18,
+    logo: ETHIcon,
+    isNative: true,
+  },
+  USDC: {
+    symbol: 'USDC',
+    name: 'USD Coin',
+    decimals: 6,
+    logo: USDCIcon,
+    isNative: false,
+  },
+  USDT: {
+    symbol: 'USDT',
+    name: 'Tether USD',
+    decimals: 6,
+    logo: USDTIcon,
+    isNative: false,
+  },
+  IDRX: {
+    symbol: 'IDRX',
+    name: 'IDR Token',
+    decimals: 2,
+    logo: IDRXIcon,
+    isNative: false,
+  },
+  LSK: {
+    symbol: 'LSK',
+    name: 'Lisk',
+    decimals: 18,
+    logo: LSKIcon,
+    isNative: false,
+  },
+  ARB: {
+    symbol: 'ARB',
+    name: 'Arbitrum',
+    decimals: 18,
+    logo: ARBIcon,
+    isNative: false,
+  },
+  MANTA: {
+    symbol: 'MANTA',
+    name: 'Manta Token',
+    decimals: 18,
+    logo: MANTAIcon,
+    isNative: false,
+  },
+}
+
+// ============================================
+// CHAIN CONFIGURATION — SINGLE SOURCE OF TRUTH
+// ============================================
+//
+// To add a new chain:
+//   1. Add ONE entry to the CHAINS array below.
+//   2. Done — contracts, ABIs, explorers, tokens, and UI are all derived.
+//
+// Testnet vs Mainnet is auto-resolved by NEXT_PUBLIC_APP_ENV.
+// ABI is auto-resolved: hub → tsbhub_abi, satellite → tsbsatellite_abi.
+//
+
+const ZERO_ADDRESS: Hex = '0x0000000000000000000000000000000000000000'
+
+interface NetworkEnv {
+  chainId: number
+  contract: Address
+  explorer: string
+  tokenAddresses: Partial<Record<TokenSymbol, Address>>
+}
+
+interface ChainDef {
+  key: string
+  label: string
+  type: 'hub' | 'satellite'
+  enabled: boolean
+  acceptedTokens: TokenSymbol[]
+  testnet: NetworkEnv
+  mainnet: NetworkEnv
+}
+
+const CHAINS: ChainDef[] = [
+  {
+    key: 'BASE',
+    label: 'Base',
+    type: 'hub',
+    enabled: true,
+    acceptedTokens: ['ETH', 'USDC'],
+    testnet: {
+      chainId: 84532,
+      contract: process.env.NEXT_PUBLIC_TSB_BASE_CONTRACT as Address,
+      explorer: 'https://sepolia.basescan.org/tx/',
+      tokenAddresses: {
+        ETH: ZERO_ADDRESS,
+        USDC: process.env.NEXT_PUBLIC_BASE_USDC_ADDRESS as Address,
+      },
+    },
+    mainnet: {
+      chainId: 8453,
+      contract: '0x0' as Address, // TODO: mainnet contract
+      explorer: 'https://basescan.org/tx/',
+      tokenAddresses: {
+        ETH: ZERO_ADDRESS,
+        USDC: '0x0' as Address, // TODO: mainnet USDC
+      },
+    },
+  },
+  {
+    key: 'ARBITRUM',
+    label: 'Arbitrum',
+    type: 'satellite',
+    enabled: true,
+    acceptedTokens: ['ETH', 'USDC'],
+    testnet: {
+      chainId: 421614,
+      contract: process.env.NEXT_PUBLIC_TSB_ARBITRUM_CONTRACT as Address,
+      explorer: 'https://sepolia.arbiscan.io/tx/',
+      tokenAddresses: {
+        ETH: ZERO_ADDRESS,
+        ARB: '0x2F6EBFeA38047B8bBD8f9D689730F0889Bd6f13a' as Address,
+        USDC: process.env.NEXT_PUBLIC_ARBITRUM_USDC_ADDRESS as Address,
+      },
+    },
+    mainnet: {
+      chainId: 42161,
+      contract: '0x0' as Address, // TODO: mainnet contract
+      explorer: 'https://arbiscan.io/tx/',
+      tokenAddresses: {
+        ETH: ZERO_ADDRESS,
+        ARB: '0x0' as Address,
+        USDC: '0x0' as Address,
+      },
+    },
+  },
+  {
+    key: 'LISK',
+    label: 'Lisk',
+    type: 'satellite',
+    enabled: false,
+    acceptedTokens: ['ETH', 'LSK'],
+    testnet: {
+      chainId: 4202,
+      contract: '0x0' as Address,
+      explorer: 'https://sepolia-blockscout.lisk.com/tx/',
+      tokenAddresses: {
+        ETH: ZERO_ADDRESS,
+        LSK: '0x0' as Address,
+      },
+    },
+    mainnet: {
+      chainId: 1135,
+      contract: '0x0' as Address,
+      explorer: 'https://blockscout.lisk.com/tx/',
+      tokenAddresses: {
+        ETH: ZERO_ADDRESS,
+        LSK: '0x0' as Address,
+      },
+    },
+  },
+  {
+    key: 'MANTA',
+    label: 'Manta',
+    type: 'satellite',
+    enabled: false,
+    acceptedTokens: ['ETH', 'MANTA'],
+    testnet: {
+      chainId: 3441006,
+      contract: '0x0' as Address,
+      explorer: 'https://pacific-explorer.testnet.manta.network/tx/',
+      tokenAddresses: {
+        ETH: ZERO_ADDRESS,
+        MANTA: '0x0' as Address,
+      },
+    },
+    mainnet: {
+      chainId: 169,
+      contract: '0x0' as Address,
+      explorer: 'https://pacific-explorer.manta.network/tx/',
+      tokenAddresses: {
+        ETH: ZERO_ADDRESS,
+        MANTA: '0x0' as Address,
+      },
+    },
+  },
+]
+
+// ============================================
+// RESOLVED CHAIN — Flattened for the active environment
+// ============================================
+
+export interface ResolvedChain {
+  key: string
+  label: string
+  type: 'hub' | 'satellite'
+  enabled: boolean
+  chainId: number
+  contract: Address
+  explorer: string
+  abi: Abi
+  isHub: boolean
+  acceptedTokens: TokenSymbol[]
+}
+
+function resolve(def: ChainDef): ResolvedChain {
+  const env = IS_PRODUCTION ? def.mainnet : def.testnet
+  return {
+    key: def.key,
+    label: def.label,
+    type: def.type,
+    enabled: def.enabled,
+    chainId: env.chainId,
+    contract: env.contract,
+    explorer: env.explorer,
+    abi: def.type === 'hub' ? (tsbhub_abi as Abi) : (tsbsatellite_abi as Abi),
+    isHub: def.type === 'hub',
+    acceptedTokens: def.acceptedTokens,
+  }
+}
+
+// Pre-computed lookup tables (built once at module load)
+const ALL_RESOLVED: ResolvedChain[] = CHAINS.map(resolve)
+const BY_CHAIN_ID = new Map<number, ResolvedChain>(
+  ALL_RESOLVED.map((c) => [c.chainId, c]),
+)
+const BY_KEY = new Map<string, ResolvedChain>(
+  ALL_RESOLVED.map((c) => [c.key, c]),
+)
+const TOKEN_ADDRS = new Map<number, Partial<Record<TokenSymbol, Address>>>(
+  CHAINS.map((def) => {
+    const env = IS_PRODUCTION ? def.mainnet : def.testnet
+    return [env.chainId, env.tokenAddresses]
+  }),
+)
+
+// ============================================
+// PUBLIC API — Use these in your components and hooks
+// ============================================
+
+/** Look up a resolved chain by its active chain ID */
+export const getChain = (chainId: number): ResolvedChain | undefined =>
+  BY_CHAIN_ID.get(chainId)
+
+/** Look up a resolved chain by key (e.g. 'BASE', 'ARBITRUM') */
+export const getChainByKey = (key: string): ResolvedChain | undefined =>
+  BY_KEY.get(key)
+
+/**
+ * Get the active chain ID for a chain key.
+ * Resolves testnet/mainnet automatically based on NEXT_PUBLIC_APP_ENV.
+ *
+ * Usage: getChainId('BASE') → 84532 (dev) or 8453 (prod)
+ */
+export const getChainId = (key: string): number => {
+  const chain = BY_KEY.get(key)
+  if (!chain) throw new Error(`[ChainConfig] Unknown chain key: ${key}`)
+  return chain.chainId
+}
+
+/** Only enabled chains (for mint UI) */
+export const getEnabledChains = (): ResolvedChain[] =>
+  ALL_RESOLVED.filter((c) => c.enabled)
+
+/** All chains including disabled (for dropdown "coming soon") */
+export const getAllChains = (): ResolvedChain[] => ALL_RESOLVED
+
+/** Is this chain ID a hub chain (direct mint)? */
+export const isHubChain = (chainId: number): boolean =>
+  getChain(chainId)?.isHub ?? false
+
+/** Get the contract address for a chain */
+export const getContract = (chainId: number): Address | undefined =>
+  getChain(chainId)?.contract
+
+/** Get the ABI for a chain (hub → tsbhub_abi, satellite → tsbsatellite_abi) */
+export const getAbi = (chainId: number): Abi | undefined =>
+  getChain(chainId)?.abi
+
+/** Get the block explorer base URL for a chain */
+export const getExplorerUrl = (chainId: number): string | undefined =>
+  getChain(chainId)?.explorer
+
+/** Get available payment tokens for a chain */
+export const getPaymentMethods = (chainId: number): Token[] => {
+  const chain = getChain(chainId)
+  if (!chain) return []
+
+  const addrs = TOKEN_ADDRS.get(chainId) || {}
+
+  return chain.acceptedTokens.map((symbol) => ({
+    ...TOKEN_META[symbol],
+    cost: MINT_PRICES[symbol],
+    chainId: chain.chainId,
+    address: (addrs[symbol] || ZERO_ADDRESS) as Hex,
+  }))
+}
+
+// ============================================
+// LEGACY — Raw chain IDs (prefer getChainId() for env-safe usage)
+// ============================================
+
+export const CHAIN_IDS = {
+  BASE: { MAINNET: 8453, SEPOLIA: 84532 },
+  LISK: { MAINNET: 1135, SEPOLIA: 4202 },
+  ARBITRUM: { ONE: 42161, SEPOLIA: 421614 },
+  MANTA: { PACIFIC: 169, TESTNET: 3441006 },
+} as const

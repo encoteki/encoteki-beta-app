@@ -1,4 +1,4 @@
-import { CHAIN_IDS } from './payments'
+import { CHAIN_IDS } from './tsb'
 
 /**
  * ABI for the EncotekiVote smart contract.

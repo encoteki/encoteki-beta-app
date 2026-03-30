@@ -26,7 +26,7 @@ export function useSmartTransaction(props: SimulateContractProps) {
   const {
     mutate,
     data: hash,
-    status: isSigning,
+    isPending: isSigning,
     error: writeError,
     reset: resetWrite,
   } = useWriteContract()
@@ -57,7 +57,7 @@ export function useSmartTransaction(props: SimulateContractProps) {
     status = 'error'
   } else if (confirmation.isLoading) {
     status = 'processing'
-  } else if (isSigning == 'pending') {
+  } else if (isSigning) {
     status = 'signing'
   } else if (confirmation.isSuccess) {
     status = 'success'

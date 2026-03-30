@@ -1,17 +1,13 @@
 import useSWR from 'swr'
+import { getSessionData } from '@/actions/auth'
 
-interface UserData {
-  isLoggedIn: boolean
-  address?: string
-  hasReferral?: boolean
-  expiresAt?: number
-}
+type SessionResult = Awaited<ReturnType<typeof getSessionData>>
 
-const fetcher = (url: string) => fetch(url).then((res) => res.json())
+const fetcher = () => getSessionData()
 
 export function useUser() {
-  const { data, error, isLoading, mutate } = useSWR<UserData>(
-    '/api/session',
+  const { data, error, isLoading, mutate } = useSWR<SessionResult>(
+    'session',
     fetcher,
     {
       revalidateOnFocus: true,
@@ -22,8 +18,8 @@ export function useUser() {
   return {
     user: data?.isLoggedIn ? data : null,
     isLoggedIn: data?.isLoggedIn ?? false,
-    hasReferral: data?.hasReferral ?? false,
-    expiresAt: data?.expiresAt ?? null,
+    hasReferral: (data?.isLoggedIn && data.hasReferral) ?? false,
+    expiresAt: (data?.isLoggedIn && data.expiresAt) ?? null,
     isLoading,
     isError: error,
     mutate,

@@ -1,28 +1,62 @@
 'use client'
 
 import { useEffect, useState } from 'react'
-import { useChainId } from 'wagmi'
+import { useChainId, useSwitchChain } from 'wagmi'
 import DefaultButton from '@/ui/buttons/default-btn'
 import { useMintCtx } from '../../contexts/mint.context'
-import { getPaymentMethods, Token } from '@/constants/contracts/payments'
+import {
+  getPaymentMethods,
+  getEnabledChains,
+  getAllChains,
+  getContract,
+  isHubChain,
+  Token,
+} from '@/constants/contracts/tsb'
 import { PaymentCard } from './payment-card'
 import { Skeleton } from '@/ui/skeleton'
 import { MintStatus } from '../../enums/mint.enum'
-import { TSB_CONTRACTS } from '@/constants/contracts/addresses'
 import { useUser } from '@/hooks/useUser'
+import { useAppCtx } from '@/contexts/app.context'
+import { useSatelliteRecovery } from '@/hooks/useSatelliteRecovery'
+import { ChevronDown } from 'lucide-react'
 
 export default function SelectPaymentMethod() {
   const [localLoading, setLocalLoading] = useState<boolean>(true)
   const [activeIdx, setActiveIdx] = useState<number>(0)
   const [paymentMethods, setPaymentMethods] = useState<Token[]>([])
-  const { setPaymentMethod, setTargetContract, setStatus } = useMintCtx()
-  const chainId = useChainId()
+  const [chainDropdownOpen, setChainDropdownOpen] = useState(false)
+  const {
+    setPaymentMethod,
+    setTargetContract,
+    setStatus,
+    setReferralCode,
+    setIsCrossChain,
+    selectedChainId,
+    setSelectedChainId,
+    restoreFromBackground,
+  } = useMintCtx()
+  const walletChainId = useChainId()
+  const { switchChain } = useSwitchChain()
   const { isLoggedIn, isLoading: isUserLoading } = useUser()
+  const { referralCode: globalReferralCode, backgroundMint } = useAppCtx()
+
+  const enabledChains = getEnabledChains()
+  const allChains = getAllChains()
+
+  const activeChainId =
+    selectedChainId ??
+    (enabledChains.length > 0 ? enabledChains[0].chainId : walletChainId)
+  const activeConfig = allChains.find((c) => c.chainId === activeChainId)
+  const isHub = isHubChain(activeChainId)
+
+  // Check for pending cross-chain mint
+  const { pendingReqId, mintRequestData } = useSatelliteRecovery()
 
   const isLoadingState = isUserLoading || localLoading
+  const hasBackgroundMint = !!backgroundMint
 
+  // Update payment methods when chain changes
   useEffect(() => {
-    // Reset state when user logs out
     if (!isLoggedIn) {
       setLocalLoading(false)
       setPaymentMethods([])
@@ -30,8 +64,7 @@ export default function SelectPaymentMethod() {
     }
     setLocalLoading(true)
 
-    // Get payment methods based on the current chain ID
-    const methods = getPaymentMethods(chainId)
+    const methods = getPaymentMethods(activeChainId)
     setPaymentMethods(methods)
     setActiveIdx(0)
 
@@ -40,28 +73,175 @@ export default function SelectPaymentMethod() {
     }, 300)
 
     return () => clearTimeout(timer)
-  }, [chainId, isLoggedIn])
+  }, [activeChainId, isLoggedIn])
 
-  // On click button
+  const handleChainSelect = (chainId: number) => {
+    setSelectedChainId(chainId)
+    setChainDropdownOpen(false)
+    if (chainId !== walletChainId) {
+      switchChain({ chainId })
+    }
+  }
+
   const onClickReview = () => {
     if (!isLoggedIn) return
+    setReferralCode(globalReferralCode || '')
     setPaymentMethod(paymentMethods[activeIdx])
-    setTargetContract(TSB_CONTRACTS[chainId])
+    setTargetContract(getContract(activeChainId)!)
+    setIsCrossChain(!isHub)
     setStatus(MintStatus.REVIEW)
   }
 
   const skeletonCount = paymentMethods.length > 0 ? paymentMethods.length : 2
 
+  const needsChainSwitch =
+    selectedChainId !== null && selectedChainId !== walletChainId
+
   return (
     <>
+      {/* Background mint toast */}
+      {backgroundMint && (
+        <button
+          onClick={restoreFromBackground}
+          className="mb-4 flex w-full items-center gap-3 rounded-xl border border-blue-200 bg-blue-50 p-3 text-left transition-colors hover:bg-blue-100"
+        >
+          <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-blue-100">
+            {backgroundMint.status === MintStatus.SUCCESS ? (
+              <div className="h-3 w-3 rounded-full bg-green-500" />
+            ) : backgroundMint.status === MintStatus.FAILED ? (
+              <div className="h-3 w-3 rounded-full bg-red-500" />
+            ) : (
+              <div className="h-3 w-3 animate-pulse rounded-full bg-blue-500" />
+            )}
+          </div>
+          <div className="flex-1">
+            <p className="text-sm font-medium text-blue-900">
+              {backgroundMint.status === MintStatus.SUCCESS
+                ? 'Mint completed!'
+                : backgroundMint.status === MintStatus.FAILED
+                  ? 'Mint failed'
+                  : 'Mint in progress'}
+            </p>
+            <p className="text-xs text-blue-700">
+              Tap to view transaction status
+            </p>
+          </div>
+          <svg
+            className="h-4 w-4 text-blue-400"
+            fill="none"
+            viewBox="0 0 24 24"
+            stroke="currentColor"
+          >
+            <path
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              strokeWidth={2}
+              d="M9 5l7 7-7 7"
+            />
+          </svg>
+        </button>
+      )}
+
+      {/* Pending cross-chain recovery notice */}
+      {!isHub && pendingReqId && mintRequestData && (
+        <div className="mb-4 rounded-xl border border-amber-300 bg-amber-50 p-3">
+          <p className="text-sm font-medium text-amber-800">
+            You have a pending cross-chain mint
+          </p>
+          <p className="mt-1 text-xs text-amber-600">
+            Your previous mint is still being processed via LayerZero. You can
+            wait for it to complete or expire it to get a refund.
+          </p>
+          <button
+            onClick={() => setStatus(MintStatus.INFLIGHT)}
+            className="mt-2 text-xs font-medium text-amber-900 underline"
+          >
+            View status
+          </button>
+        </div>
+      )}
+
+      {/* Chain Selection Dropdown */}
+      <div className="mb-4 text-left">
+        <h3 className="font-medium">Select Chain</h3>
+        <p className="text-sm text-neutral-400">
+          Choose which chain to mint on
+        </p>
+      </div>
+
+      <div className="relative mb-4">
+        <button
+          onClick={() => setChainDropdownOpen(!chainDropdownOpen)}
+          className="flex w-full items-center justify-between rounded-xl border border-gray-200 bg-white px-4 py-3 transition-all hover:border-gray-300"
+        >
+          <div className="flex items-center gap-2">
+            <span className="text-sm font-medium text-gray-900">
+              {activeConfig?.label ?? 'Select chain'}
+            </span>
+          </div>
+          <ChevronDown
+            size={16}
+            className={`text-gray-400 transition-transform ${chainDropdownOpen ? 'rotate-180' : ''}`}
+          />
+        </button>
+
+        {chainDropdownOpen && (
+          <div className="absolute z-20 mt-1 w-full rounded-xl border border-gray-200 bg-white shadow-lg">
+            {allChains.map((chain) => {
+              const isActive = chain.chainId === activeChainId
+              const isDisabled = !chain.enabled
+
+              return (
+                <button
+                  key={chain.key}
+                  onClick={() =>
+                    !isDisabled && handleChainSelect(chain.chainId)
+                  }
+                  disabled={isDisabled}
+                  className={`flex w-full items-center justify-between px-4 py-3 text-left transition-colors first:rounded-t-xl last:rounded-b-xl ${
+                    isActive
+                      ? 'bg-primary-green/7'
+                      : isDisabled
+                        ? 'cursor-not-allowed bg-gray-50 opacity-50'
+                        : 'hover:bg-gray-50'
+                  }`}
+                >
+                  <div className="flex items-center gap-2">
+                    <span
+                      className={`text-sm font-medium ${isDisabled ? 'text-gray-400' : 'text-gray-900'}`}
+                    >
+                      {chain.label}
+                    </span>
+                  </div>
+                  {isDisabled && (
+                    <span className="rounded-full bg-gray-200 px-2 py-0.5 text-[10px] text-gray-500">
+                      Coming soon
+                    </span>
+                  )}
+                  {isActive && !isDisabled && (
+                    <div className="h-2 w-2 rounded-full bg-primary-green" />
+                  )}
+                </button>
+              )
+            })}
+          </div>
+        )}
+      </div>
+
+      {/* Payment Methods */}
       <div className="mb-4 text-left">
         <h3 className="font-medium">Payment methods</h3>
         <p className="text-sm text-neutral-400">
           Please select a payment method
         </p>
+        {!isHub && (
+          <p className="mt-1 text-xs text-neutral-400">
+            Cross-chain mint via LayerZero (includes gas fee)
+          </p>
+        )}
       </div>
 
-      <div className="mb-6 flex flex-col gap-2 tablet:gap-4">
+      <div className="mb-4 flex flex-col gap-2 tablet:gap-4">
         {isLoadingState ? (
           Array.from({ length: skeletonCount }).map((_, i) => (
             <div
@@ -74,7 +254,6 @@ export default function SelectPaymentMethod() {
                   <Skeleton className="h-5 w-24 rounded" />
                 </div>
               </div>
-
               <div className="flex flex-1 items-end justify-end gap-2">
                 <Skeleton className="h-5 w-16 rounded" />
               </div>
@@ -91,20 +270,59 @@ export default function SelectPaymentMethod() {
           ))
         ) : (
           <div className="rounded-xl border border-dashed bg-gray-50 p-4 text-center text-sm text-gray-500">
-            Not available on Chain ID: {chainId}
+            Not available on Chain ID: {activeChainId}
           </div>
         )}
       </div>
 
+      {/* Referral indicator (auto-applied from login) */}
+      {globalReferralCode && (
+        <div className="mb-4 flex items-center gap-2 rounded-xl border border-green-200 bg-green-50 px-4 py-2.5">
+          <svg
+            className="h-4 w-4 text-green-600"
+            fill="none"
+            viewBox="0 0 24 24"
+            stroke="currentColor"
+          >
+            <path
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              strokeWidth={2}
+              d="M5 13l4 4L19 7"
+            />
+          </svg>
+          <span className="text-sm text-green-800">
+            Referral{' '}
+            <span className="font-mono font-medium tracking-wider">
+              {globalReferralCode}
+            </span>{' '}
+            applied
+          </span>
+        </div>
+      )}
+
       <DefaultButton
         onClick={onClickReview}
-        disabled={!isLoggedIn || isLoadingState || paymentMethods.length === 0}
+        disabled={
+          !isLoggedIn ||
+          isLoadingState ||
+          paymentMethods.length === 0 ||
+          needsChainSwitch ||
+          hasBackgroundMint ||
+          (!isHub && !!pendingReqId)
+        }
       >
         {isLoadingState
           ? 'Loading...'
           : !isLoggedIn
             ? 'Connect Wallet'
-            : 'Mint'}
+            : hasBackgroundMint
+              ? 'Mint in progress...'
+              : needsChainSwitch
+                ? 'Switching chain...'
+                : !isHub && !!pendingReqId
+                  ? 'Pending Mint Active'
+                  : 'Mint'}
       </DefaultButton>
     </>
   )

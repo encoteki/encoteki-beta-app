@@ -5,6 +5,11 @@ import { useSignMessage, useChainId, useDisconnect, useConnection } from 'wagmi'
 import { SiweMessage } from 'siwe'
 import { useConnectModal } from '@xellar/kit'
 import { useUser } from '@/hooks/useUser'
+import {
+  generateSiweNonce,
+  verifySiweMessage,
+  destroySession,
+} from '@/actions/auth'
 
 export function SignInButton() {
   const { open } = useConnectModal()
@@ -22,8 +27,7 @@ export function SignInButton() {
       if (!address || !chainId) return
       setIsSigningIn(true)
 
-      const nonceRes = await fetch('/api/nonce')
-      const nonce = await nonceRes.text()
+      const nonce = await generateSiweNonce()
 
       const message = new SiweMessage({
         domain: window.location.host,
@@ -40,13 +44,9 @@ export function SignInButton() {
         message: messageToSign,
       })
 
-      const verifyRes = await fetch('/api/verify', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ message: messageToSign, signature }),
-      })
+      const result = await verifySiweMessage(messageToSign, signature)
 
-      if (!verifyRes.ok) throw new Error('Failed to verify')
+      if (!result.success) throw new Error('Failed to verify')
 
       await mutate()
 
@@ -62,7 +62,7 @@ export function SignInButton() {
   // Logout
   const handleLogout = async () => {
     try {
-      await fetch('/api/session', { method: 'DELETE' })
+      await destroySession()
       if (isConnected) {
         await disconnect.mutateAsync()
       }

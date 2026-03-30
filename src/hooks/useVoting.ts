@@ -1,8 +1,8 @@
 'use client'
 
 import { useState, useCallback, useEffect } from 'react'
-import { useAccount } from 'wagmi'
-import { CHAIN_IDS } from '@/constants/contracts/payments'
+import { useConnection } from 'wagmi'
+import { getChainId } from '@/constants/contracts/tsb'
 import { MockProposal, VotePower } from '@/types/dao.types'
 import { simulateVote } from '@/constants/dao/mock-proposals'
 
@@ -17,7 +17,7 @@ import { simulateVote } from '@/constants/dao/mock-proposals'
  * Currently uses simulated/mock data for development.
  */
 export function useVoting(initialProposal: MockProposal) {
-  const { address, isConnected } = useAccount()
+  const { address, isConnected } = useConnection()
 
   // ============================================
   // STATE
@@ -126,7 +126,7 @@ export function useVoting(initialProposal: MockProposal) {
         proposal,
         selectedOption,
         votePower.base,
-        CHAIN_IDS.BASE.SEPOLIA,
+        getChainId('BASE'),
       )
 
       // Simulate votes from Arbitrum
@@ -134,7 +134,7 @@ export function useVoting(initialProposal: MockProposal) {
         updated,
         selectedOption,
         votePower.arbitrum,
-        CHAIN_IDS.ARBITRUM.SEPOLIA,
+        getChainId('ARBITRUM'),
       )
 
       setProposal(updated)

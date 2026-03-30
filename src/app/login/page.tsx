@@ -8,6 +8,7 @@ import { useState, useEffect } from 'react'
 import { useConnection } from 'wagmi'
 import { motion } from 'framer-motion'
 import Bg from '@/assets/bg-login.png'
+import { applyReferralCode } from '@/actions/referral'
 
 export default function SignInPage() {
   const { isLoggedIn, hasReferral, isLoading, mutate } = useUser()
@@ -39,15 +40,10 @@ export default function SignInPage() {
     setErrorMsg('')
 
     try {
-      const res = await fetch('/api/referral', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ code }),
-      })
-      const json = await res.json()
+      const result = await applyReferralCode(code)
 
-      if (!json.success) {
-        throw new Error(json.message)
+      if (!result.success) {
+        throw new Error(result.error || 'Failed to apply referral code')
       }
 
       await mutate()

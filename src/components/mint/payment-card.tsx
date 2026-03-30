@@ -1,5 +1,5 @@
 import Image from 'next/image'
-import { Token } from '@/constants/contracts/payments'
+import { Token } from '@/constants/contracts/tsb'
 import { formatIDR } from '../../utils/format-balance.util'
 
 interface PaymentCardProps {
