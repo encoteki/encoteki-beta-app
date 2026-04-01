@@ -1,17 +1,26 @@
 'use client'
 
 import { motion } from 'motion/react'
-import {
-  CHAIN_LABELS,
-  SUPPORTED_VOTE_CHAINS,
-} from '@/constants/dao/mock-proposals'
 import { ProposalOption } from '@/types/dao.types'
+import { getChainId } from '@/constants/contracts/tsb'
 
 interface VoteBreakdownProps {
   options: ProposalOption[]
   totalVotes: number
   isVisible: boolean
+  supportedChains?: string[]
 }
+
+// Default chain labels
+const DEFAULT_CHAIN_LABELS: Record<string, string> = {
+  BASE: 'Base',
+  ARBITRUM: 'Arbitrum',
+  LISK: 'Lisk',
+  MANTA: 'Manta',
+}
+
+// Default supported chains (for backwards compatibility)
+const DEFAULT_SUPPORTED_CHAINS = ['BASE', 'ARBITRUM']
 
 /**
  * Displays a breakdown of votes per chain for each option.
@@ -21,8 +30,16 @@ export default function VoteBreakdown({
   options,
   totalVotes,
   isVisible,
+  supportedChains = DEFAULT_SUPPORTED_CHAINS,
 }: VoteBreakdownProps) {
   if (!isVisible) return null
+
+  // Get chain IDs for the supported chains
+  const chainIds = supportedChains.map((chain) => ({
+    key: chain,
+    id: getChainId(chain),
+    label: DEFAULT_CHAIN_LABELS[chain] || chain,
+  }))
 
   return (
     <motion.div
@@ -40,12 +57,12 @@ export default function VoteBreakdown({
           <thead>
             <tr className="border-neutral-80 bg-neutral-90 border-b">
               <th className="text-neutral-20 px-4 py-3 font-medium">Option</th>
-              {SUPPORTED_VOTE_CHAINS.map((chainId) => (
+              {chainIds.map(({ key, label }) => (
                 <th
-                  key={chainId}
+                  key={key}
                   className="text-neutral-20 px-4 py-3 text-center font-medium"
                 >
-                  {CHAIN_LABELS[chainId]}
+                  {label}
                 </th>
               ))}
               <th className="text-neutral-20 px-4 py-3 text-center font-medium">
@@ -69,9 +86,9 @@ export default function VoteBreakdown({
                   transition={{ duration: 0.3, delay: 0.6 + idx * 0.1 }}
                 >
                   <td className="px-4 py-3 font-medium">{opt.label}</td>
-                  {SUPPORTED_VOTE_CHAINS.map((chainId) => (
-                    <td key={chainId} className="px-4 py-3 text-center">
-                      {opt.votesByChain[chainId] || 0}
+                  {chainIds.map(({ key, id }) => (
+                    <td key={key} className="px-4 py-3 text-center">
+                      {opt.votesByChain[id] || 0}
                     </td>
                   ))}
                   <td className="px-4 py-3 text-center font-semibold">
@@ -93,8 +110,9 @@ export default function VoteBreakdown({
         animate={{ opacity: 1 }}
         transition={{ delay: 1 }}
       >
-        Total votes: {totalVotes} across {SUPPORTED_VOTE_CHAINS.length} chains
-        (Base Sepolia + Arbitrum Sepolia)
+        Total votes: {totalVotes} across {supportedChains.length} chain
+        {supportedChains.length !== 1 && 's'} (
+        {chainIds.map((c) => c.label).join(' + ')})
       </motion.p>
     </motion.div>
   )

@@ -1,21 +1,24 @@
 'use client'
 
-import { useEffect, useMemo, useState } from 'react'
+import { useEffect, useMemo, useState, useCallback } from 'react'
 import { DaoType, ProposalType } from '../../enums/dao-types.enum'
 import Badge from '../../ui/badge'
 import { useDaoCtx } from '../../contexts/dao.context'
 import EmptyDao from './empty-list'
 import { Skeleton } from '@/ui/skeleton'
 import URL_ROUTES from '@/constants/url-route'
-import { mockProposals } from '@/constants/dao/mock-proposals'
-import { MockProposal } from '@/types/dao.types'
+import { fetchAllDaos } from '@/services/dao.service'
+import { DaoRow } from '@/lib/supabase/database.types'
+import { getProposalTypeFromDaoType } from '@/types/dao.types'
 
 /**
- * Compute a human-readable "time remaining" or "X days ago" string.
+ * Compute a human-readable "time remaining" or "Voting ended" string.
  */
-function getTimeLabel(endTime: string): string {
+function getTimeLabel(endDate: string | null): string {
+  if (!endDate) return 'No deadline'
+
   const now = new Date()
-  const end = new Date(endTime)
+  const end = new Date(endDate)
   const diffMs = end.getTime() - now.getTime()
 
   if (diffMs <= 0) return 'Voting ended'
@@ -48,25 +51,40 @@ const TAB_FILTER: Record<DaoType, ProposalType[]> = {
 }
 
 export function DAOList() {
-  const [proposals, setProposals] = useState<MockProposal[]>([])
+  const [daos, setDaos] = useState<DaoRow[]>([])
   const [loading, setLoading] = useState<boolean>(true)
+  const [error, setError] = useState<string | null>(null)
 
   const { daoType } = useDaoCtx()
 
-  const filtered = useMemo(() => {
-    const allowedTypes = TAB_FILTER[daoType] || []
-    return mockProposals.filter((p) => allowedTypes.includes(p.type))
-  }, [daoType])
+  // Fetch DAOs from Supabase
+  const loadDaos = useCallback(async () => {
+    setLoading(true)
+    setError(null)
+
+    try {
+      const data = await fetchAllDaos()
+      setDaos(data)
+    } catch (err) {
+      console.error('[DAOList] Error loading DAOs:', err)
+      setError('Failed to load proposals. Please try again.')
+    } finally {
+      setLoading(false)
+    }
+  }, [])
 
   useEffect(() => {
-    setLoading(true)
-    // Simulate async fetch
-    const timer = setTimeout(() => {
-      setProposals(filtered)
-      setLoading(false)
-    }, 300)
-    return () => clearTimeout(timer)
-  }, [filtered])
+    loadDaos()
+  }, [loadDaos])
+
+  // Filter DAOs based on selected tab
+  const filtered = useMemo(() => {
+    const allowedTypes = TAB_FILTER[daoType] || []
+    return daos.filter((dao) => {
+      const proposalType = getProposalTypeFromDaoType(dao.dao_type)
+      return allowedTypes.includes(proposalType)
+    })
+  }, [daoType, daos])
 
   return (
     <>
@@ -89,30 +107,44 @@ export function DAOList() {
           </>
         )}
 
-        {!loading && proposals.length === 0 ? (
+        {!loading && error && (
+          <div className="flex h-48 flex-col items-center justify-center gap-4">
+            <p className="text-red-500">{error}</p>
+            <button
+              onClick={loadDaos}
+              className="rounded-lg bg-primary-green px-4 py-2 text-white hover:bg-green-700"
+            >
+              Retry
+            </button>
+          </div>
+        )}
+
+        {!loading && !error && filtered.length === 0 ? (
           <EmptyDao />
         ) : (
           <>
-            {proposals.map((item, index) => (
-              <div
-                key={`${item.code}-${index}`}
-                className="proposal-card mb-8 transition-shadow duration-500 hover:shadow-lg"
-                onClick={() =>
-                  (window.location.href = `${URL_ROUTES.DAO}/${item.code}`)
-                }
-              >
-                <Badge type={item.type} />
-                <h3 className="font-medium">{item.name}</h3>
-                <div className="flex justify-between">
-                  <p className="text-neutral-30">
-                    {getTimeLabel(item.endTime)}
-                  </p>
-                  <p className="text-neutral-30">
-                    {getCreatedLabel(item.createdAt)}
-                  </p>
+            {!loading &&
+              !error &&
+              filtered.map((dao, index) => (
+                <div
+                  key={`${dao.dao_id}-${index}`}
+                  className="proposal-card mb-8 transition-shadow duration-500 hover:shadow-lg"
+                  onClick={() =>
+                    (window.location.href = `${URL_ROUTES.DAO}/${dao.dao_id}`)
+                  }
+                >
+                  <Badge type={getProposalTypeFromDaoType(dao.dao_type)} />
+                  <h3 className="font-medium">{dao.dao_name}</h3>
+                  <div className="flex justify-between">
+                    <p className="text-neutral-30">
+                      {getTimeLabel(dao.end_date)}
+                    </p>
+                    <p className="text-neutral-30">
+                      {getCreatedLabel(dao.created_at)}
+                    </p>
+                  </div>
                 </div>
-              </div>
-            ))}
+              ))}
           </>
         )}
       </section>
