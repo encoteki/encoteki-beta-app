@@ -3,7 +3,7 @@ import type { NextRequest } from 'next/server'
 import { getIronSession } from 'iron-session'
 import { sessionOptions, SessionData } from '@/lib/session'
 
-const PUBLIC_ROUTES = ['/login', '/']
+const PUBLIC_ROUTES = ['/login']
 
 export async function proxy(request: NextRequest) {
   const response = NextResponse.next()
