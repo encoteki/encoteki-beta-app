@@ -307,10 +307,10 @@ export function useMintTransaction({
 
   // ───────────── Auto-refetch allowance after approval ─────────────
   useEffect(() => {
-    if (approveIsSuccess && needsApproval) {
+    if (approveIsSuccess) {
       refetchAllowance()
     }
-  }, [approveIsSuccess, needsApproval, refetchAllowance])
+  }, [approveIsSuccess, refetchAllowance])
 
   // ───────────── Execute ─────────────
   const execute = useCallback(() => {
@@ -359,9 +359,9 @@ export function useMintTransaction({
     writeMint,
   ])
 
-  // Auto-mint after approval succeeds
+  // Auto-mint after approval succeeds and allowance is sufficient
   useEffect(() => {
-    if (approveIsSuccess && !needsApproval && !mintHash) {
+    if (approveIsSuccess && !needsApproval && !mintHash && !abortRef.current) {
       const functionName = hasReferral ? 'mintWithReferral' : 'mint'
       const args = hasReferral ? [tokenAddress, referralCode!] : [tokenAddress]
 
@@ -373,7 +373,18 @@ export function useMintTransaction({
         value: msgValue,
       })
     }
-  }, [approveIsSuccess, needsApproval, mintHash])
+  }, [
+    approveIsSuccess,
+    needsApproval,
+    mintHash,
+    hasReferral,
+    tokenAddress,
+    referralCode,
+    targetContract,
+    abi,
+    msgValue,
+    writeMint,
+  ])
 
   const reset = useCallback(() => {
     abortRef.current = true
