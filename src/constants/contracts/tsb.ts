@@ -137,54 +137,46 @@ const TOKEN_META: Record<TokenSymbol, TokenMetadata> = {
 //   1. Add ONE entry to the CHAINS array below.
 //   2. Done — contracts, ABIs, explorers, tokens, and UI are all derived.
 //
-// Testnet vs Mainnet is auto-resolved by NEXT_PUBLIC_APP_ENV.
 // ABI is auto-resolved: hub → tsbhub_abi, satellite → tsbsatellite_abi.
+// Accepted tokens are dynamically determined based on provided env addresses.
 //
 
 const ZERO_ADDRESS: Hex = '0x0000000000000000000000000000000000000000'
-
-interface NetworkEnv {
-  chainId: number
-  contract: Address
-  explorer: string
-  tokenAddresses: Partial<Record<TokenSymbol, Address>>
-}
 
 interface ChainDef {
   key: string
   label: string
   type: 'hub' | 'satellite'
   enabled: boolean
-  acceptedTokens: TokenSymbol[]
-  testnet: NetworkEnv
-  mainnet: NetworkEnv
+  chainId: number
+  contract: Address
+  explorer: string
+  tokenAddresses: Partial<Record<TokenSymbol, Address>>
 }
 
-// DEFINE HERE
+// Helper to filter accepted tokens based on available addresses
+function getAcceptedTokens(
+  tokenAddresses: Partial<Record<TokenSymbol, Address>>,
+): TokenSymbol[] {
+  return Object.entries(tokenAddresses)
+    .filter(([_, address]) => address && address !== '0x')
+    .map(([symbol]) => symbol as TokenSymbol)
+}
+
+// DEFINE HERE - Using mainnet configs (currently in production)
 const CHAINS: ChainDef[] = [
   {
     key: 'BASE',
     label: 'Base',
     type: 'hub',
     enabled: !!process.env.NEXT_PUBLIC_TSB_BASE_CONTRACT,
-    acceptedTokens: ['ETH', 'USDC'],
-    testnet: {
-      chainId: 84532,
-      contract: process.env.NEXT_PUBLIC_TSB_BASE_CONTRACT as Address,
-      explorer: 'https://sepolia.basescan.org/tx/',
-      tokenAddresses: {
-        ETH: ZERO_ADDRESS,
-        USDC: process.env.NEXT_PUBLIC_BASE_USDC_ADDRESS as Address,
-      },
-    },
-    mainnet: {
-      chainId: 8453,
-      contract: process.env.NEXT_PUBLIC_TSB_BASE_CONTRACT as Address,
-      explorer: 'https://basescan.org/tx/',
-      tokenAddresses: {
-        ETH: ZERO_ADDRESS,
-        USDC: process.env.NEXT_PUBLIC_BASE_USDC_ADDRESS as Address,
-      },
+    chainId: 8453,
+    contract: process.env.NEXT_PUBLIC_TSB_BASE_CONTRACT as Address,
+    explorer: 'https://basescan.org/tx/',
+    tokenAddresses: {
+      ETH: ZERO_ADDRESS,
+      USDC: process.env.NEXT_PUBLIC_BASE_USDC_ADDRESS as Address,
+      IDRX: process.env.NEXT_PUBLIC_BASE_IDRX_ADDRESS as Address,
     },
   },
   {
@@ -192,26 +184,14 @@ const CHAINS: ChainDef[] = [
     label: 'Arbitrum',
     type: 'satellite',
     enabled: !!process.env.NEXT_PUBLIC_TSB_ARBITRUM_CONTRACT,
-    acceptedTokens: ['ETH', 'USDC'],
-    testnet: {
-      chainId: 421614,
-      contract: process.env.NEXT_PUBLIC_TSB_ARBITRUM_CONTRACT as Address,
-      explorer: 'https://sepolia.arbiscan.io/tx/',
-      tokenAddresses: {
-        ETH: ZERO_ADDRESS,
-        ARB: process.env.NEXT_PUBLIC_ARBITRUM_NATIVE_ADDRESS as Address,
-        USDC: process.env.NEXT_PUBLIC_ARBITRUM_USDC_ADDRESS as Address,
-      },
-    },
-    mainnet: {
-      chainId: 42161,
-      contract: process.env.NEXT_PUBLIC_TSB_ARBITRUM_CONTRACT as Address, // TODO: mainnet contract
-      explorer: 'https://arbiscan.io/tx/',
-      tokenAddresses: {
-        ETH: ZERO_ADDRESS,
-        ARB: process.env.NEXT_PUBLIC_ARBITRUM_NATIVE_ADDRESS as Address,
-        USDC: process.env.NEXT_PUBLIC_ARBITRUM_USDC_ADDRESS as Address,
-      },
+    chainId: 42161,
+    contract: process.env.NEXT_PUBLIC_TSB_ARBITRUM_CONTRACT as Address,
+    explorer: 'https://arbiscan.io/tx/',
+    tokenAddresses: {
+      ETH: ZERO_ADDRESS,
+      ARB: process.env.NEXT_PUBLIC_ARBITRUM_NATIVE_ADDRESS as Address,
+      USDC: process.env.NEXT_PUBLIC_ARBITRUM_USDC_ADDRESS as Address,
+      USDT: process.env.NEXT_PUBLIC_ARBITRUM_USDT_ADDRESS as Address,
     },
   },
   {
@@ -219,26 +199,14 @@ const CHAINS: ChainDef[] = [
     label: 'Lisk',
     type: 'satellite',
     enabled: !!process.env.NEXT_PUBLIC_TSB_LISK_CONTRACT,
-    acceptedTokens: ['ETH', 'USDT'],
-    testnet: {
-      chainId: 4202,
-      contract: process.env.NEXT_PUBLIC_TSB_LISK_CONTRACT as Address,
-      explorer: 'https://sepolia-blockscout.lisk.com/tx/',
-      tokenAddresses: {
-        ETH: ZERO_ADDRESS,
-        LSK: process.env.NEXT_PUBLIC_LISK_NATIVE_ADDRESS as Address,
-        USDT: process.env.NEXT_PUBLIC_LISK_USDT_ADDRESS as Address,
-      },
-    },
-    mainnet: {
-      chainId: 1135,
-      contract: process.env.NEXT_PUBLIC_TSB_LISK_CONTRACT as Address,
-      explorer: 'https://blockscout.lisk.com/tx/',
-      tokenAddresses: {
-        ETH: ZERO_ADDRESS,
-        LSK: process.env.NEXT_PUBLIC_LISK_NATIVE_ADDRESS as Address,
-        USDT: process.env.NEXT_PUBLIC_LISK_USDT_ADDRESS as Address,
-      },
+    chainId: 1135,
+    contract: process.env.NEXT_PUBLIC_TSB_LISK_CONTRACT as Address,
+    explorer: 'https://blockscout.lisk.com/tx/',
+    tokenAddresses: {
+      ETH: ZERO_ADDRESS,
+      LSK: process.env.NEXT_PUBLIC_LISK_NATIVE_ADDRESS as Address,
+      USDT: process.env.NEXT_PUBLIC_LISK_USDT_ADDRESS as Address,
+      IDRX: process.env.NEXT_PUBLIC_LISK_IDRX_ADDRESS as Address,
     },
   },
   {
@@ -246,24 +214,14 @@ const CHAINS: ChainDef[] = [
     label: 'Manta',
     type: 'satellite',
     enabled: !!process.env.NEXT_PUBLIC_TSB_MANTA_CONTRACT,
-    acceptedTokens: ['ETH', 'MANTA'],
-    testnet: {
-      chainId: 3441006,
-      contract: process.env.NEXT_PUBLIC_TSB_MANTA_CONTRACT as Address,
-      explorer: 'https://pacific-explorer.testnet.manta.network/tx/',
-      tokenAddresses: {
-        ETH: ZERO_ADDRESS,
-        MANTA: process.env.NEXT_PUBLIC_MANTA_NATIVE_ADDRESS as Address,
-      },
-    },
-    mainnet: {
-      chainId: 169,
-      contract: process.env.NEXT_PUBLIC_TSB_MANTA_CONTRACT as Address,
-      explorer: 'https://pacific-explorer.manta.network/tx/',
-      tokenAddresses: {
-        ETH: ZERO_ADDRESS,
-        MANTA: process.env.NEXT_PUBLIC_MANTA_NATIVE_ADDRESS as Address,
-      },
+    chainId: 169,
+    contract: process.env.NEXT_PUBLIC_TSB_MANTA_CONTRACT as Address,
+    explorer: 'https://pacific-explorer.manta.network/tx/',
+    tokenAddresses: {
+      ETH: ZERO_ADDRESS,
+      MANTA: process.env.NEXT_PUBLIC_MANTA_NATIVE_ADDRESS as Address,
+      USDT: process.env.NEXT_PUBLIC_MANTA_USDT_ADDRESS as Address,
+      USDC: process.env.NEXT_PUBLIC_MANTA_USDC_ADDRESS as Address,
     },
   },
 ]
@@ -286,18 +244,17 @@ export interface ResolvedChain {
 }
 
 function resolve(def: ChainDef): ResolvedChain {
-  const env = IS_PRODUCTION ? def.mainnet : def.testnet
   return {
     key: def.key,
     label: def.label,
     type: def.type,
     enabled: def.enabled,
-    chainId: env.chainId,
-    contract: env.contract,
-    explorer: env.explorer,
+    chainId: def.chainId,
+    contract: def.contract,
+    explorer: def.explorer,
     abi: def.type === 'hub' ? (tsbhub_abi as Abi) : (tsbsatellite_abi as Abi),
     isHub: def.type === 'hub',
-    acceptedTokens: def.acceptedTokens,
+    acceptedTokens: getAcceptedTokens(def.tokenAddresses),
   }
 }
 
@@ -310,10 +267,7 @@ const BY_KEY = new Map<string, ResolvedChain>(
   ALL_RESOLVED.map((c) => [c.key, c]),
 )
 const TOKEN_ADDRS = new Map<number, Partial<Record<TokenSymbol, Address>>>(
-  CHAINS.map((def) => {
-    const env = IS_PRODUCTION ? def.mainnet : def.testnet
-    return [env.chainId, env.tokenAddresses]
-  }),
+  CHAINS.map((def) => [def.chainId, def.tokenAddresses]),
 )
 
 // ============================================
@@ -330,9 +284,8 @@ export const getChainByKey = (key: string): ResolvedChain | undefined =>
 
 /**
  * Get the active chain ID for a chain key.
- * Resolves testnet/mainnet automatically based on NEXT_PUBLIC_APP_ENV.
  *
- * Usage: getChainId('BASE') → 84532 (dev) or 8453 (prod)
+ * Usage: getChainId('BASE') → 8453
  */
 export const getChainId = (key: string): number => {
   const chain = BY_KEY.get(key)
