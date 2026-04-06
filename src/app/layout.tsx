@@ -6,6 +6,8 @@ import Providers from '@/providers/providers'
 const outfit = Outfit({
   subsets: ['latin'],
   display: 'swap',
+  preload: true, // Preload for faster initial load
+  fallback: ['system-ui', 'arial'], // Fallback fonts
 })
 
 export const metadata: Metadata = {

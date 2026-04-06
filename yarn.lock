@@ -1083,10 +1083,10 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@next/env@npm:16.1.6":
-  version: 16.1.6
-  resolution: "@next/env@npm:16.1.6"
-  checksum: 10c0/ed7023edb94b9b2e5da3f9c99d08b614da9757c1edd0ecec792fce4d336b4f0c64db1a84955e07cfbd848b9e61c4118fff28f4098cd7b0a7f97814a90565ebe6
+"@next/env@npm:16.2.2":
+  version: 16.2.2
+  resolution: "@next/env@npm:16.2.2"
+  checksum: 10c0/6587718aa8596dc3a23c6fcffa57be59612e3cb1340f31c4b5ad868f3a7dea4bab5c1f8ad83567983b4fae72af1503c104999547b15f0f82104b70efceabee7a
   languageName: node
   linkType: hard
 
@@ -1099,58 +1099,58 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@next/swc-darwin-arm64@npm:16.1.6":
-  version: 16.1.6
-  resolution: "@next/swc-darwin-arm64@npm:16.1.6"
+"@next/swc-darwin-arm64@npm:16.2.2":
+  version: 16.2.2
+  resolution: "@next/swc-darwin-arm64@npm:16.2.2"
   conditions: os=darwin & cpu=arm64
   languageName: node
   linkType: hard
 
-"@next/swc-darwin-x64@npm:16.1.6":
-  version: 16.1.6
-  resolution: "@next/swc-darwin-x64@npm:16.1.6"
+"@next/swc-darwin-x64@npm:16.2.2":
+  version: 16.2.2
+  resolution: "@next/swc-darwin-x64@npm:16.2.2"
   conditions: os=darwin & cpu=x64
   languageName: node
   linkType: hard
 
-"@next/swc-linux-arm64-gnu@npm:16.1.6":
-  version: 16.1.6
-  resolution: "@next/swc-linux-arm64-gnu@npm:16.1.6"
+"@next/swc-linux-arm64-gnu@npm:16.2.2":
+  version: 16.2.2
+  resolution: "@next/swc-linux-arm64-gnu@npm:16.2.2"
   conditions: os=linux & cpu=arm64 & libc=glibc
   languageName: node
   linkType: hard
 
-"@next/swc-linux-arm64-musl@npm:16.1.6":
-  version: 16.1.6
-  resolution: "@next/swc-linux-arm64-musl@npm:16.1.6"
+"@next/swc-linux-arm64-musl@npm:16.2.2":
+  version: 16.2.2
+  resolution: "@next/swc-linux-arm64-musl@npm:16.2.2"
   conditions: os=linux & cpu=arm64 & libc=musl
   languageName: node
   linkType: hard
 
-"@next/swc-linux-x64-gnu@npm:16.1.6":
-  version: 16.1.6
-  resolution: "@next/swc-linux-x64-gnu@npm:16.1.6"
+"@next/swc-linux-x64-gnu@npm:16.2.2":
+  version: 16.2.2
+  resolution: "@next/swc-linux-x64-gnu@npm:16.2.2"
   conditions: os=linux & cpu=x64 & libc=glibc
   languageName: node
   linkType: hard
 
-"@next/swc-linux-x64-musl@npm:16.1.6":
-  version: 16.1.6
-  resolution: "@next/swc-linux-x64-musl@npm:16.1.6"
+"@next/swc-linux-x64-musl@npm:16.2.2":
+  version: 16.2.2
+  resolution: "@next/swc-linux-x64-musl@npm:16.2.2"
   conditions: os=linux & cpu=x64 & libc=musl
   languageName: node
   linkType: hard
 
-"@next/swc-win32-arm64-msvc@npm:16.1.6":
-  version: 16.1.6
-  resolution: "@next/swc-win32-arm64-msvc@npm:16.1.6"
+"@next/swc-win32-arm64-msvc@npm:16.2.2":
+  version: 16.2.2
+  resolution: "@next/swc-win32-arm64-msvc@npm:16.2.2"
   conditions: os=win32 & cpu=arm64
   languageName: node
   linkType: hard
 
-"@next/swc-win32-x64-msvc@npm:16.1.6":
-  version: 16.1.6
-  resolution: "@next/swc-win32-x64-msvc@npm:16.1.6"
+"@next/swc-win32-x64-msvc@npm:16.2.2":
+  version: 16.2.2
+  resolution: "@next/swc-win32-x64-msvc@npm:16.2.2"
   conditions: os=win32 & cpu=x64
   languageName: node
   linkType: hard
@@ -1612,14 +1612,15 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@react-native-async-storage/async-storage@npm:^2.2.0":
-  version: 2.2.0
-  resolution: "@react-native-async-storage/async-storage@npm:2.2.0"
+"@react-native-async-storage/async-storage@npm:^3.0.2":
+  version: 3.0.2
+  resolution: "@react-native-async-storage/async-storage@npm:3.0.2"
   dependencies:
-    merge-options: "npm:^3.0.4"
+    idb: "npm:8.0.3"
   peerDependencies:
-    react-native: ^0.0.0-0 || >=0.65 <1.0
-  checksum: 10c0/84900eba46a40225c4ac9bf5eb58885200dc1e789d873ecda46a2a213870cc7110536ed1fd7a74b873071f3603c093958fbd84c635d6f6d4f94bfbb616ffa0ef
+    react: "*"
+    react-native: "*"
+  checksum: 10c0/afcc9805d15c644a0390e806a2d663bd9ce44f73f15d279b707581677d3a51b985e93a7bb64e301c6f970c3dae531ac7a40bb94e5773bc3515ae54afe59d9d77
   languageName: node
   linkType: hard
 
@@ -2671,14 +2672,14 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@supabase/ssr@npm:^0.8.0":
-  version: 0.8.0
-  resolution: "@supabase/ssr@npm:0.8.0"
+"@supabase/ssr@npm:^0.10.0":
+  version: 0.10.0
+  resolution: "@supabase/ssr@npm:0.10.0"
   dependencies:
     cookie: "npm:^1.0.2"
   peerDependencies:
-    "@supabase/supabase-js": ^2.76.1
-  checksum: 10c0/2fe7b867877d19ad61400af3d6c72b8905034f917374e2b35675084fe1bf4cc3ddc660d6ac9c9be7fb6894885602710daa10f6a8a01c43d134e386c5e14728d9
+    "@supabase/supabase-js": ^2.100.1
+  checksum: 10c0/7bce11c2eb52b2be3b8bd2f24be7f0a472d869eda84711b746184661048e7559a1455b6e380998086dabed216e49f6fc3fba2d44cba9d7c659dc0c915dec1b17
   languageName: node
   linkType: hard
 
@@ -2692,7 +2693,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@supabase/supabase-js@npm:^2.95.3":
+"@supabase/supabase-js@npm:^2.101.1":
   version: 2.101.1
   resolution: "@supabase/supabase-js@npm:2.101.1"
   dependencies:
@@ -2865,7 +2866,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@tailwindcss/postcss@npm:^4.1.18":
+"@tailwindcss/postcss@npm:^4.2.2":
   version: 4.2.2
   resolution: "@tailwindcss/postcss@npm:4.2.2"
   dependencies:
@@ -2885,7 +2886,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@tanstack/react-query@npm:^5.90.21":
+"@tanstack/react-query@npm:^5.96.1":
   version: 5.96.1
   resolution: "@tanstack/react-query@npm:5.96.1"
   dependencies:
@@ -2914,12 +2915,12 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@types/dompurify@npm:^3.0.5":
-  version: 3.0.5
-  resolution: "@types/dompurify@npm:3.0.5"
+"@types/dompurify@npm:^3.2.0":
+  version: 3.2.0
+  resolution: "@types/dompurify@npm:3.2.0"
   dependencies:
-    "@types/trusted-types": "npm:*"
-  checksum: 10c0/a34dcc4498ca250815ccf9aecbe82df96ba5db247d0440cf266a876757d47c52519c240db3475e794d7deb0d6b1af23328e02879be368ad0e26b20c0f0865dba
+    dompurify: "npm:*"
+  checksum: 10c0/e83fec586ffbb1b43f7c8479f2a99c223814d240db912d53fb126aaeea52a4091deceeb75632b5d76004d88ef0fbf444984887b121dece6fa69f4172ed4b2b07
   languageName: node
   linkType: hard
 
@@ -2965,7 +2966,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@types/node@npm:*, @types/node@npm:^25.2.3":
+"@types/node@npm:*, @types/node@npm:^25.5.0":
   version: 25.5.0
   resolution: "@types/node@npm:25.5.0"
   dependencies:
@@ -3008,7 +3009,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@types/trusted-types@npm:*, @types/trusted-types@npm:^2.0.2, @types/trusted-types@npm:^2.0.7":
+"@types/trusted-types@npm:^2.0.2, @types/trusted-types@npm:^2.0.7":
   version: 2.0.7
   resolution: "@types/trusted-types@npm:2.0.7"
   checksum: 10c0/4c4855f10de7c6c135e0d32ce462419d8abbbc33713b31d294596c0cc34ae1fa6112a2f9da729c8f7a20707782b0d69da3b1f8df6645b0366d08825ca1522e0c
@@ -3329,7 +3330,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@wagmi/core@npm:3.4.1, @wagmi/core@npm:^3.3.3":
+"@wagmi/core@npm:3.4.1, @wagmi/core@npm:^3.4.1":
   version: 3.4.1
   resolution: "@wagmi/core@npm:3.4.1"
   dependencies:
@@ -3427,7 +3428,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@walletconnect/ethereum-provider@npm:^2.23.5":
+"@walletconnect/ethereum-provider@npm:^2.23.9":
   version: 2.23.9
   resolution: "@walletconnect/ethereum-provider@npm:2.23.9"
   dependencies:
@@ -3812,7 +3813,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@zerodev/sdk@npm:^5.5.7":
+"@zerodev/sdk@npm:^5.5.9":
   version: 5.5.9
   resolution: "@zerodev/sdk@npm:5.5.9"
   dependencies:
@@ -4195,7 +4196,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"baseline-browser-mapping@npm:^2.10.12, baseline-browser-mapping@npm:^2.8.3":
+"baseline-browser-mapping@npm:^2.10.12, baseline-browser-mapping@npm:^2.9.19":
   version: 2.10.13
   resolution: "baseline-browser-mapping@npm:2.10.13"
   bin:
@@ -4796,7 +4797,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"dompurify@npm:^3.3.3":
+"dompurify@npm:*, dompurify@npm:^3.3.3":
   version: 3.3.3
   resolution: "dompurify@npm:3.3.3"
   dependencies:
@@ -4900,49 +4901,49 @@ __metadata:
     "@metamask/sdk": "npm:^0.34.0"
     "@radix-ui/react-dialog": "npm:^1.1.15"
     "@radix-ui/react-slot": "npm:^1.2.4"
-    "@react-native-async-storage/async-storage": "npm:^2.2.0"
+    "@react-native-async-storage/async-storage": "npm:^3.0.2"
     "@safe-global/safe-apps-provider": "npm:^0.18.6"
     "@safe-global/safe-apps-sdk": "npm:^9.1.0"
-    "@supabase/ssr": "npm:^0.8.0"
-    "@supabase/supabase-js": "npm:^2.95.3"
-    "@tailwindcss/postcss": "npm:^4.1.18"
-    "@tanstack/react-query": "npm:^5.90.21"
-    "@types/dompurify": "npm:^3.0.5"
-    "@types/node": "npm:^25.2.3"
+    "@supabase/ssr": "npm:^0.10.0"
+    "@supabase/supabase-js": "npm:^2.101.1"
+    "@tailwindcss/postcss": "npm:^4.2.2"
+    "@tanstack/react-query": "npm:^5.96.1"
+    "@types/dompurify": "npm:^3.2.0"
+    "@types/node": "npm:^25.5.0"
     "@types/react": "npm:^19.2.14"
     "@types/react-dom": "npm:^19.2.3"
-    "@wagmi/core": "npm:^3.3.3"
-    "@walletconnect/ethereum-provider": "npm:^2.23.5"
+    "@wagmi/core": "npm:^3.4.1"
+    "@walletconnect/ethereum-provider": "npm:^2.23.9"
     "@xellar/kit": "npm:^2.5.0"
     "@xellar/sdk": "npm:^4.9.0"
-    "@zerodev/sdk": "npm:^5.5.7"
+    "@zerodev/sdk": "npm:^5.5.9"
     class-variance-authority: "npm:^0.7.1"
     clsx: "npm:^2.1.1"
     dompurify: "npm:^3.3.3"
     embla-carousel-react: "npm:^8.6.0"
-    eslint: "npm:^10.0.0"
-    eslint-config-next: "npm:^16.1.6"
+    eslint: "npm:^10.1.0"
+    eslint-config-next: "npm:^16.2.2"
     ethers: "npm:^6.16.0"
-    framer-motion: "npm:^12.34.0"
+    framer-motion: "npm:^12.38.0"
     gsap: "npm:^3.14.2"
     iron-session: "npm:^8.0.4"
-    lenis: "npm:^1.3.17"
+    lenis: "npm:^1.3.21"
     lucide-react: "npm:^0.563.0"
-    motion: "npm:^12.34.2"
-    next: "npm:16.1.6"
+    motion: "npm:^12.38.0"
+    next: "npm:16.2.2"
     porto: "npm:^0.2.37"
     prettier: "npm:^3.8.1"
     prettier-plugin-tailwindcss: "npm:^0.7.2"
     react: "npm:^19.2.4"
     react-dom: "npm:^19.2.4"
     siwe: "npm:^3.0.0"
-    swr: "npm:^2.4.0"
-    tailwind-merge: "npm:^3.4.0"
-    tailwindcss: "npm:^4.1.18"
+    swr: "npm:^2.4.1"
+    tailwind-merge: "npm:^3.5.0"
+    tailwindcss: "npm:^4.2.2"
     tailwindcss-animate: "npm:^1.0.7"
-    typescript: "npm:^5.9.3"
-    viem: "npm:^2.45.3"
-    wagmi: "npm:^3.4.3"
+    typescript: "npm:^6.0.2"
+    viem: "npm:^2.47.6"
+    wagmi: "npm:^3.6.0"
   languageName: unknown
   linkType: soft
 
@@ -5172,7 +5173,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"eslint-config-next@npm:^16.1.6":
+"eslint-config-next@npm:^16.2.2":
   version: 16.2.2
   resolution: "eslint-config-next@npm:16.2.2"
   dependencies:
@@ -5372,7 +5373,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"eslint@npm:^10.0.0":
+"eslint@npm:^10.1.0":
   version: 10.1.0
   resolution: "eslint@npm:10.1.0"
   dependencies:
@@ -5730,7 +5731,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"framer-motion@npm:^12.34.0, framer-motion@npm:^12.38.0":
+"framer-motion@npm:^12.38.0":
   version: 12.38.0
   resolution: "framer-motion@npm:12.38.0"
   dependencies:
@@ -6089,6 +6090,13 @@ __metadata:
   languageName: node
   linkType: hard
 
+"idb@npm:8.0.3":
+  version: 8.0.3
+  resolution: "idb@npm:8.0.3"
+  checksum: 10c0/421cd9a3281b7564528857031cc33fd9e95753f8191e483054cb25d1ceea7303a0d1462f4f69f5b41606f0f066156999e067478abf2460dfcf9cab80dae2a2b2
+  languageName: node
+  linkType: hard
+
 "ieee754@npm:^1.2.1":
   version: 1.2.1
   resolution: "ieee754@npm:1.2.1"
@@ -6359,13 +6367,6 @@ __metadata:
   version: 7.0.0
   resolution: "is-number@npm:7.0.0"
   checksum: 10c0/b4686d0d3053146095ccd45346461bc8e53b80aeb7671cc52a4de02dbbf7dc0d1d2a986e2fe4ae206984b4d34ef37e8b795ebc4f4295c978373e6575e295d811
-  languageName: node
-  linkType: hard
-
-"is-plain-obj@npm:^2.1.0":
-  version: 2.1.0
-  resolution: "is-plain-obj@npm:2.1.0"
-  checksum: 10c0/e5c9814cdaa627a9ad0a0964ded0e0491bfd9ace405c49a5d63c88b30a162f1512c069d5b80997893c4d0181eadc3fed02b4ab4b81059aba5620bfcdfdeb9c53
   languageName: node
   linkType: hard
 
@@ -6653,7 +6654,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"lenis@npm:^1.3.17":
+"lenis@npm:^1.3.21":
   version: 1.3.21
   resolution: "lenis@npm:1.3.21"
   peerDependencies:
@@ -6951,15 +6952,6 @@ __metadata:
   languageName: node
   linkType: hard
 
-"merge-options@npm:^3.0.4":
-  version: 3.0.4
-  resolution: "merge-options@npm:3.0.4"
-  dependencies:
-    is-plain-obj: "npm:^2.1.0"
-  checksum: 10c0/02b5891ceef09b0b497b5a0154c37a71784e68ed71b14748f6fd4258ffd3fe4ecd5cb0fd6f7cae3954fd11e7686c5cb64486daffa63c2793bbe8b614b61c7055
-  languageName: node
-  linkType: hard
-
 "merge2@npm:^1.3.0":
   version: 1.4.1
   resolution: "merge2@npm:1.4.1"
@@ -7166,7 +7158,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"motion@npm:^12.34.2":
+"motion@npm:^12.38.0":
   version: 12.38.0
   resolution: "motion@npm:12.38.0"
   dependencies:
@@ -7240,24 +7232,24 @@ __metadata:
   languageName: node
   linkType: hard
 
-"next@npm:16.1.6":
-  version: 16.1.6
-  resolution: "next@npm:16.1.6"
+"next@npm:16.2.2":
+  version: 16.2.2
+  resolution: "next@npm:16.2.2"
   dependencies:
-    "@next/env": "npm:16.1.6"
-    "@next/swc-darwin-arm64": "npm:16.1.6"
-    "@next/swc-darwin-x64": "npm:16.1.6"
-    "@next/swc-linux-arm64-gnu": "npm:16.1.6"
-    "@next/swc-linux-arm64-musl": "npm:16.1.6"
-    "@next/swc-linux-x64-gnu": "npm:16.1.6"
-    "@next/swc-linux-x64-musl": "npm:16.1.6"
-    "@next/swc-win32-arm64-msvc": "npm:16.1.6"
-    "@next/swc-win32-x64-msvc": "npm:16.1.6"
+    "@next/env": "npm:16.2.2"
+    "@next/swc-darwin-arm64": "npm:16.2.2"
+    "@next/swc-darwin-x64": "npm:16.2.2"
+    "@next/swc-linux-arm64-gnu": "npm:16.2.2"
+    "@next/swc-linux-arm64-musl": "npm:16.2.2"
+    "@next/swc-linux-x64-gnu": "npm:16.2.2"
+    "@next/swc-linux-x64-musl": "npm:16.2.2"
+    "@next/swc-win32-arm64-msvc": "npm:16.2.2"
+    "@next/swc-win32-x64-msvc": "npm:16.2.2"
     "@swc/helpers": "npm:0.5.15"
-    baseline-browser-mapping: "npm:^2.8.3"
+    baseline-browser-mapping: "npm:^2.9.19"
     caniuse-lite: "npm:^1.0.30001579"
     postcss: "npm:8.4.31"
-    sharp: "npm:^0.34.4"
+    sharp: "npm:^0.34.5"
     styled-jsx: "npm:5.1.6"
   peerDependencies:
     "@opentelemetry/api": ^1.1.0
@@ -7296,7 +7288,7 @@ __metadata:
       optional: true
   bin:
     next: dist/bin/next
-  checksum: 10c0/543766bf879bb5a5d454dc18cb302953270a92efba1d01dd028ea83c64b69573ce7d6e6c3759ecbaabec0a84131b0237263c24d1ccd7c8a97205e776dcd34e0b
+  checksum: 10c0/e52691071d6166ae00c8725738fd089aea764b6c07de438d22dffdad2e88ef4bb31bcc8c5687c36cf2640cda9660014cbac39178cec8ff62d20c214e88941bf7
   languageName: node
   linkType: hard
 
@@ -8514,7 +8506,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"sharp@npm:^0.34.4":
+"sharp@npm:^0.34.5":
   version: 0.34.5
   resolution: "sharp@npm:0.34.5"
   dependencies:
@@ -8965,7 +8957,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"swr@npm:^2.4.0":
+"swr@npm:^2.4.1":
   version: 2.4.1
   resolution: "swr@npm:2.4.1"
   dependencies:
@@ -8977,7 +8969,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"tailwind-merge@npm:^3.4.0":
+"tailwind-merge@npm:^3.5.0":
   version: 3.5.0
   resolution: "tailwind-merge@npm:3.5.0"
   checksum: 10c0/4dc588f5b5296ba3f38e1ebb41f02b6d24a8c5bb45e44b33748c118fb4b5767dd0efc464431ca3e75404056b618b5f67bec3708158baa65fed8a2fc9201e0c53
@@ -8993,7 +8985,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"tailwindcss@npm:4.2.2, tailwindcss@npm:^4.1.18":
+"tailwindcss@npm:4.2.2, tailwindcss@npm:^4.2.2":
   version: 4.2.2
   resolution: "tailwindcss@npm:4.2.2"
   checksum: 10c0/6eae8a125c35d504ba6c518d26ec64fba694ff4a9ab9b9cd9883050128e0b7afdf491388c472d9bed2624664c1c7d4a133d19b653151a6b52e6ce6953168a857
@@ -9174,23 +9166,23 @@ __metadata:
   languageName: node
   linkType: hard
 
-"typescript@npm:^5.9.3":
-  version: 5.9.3
-  resolution: "typescript@npm:5.9.3"
+"typescript@npm:^6.0.2":
+  version: 6.0.2
+  resolution: "typescript@npm:6.0.2"
   bin:
     tsc: bin/tsc
     tsserver: bin/tsserver
-  checksum: 10c0/6bd7552ce39f97e711db5aa048f6f9995b53f1c52f7d8667c1abdc1700c68a76a308f579cd309ce6b53646deb4e9a1be7c813a93baaf0a28ccd536a30270e1c5
+  checksum: 10c0/4b860b0bf87cc0fee0f66d8ef2640b5a8a8a8c74d1129adb82e389e5f97124383823c47946bef8a73ede371461143a3aa8544399d2133c7b2e4f07e81860af7f
   languageName: node
   linkType: hard
 
-"typescript@patch:typescript@npm%3A^5.9.3#optional!builtin<compat/typescript>":
-  version: 5.9.3
-  resolution: "typescript@patch:typescript@npm%3A5.9.3#optional!builtin<compat/typescript>::version=5.9.3&hash=5786d5"
+"typescript@patch:typescript@npm%3A^6.0.2#optional!builtin<compat/typescript>":
+  version: 6.0.2
+  resolution: "typescript@patch:typescript@npm%3A6.0.2#optional!builtin<compat/typescript>::version=6.0.2&hash=5786d5"
   bin:
     tsc: bin/tsc
     tsserver: bin/tsserver
-  checksum: 10c0/ad09fdf7a756814dce65bc60c1657b40d44451346858eea230e10f2e95a289d9183b6e32e5c11e95acc0ccc214b4f36289dcad4bf1886b0adb84d711d336a430
+  checksum: 10c0/49f0b84fc6ca55653e77752b8a61beabc09ee3dae5d965c31596225aa6ef213c5727b1d2e895b900416dc603854ba0872ac4a812c2a4ed6793a601f9c675de02
   languageName: node
   linkType: hard
 
@@ -9529,7 +9521,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"viem@npm:>=2.37.9, viem@npm:^2.1.1, viem@npm:^2.27.2, viem@npm:^2.31.7, viem@npm:^2.45.3, viem@npm:^2.47.0":
+"viem@npm:>=2.37.9, viem@npm:^2.1.1, viem@npm:^2.27.2, viem@npm:^2.31.7, viem@npm:^2.47.0, viem@npm:^2.47.6":
   version: 2.47.6
   resolution: "viem@npm:2.47.6"
   dependencies:
@@ -9550,7 +9542,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"wagmi@npm:^3.4.3":
+"wagmi@npm:^3.6.0":
   version: 3.6.0
   resolution: "wagmi@npm:3.6.0"
   dependencies:

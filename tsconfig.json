@@ -22,7 +22,10 @@
       "@/*": ["./src/*"],
       "@/home/*": ["./src/features/home/*"],
       "@/apps/*": ["./src/features/apps/*"]
-    }
+    },
+    // Add type checking optimizations
+    "skipDefaultLibCheck": true,
+    "forceConsistentCasingInFileNames": true
   },
   "include": [
     "next-env.d.ts",
@@ -32,5 +35,5 @@
     ".next/dev/types/**/*.ts",
     "tailwind.config.mts"
   ],
-  "exclude": ["node_modules"]
+  "exclude": ["node_modules", ".next", "out", "build", "dist"]
 }
