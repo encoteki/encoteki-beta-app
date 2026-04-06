@@ -24,7 +24,12 @@ const nextConfig: NextConfig = {
     optimizeCss: true,
   },
   
-  // Optimize webpack for faster builds
+  // Turbopack configuration (used for builds in Next.js 16+)
+  turbopack: {
+    // Turbopack is used for builds, webpack config above is for legacy webpack builds only
+  },
+  
+  // Optimize webpack for faster builds (when using --webpack flag)
   webpack: (config, { isServer, dev }) => {
     // In development, skip heavy optimizations for faster compilation
     if (dev) {
