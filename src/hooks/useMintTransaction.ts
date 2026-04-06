@@ -85,7 +85,11 @@ export function useMintTransaction({
   }, [price, isNative, tokenDecimals])
 
   // ───────────── LZ Fee Quote (Satellite only) ─────────────
-  const { data: lzFeeQuote } = useReadContract({
+  const {
+    data: lzFeeQuote,
+    isLoading: isQuotingLzFee,
+    isFetching: isFetchingLzFee,
+  } = useReadContract({
     address: !isHub ? targetContract : undefined,
     abi: tsbSatelliteABI as any,
     functionName: 'quoteLayerZeroFee',
@@ -219,6 +223,12 @@ export function useMintTransaction({
       return
     }
 
+    // Show quoting phase for cross-chain mints
+    if (!isHub && (isQuotingLzFee || isFetchingLzFee) && phase === 'idle') {
+      setPhase('quoting')
+      return
+    }
+
     if (isApproveSigning || isMintSigning) {
       setPhase('signing')
       return
@@ -267,6 +277,9 @@ export function useMintTransaction({
     isHub,
     lzStatus,
     mintConfirmedByEvent,
+    isQuotingLzFee,
+    isFetchingLzFee,
+    phase,
   ])
 
   // ───────────── Watchdog: catch stuck INFLIGHT → MINTING transition ─────────────
@@ -384,7 +397,7 @@ export function useMintTransaction({
     !!targetContract &&
     priceBigInt > ZERO &&
     (isNative || tokenDecimals !== undefined) &&
-    (isHub || lzFee > ZERO)
+    (isHub || (lzFee > ZERO && !isQuotingLzFee && !isFetchingLzFee))
 
   return {
     execute,
@@ -410,5 +423,6 @@ export function useMintTransaction({
     tokenDecimals,
     priceBigInt,
     msgValue,
+    isQuotingLzFee: !isHub && (isQuotingLzFee || isFetchingLzFee),
   }
 }

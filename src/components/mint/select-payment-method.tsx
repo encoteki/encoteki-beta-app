@@ -25,6 +25,8 @@ export default function SelectPaymentMethod() {
   const [activeIdx, setActiveIdx] = useState<number>(0)
   const [paymentMethods, setPaymentMethods] = useState<Token[]>([])
   const [chainDropdownOpen, setChainDropdownOpen] = useState(false)
+  const [isSwitchingChain, setIsSwitchingChain] = useState(false)
+  const [switchChainError, setSwitchChainError] = useState<string | null>(null)
   const {
     setPaymentMethod,
     setTargetContract,
@@ -43,9 +45,9 @@ export default function SelectPaymentMethod() {
   const enabledChains = getEnabledChains()
   const allChains = getAllChains()
 
-  const activeChainId =
-    selectedChainId ??
-    (enabledChains.length > 0 ? enabledChains[0].chainId : walletChainId)
+  // Use selectedChainId if set, otherwise use walletChainId
+  // This ensures user's chain choice persists and doesn't revert to default
+  const activeChainId = selectedChainId ?? walletChainId
   const activeConfig = allChains.find((c) => c.chainId === activeChainId)
   const isHub = isHubChain(activeChainId)
 
@@ -54,6 +56,24 @@ export default function SelectPaymentMethod() {
 
   const isLoadingState = isUserLoading || localLoading
   const hasBackgroundMint = !!backgroundMint
+
+  // Don't auto-reset selectedChainId - let user's choice persist
+  // The activeChainId will use selectedChainId when available, walletChainId as fallback
+  // This prevents the chain from reverting back to default after successful switch
+
+  // Initialize selectedChainId from wallet chain on first load
+  useEffect(() => {
+    if (selectedChainId === null && walletChainId) {
+      setSelectedChainId(walletChainId)
+    }
+  }, []) // Only run once on mount
+
+  // Clear switch error when wallet chain matches selected chain
+  useEffect(() => {
+    if (selectedChainId === walletChainId) {
+      setSwitchChainError(null)
+    }
+  }, [walletChainId, selectedChainId])
 
   // Update payment methods when chain changes
   useEffect(() => {
@@ -75,11 +95,28 @@ export default function SelectPaymentMethod() {
     return () => clearTimeout(timer)
   }, [activeChainId, isLoggedIn])
 
-  const handleChainSelect = (chainId: number) => {
-    setSelectedChainId(chainId)
+  const handleChainSelect = async (chainId: number) => {
     setChainDropdownOpen(false)
+    setSelectedChainId(chainId)
+    setSwitchChainError(null)
+
+    // Only switch if different from current wallet chain
     if (chainId !== walletChainId) {
-      switchChain({ chainId })
+      setIsSwitchingChain(true)
+      try {
+        await switchChain({ chainId })
+        // Clear error on success
+        setSwitchChainError(null)
+      } catch (error) {
+        // If switch fails, keep the selectedChainId so user can retry
+        console.error('Chain switch failed:', error)
+        const errorMsg =
+          error instanceof Error ? error.message : 'Failed to switch chain'
+        setSwitchChainError(errorMsg)
+        // Don't reset - let user try again or manually switch in wallet
+      } finally {
+        setIsSwitchingChain(false)
+      }
     }
   }
 
@@ -187,38 +224,23 @@ export default function SelectPaymentMethod() {
 
         {chainDropdownOpen && (
           <div className="absolute z-20 mt-1 w-full rounded-xl border border-gray-200 bg-white shadow-lg">
-            {allChains.map((chain) => {
+            {enabledChains.map((chain) => {
               const isActive = chain.chainId === activeChainId
-              const isDisabled = !chain.enabled
 
               return (
                 <button
                   key={chain.key}
-                  onClick={() =>
-                    !isDisabled && handleChainSelect(chain.chainId)
-                  }
-                  disabled={isDisabled}
+                  onClick={() => handleChainSelect(chain.chainId)}
                   className={`flex w-full items-center justify-between px-4 py-3 text-left transition-colors first:rounded-t-xl last:rounded-b-xl ${
-                    isActive
-                      ? 'bg-primary-green/7'
-                      : isDisabled
-                        ? 'cursor-not-allowed bg-gray-50 opacity-50'
-                        : 'hover:bg-gray-50'
+                    isActive ? 'bg-primary-green/7' : 'hover:bg-gray-50'
                   }`}
                 >
                   <div className="flex items-center gap-2">
-                    <span
-                      className={`text-sm font-medium ${isDisabled ? 'text-gray-400' : 'text-gray-900'}`}
-                    >
+                    <span className="text-sm font-medium text-gray-900">
                       {chain.label}
                     </span>
                   </div>
-                  {isDisabled && (
-                    <span className="rounded-full bg-gray-200 px-2 py-0.5 text-[10px] text-gray-500">
-                      Coming soon
-                    </span>
-                  )}
-                  {isActive && !isDisabled && (
+                  {isActive && (
                     <div className="h-2 w-2 rounded-full bg-primary-green" />
                   )}
                 </button>
@@ -227,6 +249,19 @@ export default function SelectPaymentMethod() {
           </div>
         )}
       </div>
+
+      {/* Chain switch error message */}
+      {switchChainError && (
+        <div className="mb-4 rounded-xl border border-red-200 bg-red-50 p-3">
+          <p className="text-sm font-medium text-red-800">
+            Failed to switch chain
+          </p>
+          <p className="mt-1 text-xs text-red-600">
+            Please switch to {activeConfig?.label} manually in your wallet, or
+            try selecting again.
+          </p>
+        </div>
+      )}
 
       {/* Payment Methods */}
       <div className="mb-4 text-left">

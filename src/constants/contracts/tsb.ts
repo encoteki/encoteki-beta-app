@@ -50,13 +50,27 @@ export interface Token extends TokenMetadata {
 // MINT PRICING
 // ============================================
 export const MINT_PRICES: Record<TokenSymbol, number> = {
-  ETH: 0.0001,
-  LSK: 40,
-  ARB: 5,
-  MANTA: 300,
-  USDC: 1,
-  USDT: 1,
-  IDRX: 300000,
+  ETH: process.env.NEXT_PUBLIC_MINT_PRICE_ETH
+    ? parseFloat(process.env.NEXT_PUBLIC_MINT_PRICE_ETH)
+    : 0.0001,
+  LSK: process.env.NEXT_PUBLIC_MINT_PRICE_LSK
+    ? parseFloat(process.env.NEXT_PUBLIC_MINT_PRICE_LSK)
+    : 40,
+  ARB: process.env.NEXT_PUBLIC_MINT_PRICE_ARB
+    ? parseFloat(process.env.NEXT_PUBLIC_MINT_PRICE_ARB)
+    : 5,
+  MANTA: process.env.NEXT_PUBLIC_MINT_PRICE_MANTA
+    ? parseFloat(process.env.NEXT_PUBLIC_MINT_PRICE_MANTA)
+    : 300,
+  USDC: process.env.NEXT_PUBLIC_MINT_PRICE_USDC
+    ? parseFloat(process.env.NEXT_PUBLIC_MINT_PRICE_USDC)
+    : 0.2,
+  USDT: process.env.NEXT_PUBLIC_MINT_PRICE_USDT
+    ? parseFloat(process.env.NEXT_PUBLIC_MINT_PRICE_USDT)
+    : 0.2,
+  IDRX: process.env.NEXT_PUBLIC_MINT_PRICE_IDRX
+    ? parseFloat(process.env.NEXT_PUBLIC_MINT_PRICE_IDRX)
+    : 300000,
 }
 
 // ============================================
@@ -146,12 +160,13 @@ interface ChainDef {
   mainnet: NetworkEnv
 }
 
+// DEFINE HERE
 const CHAINS: ChainDef[] = [
   {
     key: 'BASE',
     label: 'Base',
     type: 'hub',
-    enabled: true,
+    enabled: !!process.env.NEXT_PUBLIC_TSB_BASE_CONTRACT,
     acceptedTokens: ['ETH', 'USDC'],
     testnet: {
       chainId: 84532,
@@ -164,11 +179,11 @@ const CHAINS: ChainDef[] = [
     },
     mainnet: {
       chainId: 8453,
-      contract: '0x0' as Address, // TODO: mainnet contract
+      contract: process.env.NEXT_PUBLIC_TSB_BASE_CONTRACT as Address,
       explorer: 'https://basescan.org/tx/',
       tokenAddresses: {
         ETH: ZERO_ADDRESS,
-        USDC: '0x0' as Address, // TODO: mainnet USDC
+        USDC: process.env.NEXT_PUBLIC_BASE_USDC_ADDRESS as Address,
       },
     },
   },
@@ -176,7 +191,7 @@ const CHAINS: ChainDef[] = [
     key: 'ARBITRUM',
     label: 'Arbitrum',
     type: 'satellite',
-    enabled: true,
+    enabled: !!process.env.NEXT_PUBLIC_TSB_ARBITRUM_CONTRACT,
     acceptedTokens: ['ETH', 'USDC'],
     testnet: {
       chainId: 421614,
@@ -184,18 +199,18 @@ const CHAINS: ChainDef[] = [
       explorer: 'https://sepolia.arbiscan.io/tx/',
       tokenAddresses: {
         ETH: ZERO_ADDRESS,
-        ARB: '0x2F6EBFeA38047B8bBD8f9D689730F0889Bd6f13a' as Address,
+        ARB: process.env.NEXT_PUBLIC_ARBITRUM_NATIVE_ADDRESS as Address,
         USDC: process.env.NEXT_PUBLIC_ARBITRUM_USDC_ADDRESS as Address,
       },
     },
     mainnet: {
       chainId: 42161,
-      contract: '0x0' as Address, // TODO: mainnet contract
+      contract: process.env.NEXT_PUBLIC_TSB_ARBITRUM_CONTRACT as Address, // TODO: mainnet contract
       explorer: 'https://arbiscan.io/tx/',
       tokenAddresses: {
         ETH: ZERO_ADDRESS,
-        ARB: '0x0' as Address,
-        USDC: '0x0' as Address,
+        ARB: process.env.NEXT_PUBLIC_ARBITRUM_NATIVE_ADDRESS as Address,
+        USDC: process.env.NEXT_PUBLIC_ARBITRUM_USDC_ADDRESS as Address,
       },
     },
   },
@@ -203,24 +218,26 @@ const CHAINS: ChainDef[] = [
     key: 'LISK',
     label: 'Lisk',
     type: 'satellite',
-    enabled: false,
-    acceptedTokens: ['ETH', 'LSK'],
+    enabled: !!process.env.NEXT_PUBLIC_TSB_LISK_CONTRACT,
+    acceptedTokens: ['ETH', 'USDT'],
     testnet: {
       chainId: 4202,
-      contract: '0x0' as Address,
+      contract: process.env.NEXT_PUBLIC_TSB_LISK_CONTRACT as Address,
       explorer: 'https://sepolia-blockscout.lisk.com/tx/',
       tokenAddresses: {
         ETH: ZERO_ADDRESS,
-        LSK: '0x0' as Address,
+        LSK: process.env.NEXT_PUBLIC_LISK_NATIVE_ADDRESS as Address,
+        USDT: process.env.NEXT_PUBLIC_LISK_USDT_ADDRESS as Address,
       },
     },
     mainnet: {
       chainId: 1135,
-      contract: '0x0' as Address,
+      contract: process.env.NEXT_PUBLIC_TSB_LISK_CONTRACT as Address,
       explorer: 'https://blockscout.lisk.com/tx/',
       tokenAddresses: {
         ETH: ZERO_ADDRESS,
-        LSK: '0x0' as Address,
+        LSK: process.env.NEXT_PUBLIC_LISK_NATIVE_ADDRESS as Address,
+        USDT: process.env.NEXT_PUBLIC_LISK_USDT_ADDRESS as Address,
       },
     },
   },
@@ -228,24 +245,24 @@ const CHAINS: ChainDef[] = [
     key: 'MANTA',
     label: 'Manta',
     type: 'satellite',
-    enabled: false,
+    enabled: !!process.env.NEXT_PUBLIC_TSB_MANTA_CONTRACT,
     acceptedTokens: ['ETH', 'MANTA'],
     testnet: {
       chainId: 3441006,
-      contract: '0x0' as Address,
+      contract: process.env.NEXT_PUBLIC_TSB_MANTA_CONTRACT as Address,
       explorer: 'https://pacific-explorer.testnet.manta.network/tx/',
       tokenAddresses: {
         ETH: ZERO_ADDRESS,
-        MANTA: '0x0' as Address,
+        MANTA: process.env.NEXT_PUBLIC_MANTA_NATIVE_ADDRESS as Address,
       },
     },
     mainnet: {
       chainId: 169,
-      contract: '0x0' as Address,
+      contract: process.env.NEXT_PUBLIC_TSB_MANTA_CONTRACT as Address,
       explorer: 'https://pacific-explorer.manta.network/tx/',
       tokenAddresses: {
         ETH: ZERO_ADDRESS,
-        MANTA: '0x0' as Address,
+        MANTA: process.env.NEXT_PUBLIC_MANTA_NATIVE_ADDRESS as Address,
       },
     },
   },
