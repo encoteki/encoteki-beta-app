@@ -19,6 +19,29 @@ import { useUser } from '@/hooks/useUser'
 import { useAppCtx } from '@/contexts/app.context'
 import { useSatelliteRecovery } from '@/hooks/useSatelliteRecovery'
 import { ChevronDown } from 'lucide-react'
+import Image from 'next/image'
+
+// Chain icons
+import BaseIcon from '@/assets/chains/base.jpeg'
+import ArbitrumIcon from '@/assets/chains/arbitrum.svg'
+import LiskIcon from '@/assets/chains/lisk.webp'
+import MantaIcon from '@/assets/chains/manta.png'
+
+// Helper to get chain icon
+const getChainIcon = (chainKey: string) => {
+  switch (chainKey) {
+    case 'BASE':
+      return BaseIcon
+    case 'ARBITRUM':
+      return ArbitrumIcon
+    case 'LISK':
+      return LiskIcon
+    case 'MANTA':
+      return MantaIcon
+    default:
+      return null
+  }
+}
 
 export default function SelectPaymentMethod() {
   const [localLoading, setLocalLoading] = useState<boolean>(true)
@@ -211,7 +234,18 @@ export default function SelectPaymentMethod() {
           onClick={() => setChainDropdownOpen(!chainDropdownOpen)}
           className="flex w-full items-center justify-between rounded-xl border border-gray-200 bg-white px-4 py-3 transition-all hover:border-gray-300"
         >
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-3">
+            {activeConfig && getChainIcon(activeConfig.key) && (
+              <div className="flex h-6 w-6 items-center justify-center overflow-hidden rounded-full">
+                <Image
+                  src={getChainIcon(activeConfig.key)!}
+                  alt={activeConfig.label}
+                  width={24}
+                  height={24}
+                  className="object-cover"
+                />
+              </div>
+            )}
             <span className="text-sm font-medium text-gray-900">
               {activeConfig?.label ?? 'Select chain'}
             </span>
@@ -226,6 +260,7 @@ export default function SelectPaymentMethod() {
           <div className="absolute z-20 mt-1 w-full rounded-xl border border-gray-200 bg-white shadow-lg">
             {enabledChains.map((chain) => {
               const isActive = chain.chainId === activeChainId
+              const chainIcon = getChainIcon(chain.key)
 
               return (
                 <button
@@ -235,7 +270,18 @@ export default function SelectPaymentMethod() {
                     isActive ? 'bg-primary-green/7' : 'hover:bg-gray-50'
                   }`}
                 >
-                  <div className="flex items-center gap-2">
+                  <div className="flex items-center gap-3">
+                    {chainIcon && (
+                      <div className="flex h-6 w-6 items-center justify-center overflow-hidden rounded-full">
+                        <Image
+                          src={chainIcon}
+                          alt={chain.label}
+                          width={24}
+                          height={24}
+                          className="object-cover"
+                        />
+                      </div>
+                    )}
                     <span className="text-sm font-medium text-gray-900">
                       {chain.label}
                     </span>

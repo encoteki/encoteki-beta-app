@@ -3,11 +3,34 @@ import DefaultButton from '@/ui/buttons/default-btn'
 import { useMintCtx } from '../../contexts/mint.context'
 import { ArrowRight, ArrowLeft, Zap } from 'lucide-react'
 import Hidden from '@/assets/mint/hidden.png'
-import { Token } from '@/constants/contracts/tsb'
+import { Token, getChain } from '@/constants/contracts/tsb'
 import { formatIDR } from '../../utils/format-balance.util'
 import { MintStatus } from '../../enums/mint.enum'
 import { MintButton } from '../../ui/buttons/mint-btn'
 import { Address } from 'viem'
+import { useConnection } from 'wagmi'
+
+// Chain icons
+import BaseIcon from '@/assets/chains/base.jpeg'
+import ArbitrumIcon from '@/assets/chains/arbitrum.svg'
+import LiskIcon from '@/assets/chains/lisk.webp'
+import MantaIcon from '@/assets/chains/manta.png'
+
+// Helper to get chain icon
+const getChainIcon = (chainKey: string) => {
+  switch (chainKey) {
+    case 'BASE':
+      return BaseIcon
+    case 'ARBITRUM':
+      return ArbitrumIcon
+    case 'LISK':
+      return LiskIcon
+    case 'MANTA':
+      return MantaIcon
+    default:
+      return null
+  }
+}
 
 export default function ReviewTransaction() {
   const {
@@ -16,10 +39,14 @@ export default function ReviewTransaction() {
     targetContract,
     isCrossChain,
     referralCode,
+    selectedChainId,
   } = useMintCtx()
 
+  const { address: recipientAddress } = useConnection()
+  const chainConfig = selectedChainId ? getChain(selectedChainId) : null
+
   return (
-    <>
+    <main className="flex flex-col gap-4">
       <div className="text-left">
         <h3 className="font-medium">Review Transaction</h3>
         <p className="text-sm text-neutral-400">
@@ -31,9 +58,11 @@ export default function ReviewTransaction() {
         item={paymentMethod!}
         isCrossChain={isCrossChain}
         referralCode={referralCode}
+        chainConfig={chainConfig}
+        recipientAddress={recipientAddress}
       />
 
-      <div className="flex w-full flex-col gap-1">
+      <div className="flex w-full flex-col gap-3">
         {/* Total */}
         <div className="flex w-full justify-between">
           <p className="font-medium">Total</p>
@@ -70,22 +99,25 @@ export default function ReviewTransaction() {
           Cancel
         </DefaultButton>
       </div>
-    </>
+    </main>
   )
 }
 
 const TransactionCard = ({
   item,
   isCrossChain,
-  referralCode,
+  chainConfig,
+  recipientAddress,
 }: {
   item: Token | null
   isCrossChain: boolean
   referralCode?: string
+  chainConfig: any
+  recipientAddress?: Address
 }) => {
   return (
     <div className="flex items-center justify-center">
-      <div className="w-full max-w-md space-y-4 rounded-2xl bg-gray-100 p-4 shadow-lg tablet:space-y-6">
+      <div className="w-full max-w-md space-y-6 rounded-2xl bg-gray-100 p-6 shadow-lg">
         {/* SEND */}
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-4">
@@ -145,6 +177,31 @@ const TransactionCard = ({
             {isCrossChain && (
               <span className="text-xs text-neutral-40">via LayerZero</span>
             )}
+          </div>
+        </div>
+
+        {/* Transaction Details */}
+        <div className="space-y-3 rounded-xl bg-white p-4">
+          <h4 className="text-sm font-medium text-gray-600">
+            Transaction Details
+          </h4>
+
+          {/* Recipient Address */}
+          {recipientAddress && (
+            <div className="flex justify-between text-sm">
+              <span className="text-gray-500">Recipient</span>
+              <span className="font-mono font-medium">
+                {recipientAddress.slice(0, 6)}...{recipientAddress.slice(-4)}
+              </span>
+            </div>
+          )}
+
+          {/* Fee Estimate */}
+          <div className="flex justify-between text-sm">
+            <span className="text-gray-500">Network</span>
+            <span className="font-medium">
+              {chainConfig ? chainConfig.label : ''}
+            </span>
           </div>
         </div>
 
