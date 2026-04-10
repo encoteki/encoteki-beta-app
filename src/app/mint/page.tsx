@@ -30,7 +30,7 @@ export default function MintPage() {
 
   return (
     <main className="mint-container">
-      <section className="mint-modal">
+      <div className="mint-modal" role="region" aria-label="Mint Transaction">
         {status === MintStatus.HOME && <SelectPaymentMethod />}
         {(status === MintStatus.REVIEW || isMinting) && (
           <div className={isMinting ? 'hidden' : ''}>
@@ -38,7 +38,7 @@ export default function MintPage() {
           </div>
         )}
         {showStatus && <TransactionStatus status={status} />}
-      </section>
+      </div>
     </main>
   )
 }

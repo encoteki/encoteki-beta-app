@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useState } from 'react'
+import { useEffect, useState, useRef } from 'react'
 import { useChainId, useSwitchChain } from 'wagmi'
 import DefaultButton from '@/ui/buttons/default-btn'
 import { useMintCtx } from '../../contexts/mint.context'
@@ -50,6 +50,7 @@ export default function SelectPaymentMethod() {
   const [chainDropdownOpen, setChainDropdownOpen] = useState(false)
   const [isSwitchingChain, setIsSwitchingChain] = useState(false)
   const [switchChainError, setSwitchChainError] = useState<string | null>(null)
+  const headingRef = useRef<HTMLHeadingElement>(null)
   const {
     setPaymentMethod,
     setTargetContract,
@@ -97,6 +98,11 @@ export default function SelectPaymentMethod() {
       setSwitchChainError(null)
     }
   }, [walletChainId, selectedChainId])
+
+  // Manage focus when mounted
+  useEffect(() => {
+    headingRef.current?.focus()
+  }, [])
 
   // Update payment methods when chain changes
   useEffect(() => {
@@ -158,36 +164,36 @@ export default function SelectPaymentMethod() {
     selectedChainId !== null && selectedChainId !== walletChainId
 
   return (
-    <>
+    <div className="mx-auto flex w-full max-w-md flex-col">
       {/* Background mint toast */}
       {backgroundMint && (
         <button
           onClick={restoreFromBackground}
-          className="mb-4 flex w-full items-center gap-3 rounded-xl border border-blue-200 bg-blue-50 p-3 text-left transition-colors hover:bg-blue-100"
+          className="mb-4 flex w-full items-center gap-3 border-b border-border py-3 text-left transition-colors hover:opacity-80"
         >
-          <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-blue-100">
+          <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-chart-3/10">
             {backgroundMint.status === MintStatus.SUCCESS ? (
-              <div className="h-3 w-3 rounded-full bg-green-500" />
+              <div className="h-3 w-3 rounded-full bg-chart-2" />
             ) : backgroundMint.status === MintStatus.FAILED ? (
-              <div className="h-3 w-3 rounded-full bg-red-500" />
+              <div className="h-3 w-3 rounded-full bg-destructive" />
             ) : (
-              <div className="h-3 w-3 animate-pulse rounded-full bg-blue-500" />
+              <div className="h-3 w-3 animate-pulse rounded-full bg-chart-3" />
             )}
           </div>
           <div className="flex-1">
-            <p className="text-sm font-medium text-blue-900">
+            <p className="text-sm font-medium text-foreground">
               {backgroundMint.status === MintStatus.SUCCESS
                 ? 'Mint completed!'
                 : backgroundMint.status === MintStatus.FAILED
                   ? 'Mint failed'
                   : 'Mint in progress'}
             </p>
-            <p className="text-xs text-blue-700">
+            <p className="text-xs text-muted-foreground">
               Tap to view transaction status
             </p>
           </div>
           <svg
-            className="h-4 w-4 text-blue-400"
+            className="h-4 w-4 text-muted-foreground"
             fill="none"
             viewBox="0 0 24 24"
             stroke="currentColor"
@@ -204,17 +210,18 @@ export default function SelectPaymentMethod() {
 
       {/* Pending cross-chain recovery notice */}
       {!isHub && pendingReqId && mintRequestData && (
-        <div className="mb-4 rounded-xl border border-amber-300 bg-amber-50 p-3">
-          <p className="text-sm font-medium text-amber-800">
-            You have a pending cross-chain mint
+        <div className="mb-6 border-b border-border pb-4">
+          <p className="flex items-center gap-2 text-sm font-semibold text-foreground">
+            <div className="h-2 w-2 animate-pulse rounded-full bg-chart-4"></div>
+            Pending cross-chain mint
           </p>
-          <p className="mt-1 text-xs text-amber-600">
+          <p className="mt-2 text-xs leading-relaxed text-muted-foreground">
             Your previous mint is still being processed via LayerZero. You can
             wait for it to complete or expire it to get a refund.
           </p>
           <button
             onClick={() => setStatus(MintStatus.INFLIGHT)}
-            className="mt-2 text-xs font-medium text-amber-900 underline"
+            className="mt-3 text-xs font-semibold text-chart-4 transition-colors hover:text-chart-4/80"
           >
             View status
           </button>
@@ -222,21 +229,31 @@ export default function SelectPaymentMethod() {
       )}
 
       {/* Chain Selection Dropdown */}
-      <div className="mb-4 text-left">
-        <h3 className="font-medium">Select Chain</h3>
-        <p className="text-sm text-neutral-400">
+      <div className="mb-4 space-y-1 text-left">
+        <h2
+          ref={headingRef}
+          tabIndex={-1}
+          className="rounded-sm text-2xl font-semibold tracking-tight text-foreground focus:outline-none"
+        >
+          Select Chain
+        </h2>
+        <p className="text-sm text-muted-foreground">
           Choose which chain to mint on
         </p>
       </div>
 
-      <div className="relative mb-4">
+      <div className="relative mb-6">
         <button
+          aria-haspopup="listbox"
+          aria-expanded={chainDropdownOpen}
+          aria-controls="chain-dropdown"
+          role="combobox"
           onClick={() => setChainDropdownOpen(!chainDropdownOpen)}
-          className="flex w-full items-center justify-between rounded-xl border border-gray-200 bg-white px-4 py-3 transition-all hover:border-gray-300"
+          className="flex w-full items-center justify-between rounded-xl border border-border bg-background px-4 py-3 shadow-sm transition-all hover:border-ring focus:ring-2 focus:ring-ring/20 focus:outline-none"
         >
           <div className="flex items-center gap-3">
             {activeConfig && getChainIcon(activeConfig.key) && (
-              <div className="flex h-6 w-6 items-center justify-center overflow-hidden rounded-full">
+              <figure className="flex h-6 w-6 items-center justify-center overflow-hidden rounded-full ring-1 ring-border">
                 <Image
                   src={getChainIcon(activeConfig.key)!}
                   alt={activeConfig.label}
@@ -244,35 +261,48 @@ export default function SelectPaymentMethod() {
                   height={24}
                   className="object-cover"
                 />
-              </div>
+              </figure>
             )}
-            <span className="text-sm font-medium text-gray-900">
+            <span className="text-base font-medium text-foreground">
               {activeConfig?.label ?? 'Select chain'}
             </span>
           </div>
           <ChevronDown
-            size={16}
-            className={`text-gray-400 transition-transform ${chainDropdownOpen ? 'rotate-180' : ''}`}
+            size={18}
+            className={`text-muted-foreground transition-transform duration-200 ${chainDropdownOpen ? 'rotate-180' : ''}`}
           />
         </button>
 
         {chainDropdownOpen && (
-          <div className="absolute z-20 mt-1 w-full rounded-xl border border-gray-200 bg-white shadow-lg">
+          <ul
+            id="chain-dropdown"
+            role="listbox"
+            className="absolute z-20 mt-2 w-full overflow-hidden rounded-xl border border-border bg-background py-1 shadow-lg"
+          >
             {enabledChains.map((chain) => {
               const isActive = chain.chainId === activeChainId
               const chainIcon = getChainIcon(chain.key)
 
               return (
-                <button
+                <li
                   key={chain.key}
+                  role="option"
+                  aria-selected={isActive}
+                  tabIndex={0}
                   onClick={() => handleChainSelect(chain.chainId)}
-                  className={`flex w-full items-center justify-between px-4 py-3 text-left transition-colors first:rounded-t-xl last:rounded-b-xl ${
-                    isActive ? 'bg-primary-green/7' : 'hover:bg-gray-50'
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter' || e.key === ' ') {
+                      e.preventDefault()
+                      handleChainSelect(chain.chainId)
+                    }
+                  }}
+                  className={`flex w-full cursor-pointer items-center justify-between px-4 py-3 text-left transition-colors focus:bg-muted/30 focus:outline-none ${
+                    isActive ? 'bg-muted/50' : 'hover:bg-muted/30'
                   }`}
                 >
                   <div className="flex items-center gap-3">
                     {chainIcon && (
-                      <div className="flex h-6 w-6 items-center justify-center overflow-hidden rounded-full">
+                      <figure className="flex h-6 w-6 items-center justify-center overflow-hidden rounded-full ring-1 ring-border">
                         <Image
                           src={chainIcon}
                           alt={chain.label}
@@ -280,63 +310,83 @@ export default function SelectPaymentMethod() {
                           height={24}
                           className="object-cover"
                         />
-                      </div>
+                      </figure>
                     )}
-                    <span className="text-sm font-medium text-gray-900">
+                    <span
+                      className={`text-base font-medium ${isActive ? 'font-semibold text-primary' : 'text-foreground'}`}
+                    >
                       {chain.label}
                     </span>
                   </div>
                   {isActive && (
-                    <div className="h-2 w-2 rounded-full bg-primary-green" />
+                    <div className="h-2 w-2 rounded-full bg-primary shadow-sm" />
                   )}
-                </button>
+                </li>
               )
             })}
-          </div>
+          </ul>
         )}
       </div>
 
       {/* Chain switch error message */}
       {switchChainError && (
-        <div className="mb-4 rounded-xl border border-red-200 bg-red-50 p-3">
-          <p className="text-sm font-medium text-red-800">
-            Failed to switch chain
-          </p>
-          <p className="mt-1 text-xs text-red-600">
-            Please switch to {activeConfig?.label} manually in your wallet, or
-            try selecting again.
-          </p>
+        <div className="mb-6 flex items-start gap-3 border-b border-border pb-4">
+          <div className="mt-0.5 shrink-0 rounded-full bg-destructive/10 p-1">
+            <svg
+              className="h-4 w-4 text-destructive"
+              fill="none"
+              viewBox="0 0 24 24"
+              stroke="currentColor"
+            >
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth={2}
+                d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"
+              />
+            </svg>
+          </div>
+          <div>
+            <p className="text-sm font-semibold text-foreground">
+              Failed to switch chain
+            </p>
+            <p className="mt-1 text-xs leading-relaxed text-muted-foreground">
+              Please switch to{' '}
+              <span className="font-medium">{activeConfig?.label}</span>{' '}
+              manually in your wallet, or try selecting it again.
+            </p>
+          </div>
         </div>
       )}
 
       {/* Payment Methods */}
-      <div className="mb-4 text-left">
-        <h3 className="font-medium">Payment methods</h3>
-        <p className="text-sm text-neutral-400">
+      <div className="mb-4 space-y-1 text-left">
+        <h3 className="text-xl font-semibold tracking-tight text-foreground">
+          Payment method
+        </h3>
+        <p className="text-sm text-muted-foreground">
           Please select a payment method
         </p>
-        {!isHub && (
-          <p className="mt-1 text-xs text-neutral-400">
-            Cross-chain mint via LayerZero (includes gas fee)
-          </p>
-        )}
       </div>
 
-      <div className="mb-4 flex flex-col gap-2 tablet:gap-4">
+      <div className="mb-6 flex flex-col gap-3">
         {isLoadingState ? (
           Array.from({ length: skeletonCount }).map((_, i) => (
             <div
               key={i}
-              className="flex items-center justify-between rounded-2xl border border-gray-100 bg-white p-2 tablet:p-3"
+              className="flex w-full items-center justify-between rounded-xl border border-border bg-background p-3 tablet:p-4"
             >
               <div className="flex flex-1 flex-col items-start gap-1">
-                <div className="flex items-center gap-2 tablet:gap-3">
-                  <Skeleton className="size-6.25 shrink-0 rounded-full" />
-                  <Skeleton className="h-5 w-24 rounded" />
+                <div className="flex items-center gap-3">
+                  <Skeleton className="size-8 shrink-0 rounded-full bg-muted" />
+                  <div className="flex flex-col gap-1.5 text-left">
+                    <Skeleton className="h-4 w-12 rounded bg-muted" />
+                    <Skeleton className="h-3 w-20 rounded bg-muted" />
+                  </div>
                 </div>
               </div>
-              <div className="flex flex-1 items-end justify-end gap-2">
-                <Skeleton className="h-5 w-16 rounded" />
+              <div className="flex flex-1 flex-col items-end justify-center gap-0.5 text-right">
+                <Skeleton className="h-5 w-20 rounded bg-muted" />
               </div>
             </div>
           ))
@@ -350,35 +400,42 @@ export default function SelectPaymentMethod() {
             />
           ))
         ) : (
-          <div className="rounded-xl border border-dashed bg-gray-50 p-4 text-center text-sm text-gray-500">
-            Not available on Chain ID: {activeChainId}
+          <div className="py-6 text-center text-sm font-medium text-muted-foreground">
+            Tokens not available on{' '}
+            {activeConfig?.label ?? `Chain ID: ${activeChainId}`}
           </div>
         )}
       </div>
 
       {/* Referral indicator (auto-applied from login) */}
       {globalReferralCode && (
-        <div className="mb-4 flex items-center gap-2 rounded-xl border border-green-200 bg-green-50 px-4 py-2.5">
-          <svg
-            className="h-4 w-4 text-green-600"
-            fill="none"
-            viewBox="0 0 24 24"
-            stroke="currentColor"
-          >
-            <path
-              strokeLinecap="round"
-              strokeLinejoin="round"
-              strokeWidth={2}
-              d="M5 13l4 4L19 7"
-            />
-          </svg>
-          <span className="text-sm text-green-800">
-            Referral{' '}
-            <span className="font-mono font-medium tracking-wider">
-              {globalReferralCode}
-            </span>{' '}
-            applied
-          </span>
+        <div className="mb-6 flex items-center gap-3 border-b border-border pb-4">
+          <div className="flex h-8 w-8 items-center justify-center rounded-full bg-chart-2/10">
+            <svg
+              className="h-4 w-4 text-chart-2"
+              fill="none"
+              viewBox="0 0 24 24"
+              stroke="currentColor"
+            >
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth={2}
+                d="M5 13l4 4L19 7"
+              />
+            </svg>
+          </div>
+          <div className="flex flex-col">
+            <span className="text-sm font-semibold text-foreground">
+              Referral applied
+            </span>
+            <span className="text-xs text-muted-foreground">
+              Code:{' '}
+              <span className="font-mono font-bold tracking-wider text-foreground">
+                {globalReferralCode}
+              </span>
+            </span>
+          </div>
         </div>
       )}
 
@@ -405,6 +462,6 @@ export default function SelectPaymentMethod() {
                   ? 'Pending Mint Active'
                   : 'Mint'}
       </DefaultButton>
-    </>
+    </div>
   )
 }

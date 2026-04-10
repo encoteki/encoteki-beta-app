@@ -12,32 +12,47 @@ export const PaymentCard = ({ item, isActive, onClick }: PaymentCardProps) => {
   return (
     <button
       onClick={onClick}
-      className={`flex items-center justify-between rounded-2xl border p-2 transition-all duration-200 tablet:p-3 ${
+      className={`group relative flex w-full items-center justify-between rounded-xl border p-3 transition-all duration-200 outline-none focus-visible:ring-2 focus-visible:ring-primary/50 tablet:p-4 ${
         isActive
-          ? `border-primary-green bg-primary-green/7`
-          : 'border-gray-200 bg-white hover:border-gray-300'
+          ? 'border-primary bg-primary/5 ring-1 ring-primary/50'
+          : 'border-border bg-background hover:border-ring hover:bg-muted/50'
       }`}
     >
       <div className="flex flex-1 flex-col items-start gap-1">
-        <div className="flex items-center gap-2 font-medium tablet:gap-3">
-          <Image
-            src={item.logo}
-            alt={item.name}
-            width={25}
-            height={25}
-            className="size-6.25 rounded-full object-cover"
-          />
-          <p className="text-base text-gray-900 tablet:text-lg">
-            {item.symbol}
-          </p>
+        <div className="flex items-center gap-3">
+          <figure
+            className={`relative h-8 w-8 shrink-0 overflow-hidden rounded-full ring-1 transition-colors ${isActive ? 'ring-primary/50' : 'ring-border group-hover:ring-ring/50'}`}
+          >
+            <Image
+              src={item.logo}
+              alt={item.name}
+              width={32}
+              height={32}
+              className="h-full w-full object-cover"
+            />
+          </figure>
+          <div className="flex flex-col text-left">
+            <span
+              className={`text-base font-semibold transition-colors ${isActive ? 'text-primary' : 'text-foreground'}`}
+            >
+              {item.symbol}
+            </span>
+            <span className="text-xs font-medium text-muted-foreground">
+              {item.name}
+            </span>
+          </div>
         </div>
       </div>
 
-      <div className="flex flex-1 items-end justify-end gap-2 text-right">
-        <p className="font-medium text-gray-900">
-          {item.symbol === 'IDRX' ? formatIDR(Number(item.cost)) : item.cost}
-        </p>
-        <p className="text-sm text-gray-500">{item.symbol || item.name}</p>
+      <div className="flex flex-1 flex-col items-end justify-center gap-0.5 text-right">
+        <div className="flex items-baseline gap-1">
+          <span className="text-lg font-bold tracking-tight text-foreground">
+            {item.symbol === 'IDRX' ? formatIDR(Number(item.cost)) : item.cost}
+          </span>
+          <span className="text-sm font-medium text-muted-foreground">
+            {item.symbol}
+          </span>
+        </div>
       </div>
     </button>
   )

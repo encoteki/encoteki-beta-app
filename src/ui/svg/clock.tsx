@@ -9,13 +9,18 @@ interface ClockProps {
   className?: string
 }
 
-export default function Clock({ size = 50, color = '#1346AC' }: ClockProps) {
+export default function Clock({
+  size = 50,
+  color = 'currentColor',
+  className = '',
+}: ClockProps) {
   return (
     <motion.svg
       xmlns="http://www.w3.org/2000/svg"
       width={size}
       height={size}
       fill={color}
+      className={className}
       viewBox="0 0 256 256"
       initial={{ rotate: 0, scale: 0.8, opacity: 0 }}
       animate={{ rotate: 360, scale: 1, opacity: 1 }}

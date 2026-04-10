@@ -30,7 +30,7 @@ const draw: Variants = {
 export function Checkmark({
   size = 50,
   strokeWidth = 6,
-  color = '#246234',
+  color = 'currentColor',
   className = '',
 }: CheckmarkProps) {
   return (

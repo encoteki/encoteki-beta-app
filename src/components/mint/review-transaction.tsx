@@ -1,4 +1,5 @@
 import Image from 'next/image'
+import { useEffect, useRef } from 'react'
 import DefaultButton from '@/ui/buttons/default-btn'
 import { useMintCtx } from '../../contexts/mint.context'
 import { ArrowRight, ArrowLeft, Zap } from 'lucide-react'
@@ -9,28 +10,6 @@ import { MintStatus } from '../../enums/mint.enum'
 import { MintButton } from '../../ui/buttons/mint-btn'
 import { Address } from 'viem'
 import { useConnection } from 'wagmi'
-
-// Chain icons
-import BaseIcon from '@/assets/chains/base.jpeg'
-import ArbitrumIcon from '@/assets/chains/arbitrum.svg'
-import LiskIcon from '@/assets/chains/lisk.webp'
-import MantaIcon from '@/assets/chains/manta.png'
-
-// Helper to get chain icon
-const getChainIcon = (chainKey: string) => {
-  switch (chainKey) {
-    case 'BASE':
-      return BaseIcon
-    case 'ARBITRUM':
-      return ArbitrumIcon
-    case 'LISK':
-      return LiskIcon
-    case 'MANTA':
-      return MantaIcon
-    default:
-      return null
-  }
-}
 
 export default function ReviewTransaction() {
   const {
@@ -44,14 +23,22 @@ export default function ReviewTransaction() {
 
   const { address: recipientAddress } = useConnection()
   const chainConfig = selectedChainId ? getChain(selectedChainId) : null
+  const headingRef = useRef<HTMLHeadingElement>(null)
+
+  useEffect(() => {
+    headingRef.current?.focus()
+  }, [])
 
   return (
-    <main className="flex flex-col gap-4">
-      <div className="text-left">
-        <h3 className="font-medium">Review Transaction</h3>
-        <p className="text-sm text-neutral-400">
-          Please review your transaction details.
-        </p>
+    <main className="mx-auto flex w-full max-w-md flex-col gap-6">
+      <div className="space-y-1 text-left">
+        <h2
+          ref={headingRef}
+          tabIndex={-1}
+          className="text-2xl font-semibold tracking-tight text-foreground focus:outline-none"
+        >
+          Review Transaction
+        </h2>
       </div>
 
       <TransactionCard
@@ -62,30 +49,20 @@ export default function ReviewTransaction() {
         recipientAddress={recipientAddress}
       />
 
-      <div className="flex w-full flex-col gap-3">
+      <div className="flex w-full flex-col gap-4">
         {/* Total */}
-        <div className="flex w-full justify-between">
-          <p className="font-medium">Total</p>
-          <p className="font-medium">
+        <div className="flex w-full items-center justify-between border-t border-border pt-4">
+          <span className="font-medium text-muted-foreground">Total</span>
+          <span className="text-lg font-semibold text-foreground">
             {paymentMethod?.symbol === 'IDRX'
               ? formatIDR(Number(paymentMethod?.cost))
               : paymentMethod?.cost}{' '}
             {paymentMethod?.symbol}
-          </p>
+          </span>
         </div>
-
-        {isCrossChain && (
-          <div className="flex w-full items-center justify-between text-xs text-neutral-40">
-            <span className="flex items-center gap-1">
-              <Zap size={12} />
-              LayerZero gas fee
-            </span>
-            <span>+ auto-quoted in ETH</span>
-          </div>
-        )}
       </div>
 
-      <div className="grid gap-3">
+      <div className="grid gap-3 pt-4">
         <MintButton
           tokenAddress={paymentMethod?.address as Address}
           price={paymentMethod?.cost?.toString() || '0'}
@@ -95,6 +72,7 @@ export default function ReviewTransaction() {
         <DefaultButton
           variant="secondary"
           onClick={() => setStatus(MintStatus.HOME)}
+          classname="w-full"
         >
           Cancel
         </DefaultButton>
@@ -116,105 +94,129 @@ const TransactionCard = ({
   recipientAddress?: Address
 }) => {
   return (
-    <div className="flex items-center justify-center">
-      <div className="w-full max-w-md space-y-6 rounded-2xl bg-gray-100 p-6 shadow-lg">
+    <div className="flex w-full items-center justify-center">
+      <div className="w-full space-y-5 sm:p-2">
         {/* SEND */}
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-4">
             <div className="relative">
-              <div className="flex h-12 w-12 items-center justify-center overflow-hidden rounded-full">
+              <figure className="relative h-12 w-12 shrink-0 overflow-hidden rounded-full bg-muted ring-1 ring-border">
                 <Image
                   src={item?.logo || ''}
                   alt={item?.symbol || ''}
-                  width={100}
-                  height={100}
+                  fill
+                  className="object-cover"
                 />
-              </div>
-              <div className="absolute -right-1 -bottom-1 rounded-full border border-[#18191f] bg-white p-0.5">
-                <div className="flex h-4 w-4 items-center justify-center rounded-full bg-primary-green">
-                  <ArrowRight size={10} className="text-white" />
+              </figure>
+              <div className="absolute -right-1 -bottom-1 rounded-full border border-background bg-background p-0.5">
+                <div className="flex h-5 w-5 items-center justify-center rounded-full bg-destructive shadow-sm">
+                  <ArrowRight
+                    strokeWidth={3}
+                    size={12}
+                    className="text-destructive-foreground"
+                  />
                 </div>
               </div>
             </div>
-            <div className="flex flex-col">
-              <span className="text-lg leading-tight font-medium">Send</span>
-              <span className="text-sm font-medium text-gray-500">
+            <div className="flex flex-col gap-0.5">
+              <span className="text-sm font-semibold tracking-wide text-muted-foreground uppercase">
+                Send
+              </span>
+              <span className="text-base font-medium text-foreground">
                 {item?.symbol}
               </span>
             </div>
           </div>
-          <div className="flex flex-col items-end">
-            <span className="font-medium">
+          <div className="flex flex-col items-end gap-0.5">
+            <span className="text-lg font-semibold text-foreground">
               -{' '}
               {item?.symbol === 'IDRX'
                 ? formatIDR(Number(item.cost))
                 : item?.cost}{' '}
+            </span>
+            <span className="text-sm font-medium text-muted-foreground">
               {item?.symbol}
             </span>
           </div>
+        </div>
+
+        {/* Divider */}
+        <div className="relative flex items-center py-1">
+          <div className="w-full border-t border-dashed border-border"></div>
         </div>
 
         {/* RECEIVE */}
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-4">
             <div className="relative">
-              <div className="h-12 w-12 overflow-hidden rounded-xl">
-                <Image src={Hidden} alt="hidden" width={999} height={999} />
-              </div>
-              <div className="absolute -right-1 -bottom-1 rounded-full border border-[#18191f] bg-white p-0.5">
-                <div className="flex h-4 w-4 items-center justify-center rounded-full bg-primary-green">
-                  <ArrowLeft size={10} className="text-white" />
+              <figure className="relative h-12 w-12 shrink-0 overflow-hidden rounded-xl bg-muted ring-1 ring-border">
+                <Image
+                  src={Hidden}
+                  alt="Target NFT Collection Placeholder"
+                  fill
+                  className="object-cover"
+                />
+              </figure>
+              <div className="absolute -right-1 -bottom-1 rounded-full border border-background bg-background p-0.5">
+                <div className="flex h-5 w-5 items-center justify-center rounded-full bg-chart-2 shadow-sm">
+                  <ArrowLeft
+                    strokeWidth={3}
+                    size={12}
+                    className="text-primary-foreground"
+                  />
                 </div>
               </div>
             </div>
-            <div className="flex flex-col">
-              <span className="text-lg leading-tight font-medium">Receive</span>
-              <span className="text-sm font-medium text-gray-500">NFT</span>
+            <div className="flex flex-col gap-0.5">
+              <span className="text-sm font-semibold tracking-wide text-muted-foreground uppercase">
+                Receive
+              </span>
+              <span className="text-base font-medium text-foreground">NFT</span>
             </div>
           </div>
-          <div className="flex flex-col items-end">
-            <span className="font-medium">1 NFT TSB</span>
-            {isCrossChain && (
-              <span className="text-xs text-neutral-40">via LayerZero</span>
-            )}
+          <div className="flex flex-col items-end gap-0.5">
+            <span className="text-lg font-semibold text-chart-2">+ 1 NFT</span>
+            <span className="text-sm font-medium text-muted-foreground">
+              TSB Collection
+            </span>
           </div>
         </div>
 
         {/* Transaction Details */}
-        <div className="space-y-3 rounded-xl bg-white p-4">
-          <h4 className="text-sm font-medium text-gray-600">
+        <div className="space-y-3 border-t border-border pt-4">
+          <h4 className="text-xs font-semibold tracking-wider text-muted-foreground uppercase">
             Transaction Details
           </h4>
 
           {/* Recipient Address */}
           {recipientAddress && (
-            <div className="flex justify-between text-sm">
-              <span className="text-gray-500">Recipient</span>
-              <span className="font-mono font-medium">
+            <div className="flex items-center justify-between text-sm">
+              <span className="text-muted-foreground">Recipient</span>
+              <span className="rounded border border-border bg-muted/50 px-2 py-0.5 font-mono font-medium text-foreground">
                 {recipientAddress.slice(0, 6)}...{recipientAddress.slice(-4)}
               </span>
             </div>
           )}
 
           {/* Fee Estimate */}
-          <div className="flex justify-between text-sm">
-            <span className="text-gray-500">Network</span>
-            <span className="font-medium">
+          <div className="flex items-center justify-between text-sm">
+            <span className="text-muted-foreground">Network</span>
+            <span className="font-medium text-foreground">
               {chainConfig ? chainConfig.label : ''}
             </span>
           </div>
-        </div>
 
-        {/* Cross-chain info banner */}
-        {isCrossChain && (
-          <div className="rounded-lg bg-blue-10/50 px-3 py-2">
-            <p className="text-xs text-blue-90">
-              This is a cross-chain mint. After your transaction confirms,
-              LayerZero will deliver it to the hub chain. You can safely close
-              this page — your mint will complete in the background.
-            </p>
-          </div>
-        )}
+          {/* Cross-chain note */}
+          {isCrossChain && (
+            <div className="flex items-center justify-between text-sm">
+              <span className="text-muted-foreground">Delivery</span>
+              <span className="flex items-center gap-1.5 font-medium text-chart-3">
+                <Zap size={14} className="fill-chart-3 text-chart-3" />{' '}
+                LayerZero
+              </span>
+            </div>
+          )}
+        </div>
       </div>
     </div>
   )

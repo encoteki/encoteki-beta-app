@@ -30,7 +30,7 @@ const draw: Variants = {
 export function Crossmark({
   size = 50,
   strokeWidth = 6,
-  color = '#D63B29', // Tailwind red-600
+  color = 'currentColor',
   className = '',
 }: CrossmarkProps) {
   return (
