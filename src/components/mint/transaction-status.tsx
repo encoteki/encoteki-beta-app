@@ -36,8 +36,8 @@ function MintSteps({ steps }: { steps: StepInfo[] }) {
       aria-valuemax={steps.length}
     >
       {steps.map((step, i) => (
-        <div key={i} className="flex flex-1 flex-col items-center gap-1.5">
-          <div className="relative h-1.5 w-full overflow-hidden rounded-full bg-muted">
+        <div key={i} className="flex flex-1 flex-col items-center gap-2">
+          <div className="relative h-1.5 w-full overflow-hidden rounded-full bg-muted/50">
             <motion.div
               initial={false}
               animate={{
@@ -47,24 +47,32 @@ function MintSteps({ steps }: { steps: StepInfo[] }) {
                   step.status === 'done'
                     ? 'var(--color-chart-2)'
                     : 'var(--color-chart-3)',
+                opacity: step.status === 'active' ? [0.6, 1, 0.6] : 1,
               }}
               style={{ transformOrigin: 'left' }}
-              transition={{ duration: 0.6, ease: [0.16, 1, 0.3, 1] }}
-              className={`absolute top-0 left-0 h-full w-full rounded-full ${step.status === 'active' ? 'animate-pulse' : ''}`}
+              transition={{
+                scaleX: { duration: 0.5, ease: [0.16, 1, 0.3, 1] },
+                backgroundColor: { duration: 0.4 },
+                opacity:
+                  step.status === 'active'
+                    ? { duration: 1.5, repeat: Infinity, ease: 'easeInOut' }
+                    : { duration: 0.2 },
+              }}
+              className="absolute top-0 left-0 h-full w-full rounded-full"
             />
           </div>
           <motion.span
             animate={{
               color:
                 step.status === 'active'
-                  ? 'var(--color-chart-3)'
+                  ? 'var(--color-foreground)'
                   : step.status === 'done'
                     ? 'var(--color-chart-2)'
                     : 'var(--color-muted-foreground)',
-              fontWeight: step.status === 'active' ? 600 : 500,
+              opacity: step.status === 'pending' ? 0.5 : 1,
             }}
-            transition={{ duration: 0.4 }}
-            className="text-xs leading-tight"
+            transition={{ duration: 0.3 }}
+            className="text-xs font-medium tracking-tight"
           >
             {step.label}
           </motion.span>
@@ -82,33 +90,33 @@ const STATE_MAP: Record<
 > = {
   [MintStatus.APPROVING]: {
     textColor: 'text-chart-3',
-    message: 'Approving token...',
-    desc: 'Please confirm the approval in your wallet.',
+    message: 'Approve in wallet',
+    desc: 'Sign the transaction to allow token transfer.',
   },
   [MintStatus.PENDING]: {
     textColor: 'text-chart-3',
-    message: 'Transaction pending',
-    desc: "Please don't close or refresh this page.",
+    message: 'Processing',
+    desc: 'Waiting for blockchain confirmation.',
   },
   [MintStatus.INFLIGHT]: {
     textColor: 'text-chart-3',
-    message: 'Cross-chain in flight',
-    desc: 'Your transaction is being delivered via LayerZero. You can safely close this page and come back later.',
+    message: 'Bridging assets',
+    desc: 'LayerZero is securely moving your tokens across networks.',
   },
   [MintStatus.MINTING]: {
     textColor: 'text-chart-3',
-    message: 'Minting in progress',
-    desc: 'Your transaction has been delivered. The NFT is being minted on the destination chain.',
+    message: 'Minting NFT',
+    desc: 'Assets arrived. Your NFT is being created.',
   },
   [MintStatus.SUCCESS]: {
     textColor: 'text-chart-2',
-    message: 'Transaction completed',
-    desc: 'Thank you for your payment, TSB is now yours!',
+    message: 'Mint successful!',
+    desc: 'The NFT is now in your wallet.',
   },
   [MintStatus.FAILED]: {
     textColor: 'text-destructive',
-    message: 'Transaction failed',
-    desc: 'Something went wrong. You can try again.',
+    message: 'Mint failed',
+    desc: 'The transaction was rejected or failed. Try again.',
   },
 }
 
@@ -219,45 +227,45 @@ export default function TransactionStatus({ status }: TransactionStatusProps) {
 
   return (
     <>
-      <div className="space-y-6">
+      <div className="space-y-8">
         {/* Icon */}
-        <div className="mx-auto w-fit py-6 tablet:py-8">
+        <div className="mx-auto w-fit pt-4 pb-2">
           <div
-            className={`relative z-10 flex h-20 w-20 items-center justify-center rounded-full bg-background shadow-sm ring-1 ring-border tablet:h-24 tablet:w-24 ${data.textColor} transition-colors duration-500`}
+            className={`relative z-10 flex h-24 w-24 items-center justify-center rounded-3xl bg-background shadow-lg ring-1 ring-border/50 tablet:h-28 tablet:w-28 ${data.textColor} transition-all duration-500`}
           >
             <AnimatePresence mode="wait">
               {isProcessing ? (
                 <motion.div
                   key="processing"
-                  initial={{ opacity: 0, scale: 0.8, rotate: -30 }}
+                  initial={{ opacity: 0, scale: 0.5, rotate: -45 }}
                   animate={{ opacity: 1, scale: 1, rotate: 0 }}
-                  exit={{ opacity: 0, scale: 0.8, rotate: 30 }}
-                  transition={{ duration: 0.3, ease: [0.16, 1, 0.3, 1] }}
+                  exit={{ opacity: 0, scale: 0.5, rotate: 45 }}
+                  transition={{ duration: 0.4, ease: [0.16, 1, 0.3, 1] }}
                   className="absolute"
                 >
-                  <Clock size={48} />
+                  <Clock size={40} strokeWidth={2.5} />
                 </motion.div>
               ) : status === MintStatus.SUCCESS ? (
                 <motion.div
                   key="success"
-                  initial={{ opacity: 0, scale: 0.8 }}
+                  initial={{ opacity: 0, scale: 0.5 }}
                   animate={{ opacity: 1, scale: 1 }}
-                  exit={{ opacity: 0, scale: 0.8 }}
-                  transition={{ duration: 0.4, type: 'spring', bounce: 0.2 }}
+                  exit={{ opacity: 0, scale: 0.5 }}
+                  transition={{ duration: 0.5, type: 'spring', bounce: 0.4 }}
                   className="absolute"
                 >
-                  <Checkmark size={48} />
+                  <Checkmark size={48} strokeWidth={3} />
                 </motion.div>
               ) : status === MintStatus.FAILED ? (
                 <motion.div
                   key="failed"
-                  initial={{ opacity: 0, scale: 0.8 }}
+                  initial={{ opacity: 0, scale: 0.5 }}
                   animate={{ opacity: 1, scale: 1 }}
-                  exit={{ opacity: 0, scale: 0.8 }}
-                  transition={{ duration: 0.4, type: 'spring', bounce: 0.2 }}
+                  exit={{ opacity: 0, scale: 0.5 }}
+                  transition={{ duration: 0.4, type: 'spring', bounce: 0.4 }}
                   className="absolute"
                 >
-                  <Crossmark size={48} />
+                  <Crossmark size={48} strokeWidth={3} />
                 </motion.div>
               ) : null}
             </AnimatePresence>
@@ -268,27 +276,27 @@ export default function TransactionStatus({ status }: TransactionStatusProps) {
         <MintSteps steps={steps} />
 
         {/* Status Text */}
-        <div className="relative">
+        <div className="relative pt-4">
           <div aria-live="polite" aria-atomic="true" className="sr-only">
             {data.message}. {errorMessage || data.desc}
           </div>
           <AnimatePresence mode="wait">
             <motion.div
               key={status}
-              className="space-y-2 text-center"
-              initial={{ opacity: 0, y: prefersReducedMotion ? 0 : 5 }}
+              className="space-y-1.5 text-center"
+              initial={{ opacity: 0, y: prefersReducedMotion ? 0 : 10 }}
               animate={{ opacity: 1, y: 0 }}
-              exit={{ opacity: 0, y: prefersReducedMotion ? 0 : -5 }}
-              transition={{ duration: 0.3, ease: [0.16, 1, 0.3, 1] }}
+              exit={{ opacity: 0, y: prefersReducedMotion ? 0 : -10 }}
+              transition={{ duration: 0.4, ease: [0.16, 1, 0.3, 1] }}
             >
               <h3
                 ref={headingRef}
                 tabIndex={-1}
-                className="text-xl font-semibold tracking-tight text-foreground focus:outline-none"
+                className="text-2xl font-bold tracking-tight wrap-break-word text-foreground focus:outline-none"
               >
                 {data.message}
               </h3>
-              <p className="text-sm leading-relaxed text-muted-foreground">
+              <p className="text-base wrap-break-word text-muted-foreground/90">
                 {errorMessage || data.desc}
               </p>
             </motion.div>
@@ -300,24 +308,17 @@ export default function TransactionStatus({ status }: TransactionStatusProps) {
         {/* Cross-chain inflight notice */}
         {status === MintStatus.INFLIGHT && (
           <motion.div
-            className="mt-6 overflow-hidden border-t border-border pt-6 text-center"
-            initial={{ opacity: 0, height: 0, marginTop: 0, paddingTop: 0 }}
-            animate={{
-              opacity: 1,
-              height: 'auto',
-              marginTop: 24,
-              paddingTop: 24,
-            }}
-            exit={{ opacity: 0, height: 0, marginTop: 0, paddingTop: 0 }}
+            className="mt-8 rounded-2xl bg-muted/30 p-5 text-center"
+            initial={{ opacity: 0, y: 10 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -10 }}
             transition={{ duration: 0.4, ease: [0.16, 1, 0.3, 1] }}
           >
-            <p className="text-sm leading-relaxed text-muted-foreground">
-              Your source transaction is confirmed. LayerZero is now delivering
-              your mint to the hub chain. This typically takes 1-5 minutes but
-              can take up to 30 minutes.
+            <p className="text-sm text-muted-foreground/90">
+              Delivery to the hub network takes 1-5 minutes (up to 30 min).
             </p>
-            <p className="mt-2 text-sm font-medium text-foreground">
-              You can safely close this page. Your NFT will be minted
+            <p className="mt-2 text-sm font-semibold text-foreground">
+              You can safely close this page. The mint will complete
               automatically.
             </p>
           </motion.div>
@@ -326,20 +327,17 @@ export default function TransactionStatus({ status }: TransactionStatusProps) {
         {/* Minting on destination chain */}
         {status === MintStatus.MINTING && (
           <motion.div
-            className="mt-6 overflow-hidden border-t border-border pt-6 text-center"
-            initial={{ opacity: 0, height: 0, marginTop: 0, paddingTop: 0 }}
-            animate={{
-              opacity: 1,
-              height: 'auto',
-              marginTop: 24,
-              paddingTop: 24,
-            }}
-            exit={{ opacity: 0, height: 0, marginTop: 0, paddingTop: 0 }}
+            className="mt-8 rounded-2xl bg-muted/30 p-5 text-center"
+            initial={{ opacity: 0, y: 10 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -10 }}
             transition={{ duration: 0.4, ease: [0.16, 1, 0.3, 1] }}
           >
-            <p className="text-sm leading-relaxed text-muted-foreground">
-              Cross-chain transfer complete. Your NFT is now being minted on the
-              destination chain.
+            <p className="text-sm font-medium text-foreground">
+              Cross-chain transfer complete!
+            </p>
+            <p className="text-sm text-muted-foreground/90">
+              Your NFT is now being minted.
             </p>
           </motion.div>
         )}
@@ -349,10 +347,10 @@ export default function TransactionStatus({ status }: TransactionStatusProps) {
       <AnimatePresence mode="wait">
         <motion.div
           key={status}
-          className="flex flex-col gap-2"
+          className="mt-8 flex flex-col gap-3"
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
-          transition={{ delay: 0.8, duration: 0.4 }}
+          transition={{ delay: 0.4, duration: 0.4 }}
         >
           {status === MintStatus.SUCCESS && explorerUrl && (
             <a href={explorerUrl} target="_blank" rel="noopener noreferrer">
@@ -439,7 +437,7 @@ function CrossChainRecovery({ reqId }: { reqId: Hex }) {
         <p className="text-sm font-semibold text-foreground">
           Recovery Options
         </p>
-        <p className="mx-auto max-w-[280px] text-xs leading-relaxed text-muted-foreground">
+        <p className="mx-auto max-w-70 text-xs leading-relaxed text-muted-foreground">
           {canExpire
             ? 'The timeout has passed. You can expire this mint and claim a refund.'
             : `You can retry the mint or wait for the timeout (${Math.ceil(recovery.mintTimeout / 60)} min) to expire it.`}
@@ -474,9 +472,9 @@ function CrossChainRecovery({ reqId }: { reqId: Hex }) {
         </button>
       </div>
       {recovery.error && (
-        <p className="text-center text-xs font-medium text-destructive">
+        <p className="text-center text-xs font-medium wrap-break-word text-destructive">
           {(recovery.error as any)?.shortMessage ||
-            (recovery.error as any)?.message?.slice(0, 80)}
+            (recovery.error as any)?.message?.slice(0, 100)}
         </p>
       )}
     </div>

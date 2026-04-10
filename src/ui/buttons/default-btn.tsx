@@ -24,7 +24,7 @@ export default function DefaultButton({
         variant === 'primary'
           ? 'bg-primary-green text-white hover:enabled:bg-green-10'
           : 'border border-primary-green/10 bg-white text-primary-green hover:enabled:bg-primary-green/10'
-      } hover:enabled:scale-105 disabled:cursor-not-allowed disabled:opacity-50`}
+      } hover:enabled:scale-105 active:enabled:scale-95 disabled:cursor-not-allowed disabled:opacity-50`}
     >
       {children}
     </button>

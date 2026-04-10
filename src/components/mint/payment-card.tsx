@@ -1,59 +1,59 @@
 import Image from 'next/image'
+import { memo, useCallback } from 'react'
 import { Token } from '@/constants/contracts/tsb'
 import { formatIDR } from '../../utils/format-balance.util'
 
 interface PaymentCardProps {
   item: Token
   isActive: boolean
-  onClick: () => void
+  idx: number
+  onSelect: (idx: number) => void
 }
 
-export const PaymentCard = ({ item, isActive, onClick }: PaymentCardProps) => {
+export const PaymentCard = memo(function PaymentCard({
+  item,
+  isActive,
+  idx,
+  onSelect,
+}: PaymentCardProps) {
+  const handleClick = useCallback(() => {
+    onSelect(idx)
+  }, [idx, onSelect])
+
   return (
     <button
-      onClick={onClick}
-      className={`group relative flex w-full items-center justify-between rounded-xl border p-3 transition-all duration-200 outline-none focus-visible:ring-2 focus-visible:ring-primary/50 tablet:p-4 ${
+      onClick={handleClick}
+      className={`flex w-full items-center justify-between rounded-xl border p-3 text-left transition-all focus:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-1 focus-visible:ring-offset-background active:scale-[0.98] sm:p-4 ${
         isActive
-          ? 'border-primary bg-primary/5 ring-1 ring-primary/50'
-          : 'border-border bg-background hover:border-ring hover:bg-muted/50'
+          ? 'border-primary bg-primary/5'
+          : 'border-border hover:border-muted-foreground/30 hover:bg-muted/30'
       }`}
     >
-      <div className="flex flex-1 flex-col items-start gap-1">
-        <div className="flex items-center gap-3">
-          <figure
-            className={`relative h-8 w-8 shrink-0 overflow-hidden rounded-full ring-1 transition-colors ${isActive ? 'ring-primary/50' : 'ring-border group-hover:ring-ring/50'}`}
-          >
-            <Image
-              src={item.logo}
-              alt={item.name}
-              width={32}
-              height={32}
-              className="h-full w-full object-cover"
-            />
-          </figure>
-          <div className="flex flex-col text-left">
-            <span
-              className={`text-base font-semibold transition-colors ${isActive ? 'text-primary' : 'text-foreground'}`}
-            >
-              {item.symbol}
-            </span>
-            <span className="text-xs font-medium text-muted-foreground">
-              {item.name}
-            </span>
-          </div>
+      <div className="flex min-w-0 items-center gap-3 sm:gap-4">
+        <figure className="relative h-8 w-8 shrink-0 overflow-hidden rounded-full ring-1 ring-border sm:h-10 sm:w-10">
+          <Image
+            src={item.logo}
+            alt={item.name}
+            width={40}
+            height={40}
+            className="object-cover"
+          />
+        </figure>
+        <div className="flex min-w-0 flex-col">
+          <span className="truncate text-sm font-medium text-foreground sm:text-base">
+            {item.symbol}
+          </span>
+          <span className="truncate text-[11px] text-muted-foreground sm:text-xs">
+            {item.name}
+          </span>
         </div>
       </div>
 
-      <div className="flex flex-1 flex-col items-end justify-center gap-0.5 text-right">
-        <div className="flex items-baseline gap-1">
-          <span className="text-lg font-bold tracking-tight text-foreground">
-            {item.symbol === 'IDRX' ? formatIDR(Number(item.cost)) : item.cost}
-          </span>
-          <span className="text-sm font-medium text-muted-foreground">
-            {item.symbol}
-          </span>
-        </div>
+      <div className="shrink-0 pl-2 text-right">
+        <span className="text-base font-semibold text-foreground sm:text-lg">
+          {item.symbol === 'IDRX' ? formatIDR(Number(item.cost)) : item.cost}
+        </span>
       </div>
     </button>
   )
-}
+})

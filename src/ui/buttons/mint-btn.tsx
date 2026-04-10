@@ -124,7 +124,7 @@ export const MintButton = ({
       )}
 
       {mint.isCrossChain && mint.lzFee > BigInt(0) && mint.phase === 'idle' && (
-        <p className="text-center text-xs text-neutral-40">
+        <p className="text-center text-xs text-neutral-30">
           Includes LayerZero cross-chain fee
         </p>
       )}
