@@ -69,7 +69,7 @@ export default function SignInPage() {
           priority
           quality={100}
         />
-        <div className="absolute inset-0 bg-gradient-to-t from-neutral-10/80 to-neutral-10/20" />
+        <div className="absolute inset-0 bg-linear-to-t from-neutral-10/80 to-neutral-10/20" />
       </div>
 
       {/* Modal Container */}

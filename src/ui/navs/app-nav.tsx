@@ -25,9 +25,7 @@ export const AppNav = ({ items }: { items: NavProps[] }) => {
   }, [])
 
   return (
-    <div
-      className={`hidden rounded-full border border-primary-green bg-white p-1 shadow-lg transition-all tablet:flex tablet:p-2`}
-    >
+    <div className="hidden items-center rounded-full border border-neutral-60/40 bg-white/90 p-1.5 shadow-sm backdrop-blur-md transition-all duration-300 tablet:flex">
       {items.map((item, idx) => {
         const isActive = activeIdx === idx
         return (
@@ -38,20 +36,28 @@ export const AppNav = ({ items }: { items: NavProps[] }) => {
               router.push(item.id)
             }}
             className={cn(
-              'relative rounded-full text-green-10 tablet:min-w-24 tablet:px-4 tablet:py-2 desktop:min-w-32 desktop:px-6 desktop:py-3',
-              isActive && '',
+              'group relative rounded-full text-sm font-medium tracking-wide transition-colors duration-200 outline-none focus-visible:ring-2 focus-visible:ring-primary-green tablet:min-w-27.5 tablet:px-3 tablet:py-2.5 desktop:min-w-27.5 desktop:px-5 desktop:py-2.5',
+              isActive
+                ? 'text-primary-green'
+                : 'text-neutral-40 hover:text-neutral-10',
             )}
           >
             {isActive && (
               <motion.span
-                initial={{ opacity: 0, scale: 0.8 }}
-                animate={{ opacity: 1, scale: 1 }}
-                exit={{ opacity: 0, scale: 0.8 }}
-                transition={{ duration: 0.25, ease: 'easeInOut' }}
-                className="absolute inset-0 rounded-full bg-primary-green/20"
+                layoutId="app-nav-active-pill"
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                exit={{ opacity: 0 }}
+                transition={{
+                  type: 'spring',
+                  stiffness: 500,
+                  damping: 35,
+                  mass: 1,
+                }}
+                className="absolute inset-0 rounded-full bg-green-90"
               />
             )}
-            <span className="relative z-10 font-medium">{item.label}</span>
+            <span className="relative z-10">{item.label}</span>
           </button>
         )
       })}

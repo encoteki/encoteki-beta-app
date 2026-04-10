@@ -100,10 +100,10 @@ export function SignInButton() {
   if (isSessionLoading) {
     return (
       <button
-        className="w-full animate-pulse cursor-pointer rounded-4xl bg-gray-200 px-4 py-3 text-gray-500 duration-300 hover:scale-105 hover:bg-(--green-10) disabled:cursor-not-allowed disabled:opacity-50 md:px-6 md:py-4"
+        className="flex w-full cursor-not-allowed items-center justify-center rounded-full bg-neutral-60/20 px-5 py-3 text-sm font-medium text-neutral-40 transition-colors duration-300 tablet:w-auto tablet:py-2.5"
         disabled
       >
-        Loading...
+        <Loading label="Loading..." />
       </button>
     )
   }
@@ -113,7 +113,7 @@ export function SignInButton() {
     return (
       <button
         onClick={handleLogout}
-        className="w-full cursor-pointer rounded-4xl bg-white py-3 font-medium text-primary-red duration-300 marker:text-sm hover:scale-105 disabled:cursor-not-allowed disabled:opacity-50 md:px-6 md:py-4 md:text-base"
+        className="w-full rounded-full bg-white px-5 py-3 text-sm font-medium text-primary-red shadow-sm ring-1 ring-neutral-60/20 transition-all duration-200 outline-none hover:bg-red-50 hover:shadow focus-visible:ring-2 focus-visible:ring-primary-red active:scale-[0.98] tablet:w-auto tablet:py-2.5"
       >
         Disconnect
       </button>
@@ -124,7 +124,7 @@ export function SignInButton() {
     <button
       onClick={handleClick}
       disabled={isSigningIn}
-      className="w-full cursor-pointer rounded-4xl bg-primary-green py-3 font-medium text-white duration-300 marker:text-sm hover:scale-105 hover:bg-green-10 disabled:cursor-not-allowed disabled:opacity-50 md:px-6 md:py-4 md:text-base"
+      className="w-full rounded-full bg-primary-green px-5 py-3 text-sm font-medium text-white shadow-[0_4px_12px_rgba(36,98,52,0.2)] transition-all duration-200 outline-none hover:bg-primary-green/90 hover:shadow-[0_6px_16px_rgba(36,98,52,0.3)] focus-visible:ring-2 focus-visible:ring-primary-green focus-visible:ring-offset-2 active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-60 disabled:hover:bg-primary-green disabled:hover:shadow-none tablet:w-auto tablet:py-2.5"
     >
       {isSigningIn ? (
         <Loading label="Signing..." />
