@@ -1,6 +1,5 @@
 import { useEffect, useMemo, useState, useCallback, useRef } from 'react'
 import {
-  useChainId,
   useReadContract,
   useWriteContract,
   useWaitForTransactionReceipt,
@@ -38,6 +37,7 @@ interface UseMintTransactionProps {
   price: string
   referralCode?: string
   targetContract: Address
+  chainId: number
 }
 
 export function useMintTransaction({
@@ -45,8 +45,8 @@ export function useMintTransaction({
   price,
   referralCode,
   targetContract,
+  chainId,
 }: UseMintTransactionProps) {
-  const chainId = useChainId()
   const { address: userAddress } = useConnection()
   const isHub = isHubChain(chainId)
   const abi = getAbi(chainId)
@@ -67,6 +67,7 @@ export function useMintTransaction({
   )
 
   const { data: tokenDecimals } = useReadContract({
+    chainId,
     address: isNative ? undefined : tokenAddress,
     abi: erc20Abi,
     functionName: 'decimals',
@@ -89,7 +90,9 @@ export function useMintTransaction({
     data: lzFeeQuote,
     isLoading: isQuotingLzFee,
     isFetching: isFetchingLzFee,
+    error: quoteError,
   } = useReadContract({
+    chainId,
     address: !isHub ? targetContract : undefined,
     abi: tsbSatelliteABI as any,
     functionName: 'quoteLayerZeroFee',
@@ -100,8 +103,14 @@ export function useMintTransaction({
     },
   })
 
+  useEffect(() => {
+    if (quoteError) {
+      console.error('LZ Quote Error:', quoteError)
+    }
+  }, [quoteError])
+
   const lzFee = useMemo(() => {
-    if (isHub || !lzFeeQuote) return ZERO
+    if (isHub || lzFeeQuote === undefined) return ZERO
     // Add 10% buffer for gas fluctuations
     const fee = lzFeeQuote as bigint
     return fee + fee / TEN
@@ -110,6 +119,7 @@ export function useMintTransaction({
   // ───────────── Allowance Check (ERC20 only) ─────────────
   const { data: currentAllowance, refetch: refetchAllowance } = useReadContract(
     {
+      chainId,
       address: isNative ? undefined : tokenAddress,
       abi: erc20Abi,
       functionName: 'allowance',
@@ -323,6 +333,7 @@ export function useMintTransaction({
     // Step 1: Approve if needed
     if (needsApproval && !isNative) {
       writeApprove({
+        chainId,
         address: tokenAddress,
         abi: erc20Abi,
         functionName: 'approve',
@@ -336,6 +347,7 @@ export function useMintTransaction({
     const args = hasReferral ? [tokenAddress, referralCode!] : [tokenAddress]
 
     writeMint({
+      chainId,
       address: targetContract,
       abi: abi as any,
       functionName,
@@ -357,6 +369,7 @@ export function useMintTransaction({
     msgValue,
     writeApprove,
     writeMint,
+    chainId,
   ])
 
   // Auto-mint after approval succeeds and allowance is sufficient
@@ -366,6 +379,7 @@ export function useMintTransaction({
       const args = hasReferral ? [tokenAddress, referralCode!] : [tokenAddress]
 
       writeMint({
+        chainId,
         address: targetContract,
         abi: abi as any,
         functionName,
@@ -384,6 +398,7 @@ export function useMintTransaction({
     abi,
     msgValue,
     writeMint,
+    chainId,
   ])
 
   const reset = useCallback(() => {

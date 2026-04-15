@@ -10,6 +10,7 @@ interface MintButtonProps {
   price: string
   referralCode?: string
   targetContract: Address
+  chainId: number
 }
 
 export const MintButton = ({
@@ -17,6 +18,7 @@ export const MintButton = ({
   price,
   referralCode,
   targetContract,
+  chainId,
 }: MintButtonProps) => {
   const {
     setStatus,
@@ -32,6 +34,7 @@ export const MintButton = ({
     price,
     referralCode,
     targetContract,
+    chainId,
   })
 
   // Sync mint phase → context status

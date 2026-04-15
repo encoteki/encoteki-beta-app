@@ -54,6 +54,7 @@ export default function ReviewTransaction() {
           price={paymentMethod?.cost?.toString() || '0'}
           referralCode={referralCode}
           targetContract={targetContract as Address}
+          chainId={selectedChainId!}
         />
         <DefaultButton
           variant="secondary"
