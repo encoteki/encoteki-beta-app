@@ -51,7 +51,12 @@ export const PaymentCard = memo(function PaymentCard({
 
       <div className="shrink-0 pl-2 text-right">
         <span className="text-base font-semibold text-foreground sm:text-lg">
-          {item.symbol === 'IDRX' ? formatIDR(Number(item.cost)) : item.cost}
+          {item.symbol === 'IDRX'
+            ? new Intl.NumberFormat('en-US', {
+                minimumFractionDigits: 0,
+                maximumFractionDigits: 0,
+              }).format(Number(item.cost))
+            : item.cost}
         </span>
       </div>
     </button>
