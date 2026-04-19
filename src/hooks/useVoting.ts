@@ -1,9 +1,14 @@
 'use client'
 
 import { useState, useCallback, useEffect } from 'react'
-import { useConnection, useReadContract, useWriteContract } from 'wagmi'
+import {
+  useConnection,
+  useReadContract,
+  useWriteContract,
+  useChainId,
+} from 'wagmi'
 import { Address } from 'viem'
-import { getChainId } from '@/constants/contracts/tsb'
+import { getChainId, getAllChains } from '@/constants/contracts/tsb'
 import { VotePower, ProposalOption, VotesByChain } from '@/types/dao.types'
 import { DaoRow } from '@/lib/supabase/database.types'
 import { proposalImplABI } from '@/constants/abis/proposalImplementation.abi'
@@ -137,6 +142,17 @@ function daoToProposalState(dao: DaoRow): ProposalState {
  */
 export function useVotingWithDao(dao: DaoRow) {
   const { address, isConnected } = useConnection()
+  const walletChainId = useChainId()
+
+  const supportedChains = getDaoSupportedChains(dao)
+  const allChains = getAllChains()
+
+  // Track the user's selected chain for voting
+  const [selectedChainId, setSelectedChainId] = useState<number | null>(null)
+
+  const activeChainId = selectedChainId ?? walletChainId
+  const activeChainConfig = allChains.find((c) => c.chainId === activeChainId)
+  const activeChainKey = activeChainConfig?.key as DaoChainKey | undefined
 
   // ============================================
   // STATE
@@ -159,14 +175,20 @@ export function useVotingWithDao(dao: DaoRow) {
     total: 0,
   })
 
-  // Supported chains for this DAO
-  const supportedChains = getDaoSupportedChains(dao)
+  // Primary contract address (based on active chain, fallback to first available)
+  const primaryChain =
+    activeChainKey && supportedChains.includes(activeChainKey)
+      ? activeChainKey
+      : supportedChains[0] || null
 
-  // Primary contract address (first available chain)
-  const primaryChain = supportedChains[0] || null
   const primaryContractAddress = primaryChain
     ? getContractAddress(dao, primaryChain)
     : null
+
+  const activeChainPower = activeChainKey
+    ? (votePower[activeChainKey.toLowerCase() as keyof VotePower] as number) ||
+      0
+    : 0
 
   // ============================================
   // ON-CHAIN DATA READS
@@ -301,52 +323,55 @@ export function useVotingWithDao(dao: DaoRow) {
   const vote = useCallback(async () => {
     if (selectedOption === undefined) return
     if (votePower.total === 0) return
-    if (hasVoted) return
 
     setIsVoting(true)
 
     try {
-      // Vote on each supported chain with contract address
-      for (const chain of supportedChains) {
-        const contractAddress = getContractAddress(dao, chain)
-        if (!contractAddress) continue
+      // Find one chain that has vote power
+      let votedChain: DaoChainKey | null = null
+      let votedContractAddress: Address | null = null
+      let votedChainId: number | null = null
 
-        const chainId = getChainId(chain)
-        const chainVotePower = votePower[
-          chain.toLowerCase() as keyof VotePower
-        ] as number
-
-        if (chainVotePower > 0) {
-          /**
-           * In production, iterate through owned tokenIds and vote with each.
-           * For now, simulate a single vote transaction per chain.
-           */
-
-          // Example vote call (would need actual tokenId)
-          // await writeContractAsync({
-          //   address: contractAddress,
-          //   abi: proposalImplABI,
-          //   functionName: 'vote',
-          //   args: [BigInt(tokenId), BigInt(selectedOption), '0x0000000000000000000000000000000000000000000000000000000000000000'],
-          //   chainId,
-          // })
-
-          console.log(
-            `[Vote] Chain: ${chain}, Contract: ${contractAddress}, Option: ${selectedOption}, ChainId: ${chainId}`,
-          )
+      // Prefer the active chain if it has voting power
+      if (
+        activeChainKey &&
+        votePower[activeChainKey.toLowerCase() as keyof VotePower] > 0
+      ) {
+        votedChain = activeChainKey
+      } else {
+        for (const chain of supportedChains) {
+          const chainVotePower = votePower[
+            chain.toLowerCase() as keyof VotePower
+          ] as number
+          if (chainVotePower > 0) {
+            votedChain = chain
+            break
+          }
         }
+      }
+
+      if (votedChain) {
+        votedContractAddress = getContractAddress(dao, votedChain)
+        votedChainId = getChainId(votedChain)
+
+        console.log(
+          `[Vote] Chain: ${votedChain}, Contract: ${votedContractAddress}, Option: ${selectedOption}, ChainId: ${votedChainId}`,
+        )
+
+        // Example vote call
+        // await writeContractAsync({ ... })
       }
 
       // Simulate vote delay for UX
       await new Promise((resolve) => setTimeout(resolve, 1500))
 
-      // Update local state to reflect the vote
+      // Update local state to reflect the single vote
       setProposal((prev) => {
         const updatedOptions = prev.options.map((opt, idx) => {
           if (idx === selectedOption) {
             return {
               ...opt,
-              votes: opt.votes + votePower.total,
+              votes: opt.votes + 1,
             }
           }
           return opt
@@ -355,11 +380,25 @@ export function useVotingWithDao(dao: DaoRow) {
         return {
           ...prev,
           options: updatedOptions,
-          totalVotes: prev.totalVotes + votePower.total,
+          totalVotes: prev.totalVotes + 1,
         }
       })
 
-      setHasVoted(true)
+      setVotePower((prev) => {
+        if (!votedChain) return prev
+        const key = votedChain.toLowerCase() as keyof VotePower
+        const next = {
+          ...prev,
+          [key]: (prev[key] as number) - 1,
+          total: prev.total - 1,
+        }
+
+        if (next.total === 0) {
+          setHasVoted(true)
+        }
+
+        return next
+      })
     } catch (error) {
       console.error('Vote failed:', error)
     } finally {
@@ -368,7 +407,7 @@ export function useVotingWithDao(dao: DaoRow) {
   }, [
     selectedOption,
     votePower,
-    hasVoted,
+    activeChainKey,
     dao,
     supportedChains,
     writeContractAsync,
@@ -385,9 +424,16 @@ export function useVotingWithDao(dao: DaoRow) {
     hasVoted,
     isVoting,
     votePower,
+    activeChainPower,
     vote,
     isConnected,
     supportedChains,
+    allChains,
+    walletChainId,
+    activeChainId,
+    activeChainKey,
+    selectedChainId,
+    setSelectedChainId,
     contractAddresses: {
       base: getContractAddress(dao, 'BASE'),
       arbitrum: getContractAddress(dao, 'ARBITRUM'),

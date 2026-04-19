@@ -56,8 +56,6 @@ export function useMintTransaction({
   const [reqId, setReqId] = useState<Hex | null>(null)
   const [mintConfirmedByEvent, setMintConfirmedByEvent] = useState(false)
 
-  const hasReferral = !!referralCode && referralCode.length === 6
-
   const abortRef = useRef(false)
 
   // ───────────── Token Decimals ─────────────
@@ -204,8 +202,11 @@ export function useMintTransaction({
   // ───────────── Compute msg.value ─────────────
   // Gas is covered by the contract; only send price when paying with native ETH
   const msgValue = useMemo(() => {
-    return isNative ? priceBigInt : ZERO
-  }, [isNative, priceBigInt])
+    let val = ZERO
+    if (isNative) val += priceBigInt
+    if (!isHub && lzFee > ZERO) val += lzFee
+    return val
+  }, [isNative, priceBigInt, isHub, lzFee])
 
   // ───────────── Derive Phase ─────────────
   // Use primitive values as deps to ensure proper re-renders
@@ -324,8 +325,8 @@ export function useMintTransaction({
 
   // ───────────── Execute ─────────────
   const execute = useCallback(() => {
-    if (!userAddress || !targetContract || priceBigInt === ZERO) return
-    if (!isHub && lzFee === ZERO) return
+    if (!userAddress || !targetContract || priceBigInt < ZERO) return
+    if (!isHub && lzFee < ZERO) return
 
     abortRef.current = false
     setErrorMsg(null)
@@ -343,8 +344,8 @@ export function useMintTransaction({
     }
 
     // Step 2: Mint
-    const functionName = hasReferral ? 'mintWithReferral' : 'mint'
-    const args = hasReferral ? [tokenAddress, referralCode!] : [tokenAddress]
+    const functionName = 'mint'
+    const args = [tokenAddress, referralCode || '']
 
     writeMint({
       chainId,
@@ -363,7 +364,6 @@ export function useMintTransaction({
     needsApproval,
     isNative,
     tokenAddress,
-    hasReferral,
     referralCode,
     abi,
     msgValue,
@@ -375,8 +375,8 @@ export function useMintTransaction({
   // Auto-mint after approval succeeds and allowance is sufficient
   useEffect(() => {
     if (approveIsSuccess && !needsApproval && !mintHash && !abortRef.current) {
-      const functionName = hasReferral ? 'mintWithReferral' : 'mint'
-      const args = hasReferral ? [tokenAddress, referralCode!] : [tokenAddress]
+      const functionName = 'mint'
+      const args = [tokenAddress, referralCode || '']
 
       writeMint({
         chainId,
@@ -391,7 +391,6 @@ export function useMintTransaction({
     approveIsSuccess,
     needsApproval,
     mintHash,
-    hasReferral,
     tokenAddress,
     referralCode,
     targetContract,
@@ -421,9 +420,9 @@ export function useMintTransaction({
   const isReady =
     !!userAddress &&
     !!targetContract &&
-    priceBigInt > ZERO &&
+    priceBigInt >= ZERO &&
     (isNative || tokenDecimals !== undefined) &&
-    (isHub || (lzFee > ZERO && !isQuotingLzFee && !isFetchingLzFee))
+    (isHub || (lzFee >= ZERO && !isQuotingLzFee && !isFetchingLzFee))
 
   return {
     execute,
