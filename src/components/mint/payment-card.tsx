@@ -30,7 +30,7 @@ export const PaymentCard = memo(function PaymentCard({
       }`}
     >
       <div className="flex min-w-0 items-center gap-3 sm:gap-4">
-        <figure className="relative h-8 w-8 shrink-0 overflow-hidden rounded-full ring-1 ring-border sm:h-10 sm:w-10">
+        <figure className="relative h-8 w-8 shrink-0 overflow-hidden rounded-full sm:h-10 sm:w-10">
           <Image
             src={item.logo}
             alt={item.name}

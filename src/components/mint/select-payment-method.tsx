@@ -265,7 +265,7 @@ export default function SelectPaymentMethod() {
         >
           <div className="flex items-center gap-3">
             {activeConfig && getChainIcon(activeConfig.key) && (
-              <figure className="flex h-6 w-6 items-center justify-center overflow-hidden rounded-full ring-1 ring-border">
+              <figure className="flex h-6 w-6 items-center justify-center overflow-hidden rounded-full">
                 <Image
                   src={getChainIcon(activeConfig.key)!}
                   alt={activeConfig.label}
@@ -319,7 +319,7 @@ export default function SelectPaymentMethod() {
                   >
                     <div className="flex items-center gap-3">
                       {chainIcon && (
-                        <figure className="flex h-6 w-6 items-center justify-center overflow-hidden rounded-full ring-1 ring-border">
+                        <figure className="flex h-6 w-6 items-center justify-center overflow-hidden rounded-full">
                           <Image
                             src={chainIcon}
                             alt={chain.label}
