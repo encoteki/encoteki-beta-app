@@ -1,380 +1,677 @@
 export const tsbReferralABI = [
-  { inputs: [], stateMutability: 'nonpayable', type: 'constructor' },
   {
-    inputs: [{ internalType: 'uint256', name: 'amount', type: 'uint256' }],
-    name: 'EthSentWithERC20',
-    type: 'error',
+    "type": "constructor",
+    "inputs": [],
+    "stateMutability": "nonpayable"
   },
-  { inputs: [], name: 'EthTransferFailed', type: 'error' },
   {
-    inputs: [
-      { internalType: 'uint256', name: 'contractBalance', type: 'uint256' },
-      { internalType: 'uint256', name: 'gasRequired', type: 'uint256' },
+    "type": "function",
+    "name": "MANAGER_ROLE",
+    "inputs": [],
+    "outputs": [
+      {
+        "name": "",
+        "type": "bytes32",
+        "internalType": "bytes32"
+      }
     ],
-    name: 'InsufficientContractBalance',
-    type: 'error',
+    "stateMutability": "view"
   },
   {
-    inputs: [
-      { internalType: 'uint256', name: 'provided', type: 'uint256' },
-      { internalType: 'uint256', name: 'price', type: 'uint256' },
+    "type": "function",
+    "name": "WITHDRAWER_ROLE",
+    "inputs": [],
+    "outputs": [
+      {
+        "name": "",
+        "type": "bytes32",
+        "internalType": "bytes32"
+      }
     ],
-    name: 'InsufficientMintPrice',
-    type: 'error',
+    "stateMutability": "view"
   },
-  { inputs: [], name: 'InvalidAddress', type: 'error' },
-  { inputs: [], name: 'InvalidGasLimit', type: 'error' },
-  { inputs: [], name: 'InvalidReferralCode', type: 'error' },
   {
-    inputs: [
-      { internalType: 'address', name: 'user', type: 'address' },
-      { internalType: 'uint256', name: 'limit', type: 'uint256' },
+    "type": "function",
+    "name": "acceptOwnership",
+    "inputs": [],
+    "outputs": [],
+    "stateMutability": "nonpayable"
+  },
+  {
+    "type": "function",
+    "name": "authorizedCallers",
+    "inputs": [
+      {
+        "name": "",
+        "type": "address",
+        "internalType": "address"
+      }
     ],
-    name: 'MaxMintReached',
-    type: 'error',
-  },
-  { inputs: [], name: 'MaxSupplyReached', type: 'error' },
-  {
-    inputs: [{ internalType: 'address', name: 'owner', type: 'address' }],
-    name: 'OwnableInvalidOwner',
-    type: 'error',
-  },
-  {
-    inputs: [{ internalType: 'address', name: 'account', type: 'address' }],
-    name: 'OwnableUnauthorizedAccount',
-    type: 'error',
-  },
-  {
-    inputs: [{ internalType: 'address', name: 'token', type: 'address' }],
-    name: 'PaymentTokenNotSupported',
-    type: 'error',
-  },
-  { inputs: [], name: 'PublicMintClosed', type: 'error' },
-  { inputs: [], name: 'ReferralOnlyOnFirstMint', type: 'error' },
-  { inputs: [], name: 'Unauthorized', type: 'error' },
-  {
-    inputs: [{ internalType: 'enum MsgType', name: 'msgType', type: 'uint8' }],
-    name: 'UnsupportedMsgType',
-    type: 'error',
-  },
-  {
-    anonymous: false,
-    inputs: [
+    "outputs": [
       {
-        indexed: true,
-        internalType: 'address',
-        name: 'newAdmin',
-        type: 'address',
-      },
+        "name": "",
+        "type": "bool",
+        "internalType": "bool"
+      }
     ],
-    name: 'AdminTransferAccepted',
-    type: 'event',
+    "stateMutability": "view"
   },
   {
-    anonymous: false,
-    inputs: [
+    "type": "function",
+    "name": "hasAlreadyMinted",
+    "inputs": [
       {
-        indexed: true,
-        internalType: 'address',
-        name: 'currentAdmin',
-        type: 'address',
-      },
-      {
-        indexed: true,
-        internalType: 'address',
-        name: 'pendingAdmin',
-        type: 'address',
-      },
+        "name": "",
+        "type": "address",
+        "internalType": "address"
+      }
     ],
-    name: 'AdminTransferProposed',
-    type: 'event',
-  },
-  {
-    anonymous: false,
-    inputs: [
+    "outputs": [
       {
-        indexed: true,
-        internalType: 'address',
-        name: 'caller',
-        type: 'address',
-      },
-      { indexed: false, internalType: 'bool', name: 'status', type: 'bool' },
+        "name": "",
+        "type": "bool",
+        "internalType": "bool"
+      }
     ],
-    name: 'AuthorizedCallerUpdated',
-    type: 'event',
+    "stateMutability": "view"
   },
   {
-    anonymous: false,
-    inputs: [
+    "type": "function",
+    "name": "owner",
+    "inputs": [],
+    "outputs": [
       {
-        indexed: false,
-        internalType: 'address',
-        name: 'from',
-        type: 'address',
-      },
-      {
-        indexed: false,
-        internalType: 'uint256',
-        name: 'amount',
-        type: 'uint256',
-      },
+        "name": "",
+        "type": "address",
+        "internalType": "address"
+      }
     ],
-    name: 'Deposited',
-    type: 'event',
+    "stateMutability": "view"
   },
   {
-    anonymous: false,
-    inputs: [
+    "type": "function",
+    "name": "pendingOwner",
+    "inputs": [],
+    "outputs": [
       {
-        indexed: false,
-        internalType: 'uint256',
-        name: 'newLimit',
-        type: 'uint256',
-      },
+        "name": "",
+        "type": "address",
+        "internalType": "address"
+      }
     ],
-    name: 'MaxMintUpdated',
-    type: 'event',
+    "stateMutability": "view"
   },
   {
-    anonymous: false,
-    inputs: [
+    "type": "function",
+    "name": "recordReferralCode",
+    "inputs": [
       {
-        indexed: false,
-        internalType: 'uint256',
-        name: 'newSupply',
-        type: 'uint256',
+        "name": "user",
+        "type": "address",
+        "internalType": "address"
       },
+      {
+        "name": "tokenId",
+        "type": "uint256",
+        "internalType": "uint256"
+      },
+      {
+        "name": "code",
+        "type": "string",
+        "internalType": "string"
+      }
     ],
-    name: 'MaxSupplyUpdated',
-    type: 'event',
+    "outputs": [],
+    "stateMutability": "nonpayable"
   },
   {
-    anonymous: false,
-    inputs: [
+    "type": "function",
+    "name": "renounceOwnership",
+    "inputs": [],
+    "outputs": [],
+    "stateMutability": "nonpayable"
+  },
+  {
+    "type": "function",
+    "name": "setAuthorizedCaller",
+    "inputs": [
       {
-        indexed: false,
-        internalType: 'string',
-        name: 'hiddenUri',
-        type: 'string',
+        "name": "_caller",
+        "type": "address",
+        "internalType": "address"
       },
       {
-        indexed: false,
-        internalType: 'string',
-        name: 'baseUri',
-        type: 'string',
-      },
+        "name": "_status",
+        "type": "bool",
+        "internalType": "bool"
+      }
     ],
-    name: 'MetadataUriUpdated',
-    type: 'event',
+    "outputs": [],
+    "stateMutability": "nonpayable"
   },
   {
-    anonymous: false,
-    inputs: [
+    "type": "function",
+    "name": "transferOwnership",
+    "inputs": [
       {
-        indexed: true,
-        internalType: 'address',
-        name: 'minter',
-        type: 'address',
-      },
-      {
-        indexed: true,
-        internalType: 'bytes32',
-        name: 'reqId',
-        type: 'bytes32',
-      },
-      {
-        indexed: false,
-        internalType: 'string',
-        name: 'reason',
-        type: 'string',
-      },
+        "name": "newOwner",
+        "type": "address",
+        "internalType": "address"
+      }
     ],
-    name: 'MintFailed',
-    type: 'event',
+    "outputs": [],
+    "stateMutability": "nonpayable"
   },
   {
-    anonymous: false,
-    inputs: [
+    "type": "event",
+    "name": "AdminTransferAccepted",
+    "inputs": [
       {
-        indexed: true,
-        internalType: 'address',
-        name: 'minter',
-        type: 'address',
-      },
-      {
-        indexed: true,
-        internalType: 'uint256',
-        name: 'tokenId',
-        type: 'uint256',
-      },
-      {
-        indexed: false,
-        internalType: 'uint256',
-        name: 'chainId',
-        type: 'uint256',
-      },
+        "name": "newAdmin",
+        "type": "address",
+        "indexed": true,
+        "internalType": "address"
+      }
     ],
-    name: 'MintSuccess',
-    type: 'event',
+    "anonymous": false
   },
   {
-    anonymous: false,
-    inputs: [
+    "type": "event",
+    "name": "AdminTransferProposed",
+    "inputs": [
       {
-        indexed: true,
-        internalType: 'address',
-        name: 'previousOwner',
-        type: 'address',
+        "name": "currentAdmin",
+        "type": "address",
+        "indexed": true,
+        "internalType": "address"
       },
       {
-        indexed: true,
-        internalType: 'address',
-        name: 'newOwner',
-        type: 'address',
-      },
+        "name": "pendingAdmin",
+        "type": "address",
+        "indexed": true,
+        "internalType": "address"
+      }
     ],
-    name: 'OwnershipTransferred',
-    type: 'event',
+    "anonymous": false
   },
   {
-    anonymous: false,
-    inputs: [
+    "type": "event",
+    "name": "AuthorizedCallerUpdated",
+    "inputs": [
       {
-        indexed: true,
-        internalType: 'address',
-        name: 'token',
-        type: 'address',
-      },
-      {
-        indexed: false,
-        internalType: 'uint256',
-        name: 'newPrice',
-        type: 'uint256',
-      },
-      { indexed: false, internalType: 'bool', name: 'active', type: 'bool' },
-    ],
-    name: 'PaymentTokenUpdated',
-    type: 'event',
-  },
-  {
-    anonymous: false,
-    inputs: [
-      { indexed: false, internalType: 'bool', name: 'isOpen', type: 'bool' },
-    ],
-    name: 'PublicMintStatusUpdated',
-    type: 'event',
-  },
-  {
-    anonymous: false,
-    inputs: [
-      {
-        indexed: true,
-        internalType: 'address',
-        name: 'minter',
-        type: 'address',
+        "name": "caller",
+        "type": "address",
+        "indexed": true,
+        "internalType": "address"
       },
       {
-        indexed: true,
-        internalType: 'uint256',
-        name: 'tokenId',
-        type: 'uint256',
+        "name": "status",
+        "type": "bool",
+        "indexed": false,
+        "internalType": "bool"
+      }
+    ],
+    "anonymous": false
+  },
+  {
+    "type": "event",
+    "name": "Deposited",
+    "inputs": [
+      {
+        "name": "from",
+        "type": "address",
+        "indexed": false,
+        "internalType": "address"
       },
       {
-        indexed: false,
-        internalType: 'string',
-        name: 'referral',
-        type: 'string',
+        "name": "amount",
+        "type": "uint256",
+        "indexed": false,
+        "internalType": "uint256"
+      }
+    ],
+    "anonymous": false
+  },
+  {
+    "type": "event",
+    "name": "ExecutorGasLimitUpdated",
+    "inputs": [
+      {
+        "name": "newLimit",
+        "type": "uint128",
+        "indexed": false,
+        "internalType": "uint128"
+      }
+    ],
+    "anonymous": false
+  },
+  {
+    "type": "event",
+    "name": "MaxMintUpdated",
+    "inputs": [
+      {
+        "name": "newLimit",
+        "type": "uint256",
+        "indexed": false,
+        "internalType": "uint256"
+      }
+    ],
+    "anonymous": false
+  },
+  {
+    "type": "event",
+    "name": "MaxSupplyUpdated",
+    "inputs": [
+      {
+        "name": "newSupply",
+        "type": "uint256",
+        "indexed": false,
+        "internalType": "uint256"
+      }
+    ],
+    "anonymous": false
+  },
+  {
+    "type": "event",
+    "name": "MetadataUriUpdated",
+    "inputs": [
+      {
+        "name": "hiddenUri",
+        "type": "string",
+        "indexed": false,
+        "internalType": "string"
       },
+      {
+        "name": "baseUri",
+        "type": "string",
+        "indexed": false,
+        "internalType": "string"
+      }
     ],
-    name: 'RecordReferral',
-    type: 'event',
+    "anonymous": false
   },
   {
-    anonymous: false,
-    inputs: [
-      { indexed: false, internalType: 'bool', name: 'revealed', type: 'bool' },
+    "type": "event",
+    "name": "MintFailed",
+    "inputs": [
+      {
+        "name": "minter",
+        "type": "address",
+        "indexed": true,
+        "internalType": "address"
+      },
+      {
+        "name": "reqId",
+        "type": "bytes32",
+        "indexed": true,
+        "internalType": "bytes32"
+      },
+      {
+        "name": "reason",
+        "type": "string",
+        "indexed": false,
+        "internalType": "string"
+      }
     ],
-    name: 'RevealStatusUpdated',
-    type: 'event',
+    "anonymous": false
   },
   {
-    anonymous: false,
-    inputs: [
-      { indexed: true, internalType: 'bytes32', name: 'role', type: 'bytes32' },
-      { indexed: true, internalType: 'address', name: 'user', type: 'address' },
-      { indexed: false, internalType: 'bool', name: 'status', type: 'bool' },
+    "type": "event",
+    "name": "MintSuccess",
+    "inputs": [
+      {
+        "name": "minter",
+        "type": "address",
+        "indexed": true,
+        "internalType": "address"
+      },
+      {
+        "name": "tokenId",
+        "type": "uint256",
+        "indexed": true,
+        "internalType": "uint256"
+      },
+      {
+        "name": "chainId",
+        "type": "uint256",
+        "indexed": false,
+        "internalType": "uint256"
+      },
+      {
+        "name": "paymentToken",
+        "type": "address",
+        "indexed": true,
+        "internalType": "address"
+      }
     ],
-    name: 'RoleStatusUpdated',
-    type: 'event',
+    "anonymous": false
   },
   {
-    inputs: [],
-    name: 'MANAGER_ROLE',
-    outputs: [{ internalType: 'bytes32', name: '', type: 'bytes32' }],
-    stateMutability: 'view',
-    type: 'function',
-  },
-  {
-    inputs: [],
-    name: 'WITHDRAWER_ROLE',
-    outputs: [{ internalType: 'bytes32', name: '', type: 'bytes32' }],
-    stateMutability: 'view',
-    type: 'function',
-  },
-  {
-    inputs: [{ internalType: 'address', name: '', type: 'address' }],
-    name: 'authorizedCallers',
-    outputs: [{ internalType: 'bool', name: '', type: 'bool' }],
-    stateMutability: 'view',
-    type: 'function',
-  },
-  {
-    inputs: [{ internalType: 'address', name: '', type: 'address' }],
-    name: 'hasAlreadyMinted',
-    outputs: [{ internalType: 'bool', name: '', type: 'bool' }],
-    stateMutability: 'view',
-    type: 'function',
-  },
-  {
-    inputs: [],
-    name: 'owner',
-    outputs: [{ internalType: 'address', name: '', type: 'address' }],
-    stateMutability: 'view',
-    type: 'function',
-  },
-  {
-    inputs: [
-      { internalType: 'address', name: 'user', type: 'address' },
-      { internalType: 'uint256', name: 'tokenId', type: 'uint256' },
-      { internalType: 'string', name: 'code', type: 'string' },
+    "type": "event",
+    "name": "OAppOwnershipTransferAccepted",
+    "inputs": [
+      {
+        "name": "newOwner",
+        "type": "address",
+        "indexed": true,
+        "internalType": "address"
+      }
     ],
-    name: 'recordReferralCode',
-    outputs: [],
-    stateMutability: 'nonpayable',
-    type: 'function',
+    "anonymous": false
   },
   {
-    inputs: [],
-    name: 'renounceOwnership',
-    outputs: [],
-    stateMutability: 'nonpayable',
-    type: 'function',
-  },
-  {
-    inputs: [
-      { internalType: 'address', name: '_caller', type: 'address' },
-      { internalType: 'bool', name: '_status', type: 'bool' },
+    "type": "event",
+    "name": "OAppOwnershipTransferProposed",
+    "inputs": [
+      {
+        "name": "currentOwner",
+        "type": "address",
+        "indexed": true,
+        "internalType": "address"
+      },
+      {
+        "name": "pendingOwner",
+        "type": "address",
+        "indexed": true,
+        "internalType": "address"
+      }
     ],
-    name: 'setAuthorizedCaller',
-    outputs: [],
-    stateMutability: 'nonpayable',
-    type: 'function',
+    "anonymous": false
   },
   {
-    inputs: [{ internalType: 'address', name: 'newOwner', type: 'address' }],
-    name: 'transferOwnership',
-    outputs: [],
-    stateMutability: 'nonpayable',
-    type: 'function',
+    "type": "event",
+    "name": "OwnershipTransferStarted",
+    "inputs": [
+      {
+        "name": "previousOwner",
+        "type": "address",
+        "indexed": true,
+        "internalType": "address"
+      },
+      {
+        "name": "newOwner",
+        "type": "address",
+        "indexed": true,
+        "internalType": "address"
+      }
+    ],
+    "anonymous": false
   },
+  {
+    "type": "event",
+    "name": "OwnershipTransferred",
+    "inputs": [
+      {
+        "name": "previousOwner",
+        "type": "address",
+        "indexed": true,
+        "internalType": "address"
+      },
+      {
+        "name": "newOwner",
+        "type": "address",
+        "indexed": true,
+        "internalType": "address"
+      }
+    ],
+    "anonymous": false
+  },
+  {
+    "type": "event",
+    "name": "PaymentTokenUpdated",
+    "inputs": [
+      {
+        "name": "token",
+        "type": "address",
+        "indexed": true,
+        "internalType": "address"
+      },
+      {
+        "name": "newPrice",
+        "type": "uint256",
+        "indexed": false,
+        "internalType": "uint256"
+      },
+      {
+        "name": "active",
+        "type": "bool",
+        "indexed": false,
+        "internalType": "bool"
+      }
+    ],
+    "anonymous": false
+  },
+  {
+    "type": "event",
+    "name": "PublicMintStatusUpdated",
+    "inputs": [
+      {
+        "name": "isOpen",
+        "type": "bool",
+        "indexed": false,
+        "internalType": "bool"
+      }
+    ],
+    "anonymous": false
+  },
+  {
+    "type": "event",
+    "name": "RecordReferral",
+    "inputs": [
+      {
+        "name": "minter",
+        "type": "address",
+        "indexed": true,
+        "internalType": "address"
+      },
+      {
+        "name": "tokenId",
+        "type": "uint256",
+        "indexed": true,
+        "internalType": "uint256"
+      },
+      {
+        "name": "referral",
+        "type": "string",
+        "indexed": false,
+        "internalType": "string"
+      }
+    ],
+    "anonymous": false
+  },
+  {
+    "type": "event",
+    "name": "ReferralRecordSkipped",
+    "inputs": [
+      {
+        "name": "minter",
+        "type": "address",
+        "indexed": true,
+        "internalType": "address"
+      },
+      {
+        "name": "tokenId",
+        "type": "uint256",
+        "indexed": true,
+        "internalType": "uint256"
+      }
+    ],
+    "anonymous": false
+  },
+  {
+    "type": "event",
+    "name": "RevealStatusUpdated",
+    "inputs": [
+      {
+        "name": "revealed",
+        "type": "bool",
+        "indexed": false,
+        "internalType": "bool"
+      }
+    ],
+    "anonymous": false
+  },
+  {
+    "type": "event",
+    "name": "RoleStatusUpdated",
+    "inputs": [
+      {
+        "name": "role",
+        "type": "bytes32",
+        "indexed": true,
+        "internalType": "bytes32"
+      },
+      {
+        "name": "user",
+        "type": "address",
+        "indexed": true,
+        "internalType": "address"
+      },
+      {
+        "name": "status",
+        "type": "bool",
+        "indexed": false,
+        "internalType": "bool"
+      }
+    ],
+    "anonymous": false
+  },
+  {
+    "type": "error",
+    "name": "OwnableInvalidOwner",
+    "inputs": [
+      {
+        "name": "owner",
+        "type": "address",
+        "internalType": "address"
+      }
+    ]
+  },
+  {
+    "type": "error",
+    "name": "OwnableUnauthorizedAccount",
+    "inputs": [
+      {
+        "name": "account",
+        "type": "address",
+        "internalType": "address"
+      }
+    ]
+  },
+  {
+    "type": "error",
+    "name": "TSBShared__EthSentWithERC20",
+    "inputs": [
+      {
+        "name": "amount",
+        "type": "uint256",
+        "internalType": "uint256"
+      }
+    ]
+  },
+  {
+    "type": "error",
+    "name": "TSBShared__EthTransferFailed",
+    "inputs": []
+  },
+  {
+    "type": "error",
+    "name": "TSBShared__InsufficientContractBalance",
+    "inputs": [
+      {
+        "name": "contractBalance",
+        "type": "uint256",
+        "internalType": "uint256"
+      },
+      {
+        "name": "gasRequired",
+        "type": "uint256",
+        "internalType": "uint256"
+      }
+    ]
+  },
+  {
+    "type": "error",
+    "name": "TSBShared__InsufficientMintPrice",
+    "inputs": [
+      {
+        "name": "provided",
+        "type": "uint256",
+        "internalType": "uint256"
+      },
+      {
+        "name": "price",
+        "type": "uint256",
+        "internalType": "uint256"
+      }
+    ]
+  },
+  {
+    "type": "error",
+    "name": "TSBShared__InvalidAddress",
+    "inputs": []
+  },
+  {
+    "type": "error",
+    "name": "TSBShared__InvalidGasLimit",
+    "inputs": []
+  },
+  {
+    "type": "error",
+    "name": "TSBShared__InvalidReferralCode",
+    "inputs": []
+  },
+  {
+    "type": "error",
+    "name": "TSBShared__MaxMintReached",
+    "inputs": [
+      {
+        "name": "user",
+        "type": "address",
+        "internalType": "address"
+      },
+      {
+        "name": "limit",
+        "type": "uint256",
+        "internalType": "uint256"
+      }
+    ]
+  },
+  {
+    "type": "error",
+    "name": "TSBShared__MaxSupplyReached",
+    "inputs": []
+  },
+  {
+    "type": "error",
+    "name": "TSBShared__PaymentTokenNotSupported",
+    "inputs": [
+      {
+        "name": "token",
+        "type": "address",
+        "internalType": "address"
+      }
+    ]
+  },
+  {
+    "type": "error",
+    "name": "TSBShared__PublicMintClosed",
+    "inputs": []
+  },
+  {
+    "type": "error",
+    "name": "TSBShared__Unauthorized",
+    "inputs": []
+  },
+  {
+    "type": "error",
+    "name": "TSBShared__UnsupportedMsgType",
+    "inputs": [
+      {
+        "name": "msgType",
+        "type": "uint8",
+        "internalType": "enum MsgType"
+      }
+    ]
+  }
 ] as const
