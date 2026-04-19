@@ -19,11 +19,9 @@ import { tsbSatelliteABI } from '@/constants/abis/tsbSatellite.abi'
 import { useLayerZeroScan } from './useLayerZeroScan'
 
 const ZERO = BigInt(0)
-const TEN = BigInt(10)
 
 type MintPhase =
   | 'idle'
-  | 'quoting'
   | 'signing-approve'
   | 'approving'
   | 'signing'
@@ -84,36 +82,13 @@ export function useMintTransaction({
     }
   }, [price, isNative, tokenDecimals])
 
-  // ───────────── LZ Fee Quote (Satellite only) ─────────────
-  const {
-    data: lzFeeQuote,
-    isLoading: isQuotingLzFee,
-    isFetching: isFetchingLzFee,
-    error: quoteError,
-  } = useReadContract({
-    chainId,
-    address: !isHub ? targetContract : undefined,
-    abi: tsbSatelliteABI as any,
-    functionName: 'quoteLayerZeroFee',
-    args: [userAddress as Address, referralCode || ''],
-    query: {
-      enabled: !isHub && !!userAddress && !!targetContract,
-      refetchInterval: 30_000,
-    },
-  })
-
-  useEffect(() => {
-    if (quoteError) {
-      console.error('LZ Quote Error:', quoteError)
-    }
-  }, [quoteError])
-
-  const lzFee = useMemo(() => {
-    if (isHub || lzFeeQuote === undefined) return ZERO
-    // Add 10% buffer for gas fluctuations
-    const fee = lzFeeQuote as bigint
-    return fee + fee / TEN
-  }, [isHub, lzFeeQuote])
+  // ───────────── Compute msg.value ─────────────
+  // LZ fee is covered by the contract.
+  // Only send the price when paying with native ETH; send 0 for ERC20.
+  const msgValue = useMemo(() => {
+    if (!isNative) return ZERO
+    return priceBigInt
+  }, [isNative, priceBigInt])
 
   // ───────────── Allowance Check (ERC20 only) ─────────────
   const { data: currentAllowance, refetch: refetchAllowance } = useReadContract(
@@ -200,17 +175,7 @@ export function useMintTransaction({
     }
   }, [mintReceipt.data, isHub, abi])
 
-  // ───────────── Compute msg.value ─────────────
-  // Gas is covered by the contract; only send price when paying with native ETH
-  const msgValue = useMemo(() => {
-    let val = ZERO
-    if (isNative) val += priceBigInt
-    if (!isHub && lzFee > ZERO) val += lzFee
-    return val
-  }, [isNative, priceBigInt, isHub, lzFee])
-
   // ───────────── Derive Phase ─────────────
-  // Use primitive values as deps to ensure proper re-renders
   const approveIsLoading = approveReceipt.isLoading
   const approveIsSuccess = approveReceipt.isSuccess
   const approveError = approveReceipt.error
@@ -235,12 +200,6 @@ export function useMintTransaction({
       return
     }
 
-    // Show quoting phase for cross-chain mints
-    if (!isHub && (isQuotingLzFee || isFetchingLzFee) && phase === 'idle') {
-      setPhase('quoting')
-      return
-    }
-
     if (isApproveSigning) {
       setPhase('signing-approve')
       return
@@ -259,7 +218,6 @@ export function useMintTransaction({
     }
 
     // Hub success — no LayerZero needed
-    // Use both receipt success AND MintSuccess event as truth checks
     if (isHub && (mintIsSuccess || mintConfirmedByEvent)) {
       setPhase('success')
       return
@@ -293,14 +251,9 @@ export function useMintTransaction({
     isHub,
     lzStatus,
     mintConfirmedByEvent,
-    isQuotingLzFee,
-    isFetchingLzFee,
-    phase,
   ])
 
   // ───────────── Watchdog: catch stuck INFLIGHT → MINTING transition ─────────────
-  // If the main effect above misses the lzStatus change, this dedicated
-  // effect guarantees the phase advances when LZ reports DELIVERED.
   useEffect(() => {
     if (phase === 'inflight' && lzStatus === 'DELIVERED') {
       setPhase('minting')
@@ -308,15 +261,12 @@ export function useMintTransaction({
   }, [phase, lzStatus])
 
   // ───────────── Auto-advance MINTING → SUCCESS ─────────────
-  // LZ "DELIVERED" already means the destination TX was executed and
-  // confirmed on-chain.  Show the "Minting" step for a few seconds
-  // so the user sees the progress, then transition to success.
   useEffect(() => {
     if (phase !== 'minting') return
 
     const timer = setTimeout(() => {
       setPhase('success')
-    }, 4_000) // 4 seconds visual dwell
+    }, 4_000)
 
     return () => clearTimeout(timer)
   }, [phase])
@@ -331,7 +281,6 @@ export function useMintTransaction({
   // ───────────── Execute ─────────────
   const execute = useCallback(() => {
     if (!userAddress || !targetContract || priceBigInt < ZERO) return
-    if (!isHub && lzFee < ZERO) return
 
     abortRef.current = false
     setErrorMsg(null)
@@ -349,23 +298,18 @@ export function useMintTransaction({
     }
 
     // Step 2: Mint
-    const functionName = 'mint'
-    const args = [tokenAddress, referralCode || '']
-
     writeMint({
       chainId,
       address: targetContract,
       abi: abi as any,
-      functionName,
-      args,
+      functionName: 'mint',
+      args: [tokenAddress, referralCode || ''],
       value: msgValue,
     })
   }, [
     userAddress,
     targetContract,
     priceBigInt,
-    isHub,
-    lzFee,
     needsApproval,
     isNative,
     tokenAddress,
@@ -377,19 +321,15 @@ export function useMintTransaction({
     chainId,
   ])
 
-  // Auto-mint after approval succeeds — approval being mined is sufficient proof,
-  // no need to wait for the allowance refetch to reflect the new balance.
+  // Auto-mint after approval succeeds
   useEffect(() => {
     if (approveIsSuccess && !mintHash && !abortRef.current) {
-      const functionName = 'mint'
-      const args = [tokenAddress, referralCode || '']
-
       writeMint({
         chainId,
         address: targetContract,
         abi: abi as any,
-        functionName,
-        args,
+        functionName: 'mint',
+        args: [tokenAddress, referralCode || ''],
         value: msgValue,
       })
     }
@@ -426,8 +366,7 @@ export function useMintTransaction({
     !!userAddress &&
     !!targetContract &&
     priceBigInt >= ZERO &&
-    (isNative || tokenDecimals !== undefined) &&
-    (isHub || (lzFee >= ZERO && !isQuotingLzFee && !isFetchingLzFee))
+    (isNative || tokenDecimals !== undefined)
 
   return {
     execute,
@@ -445,7 +384,6 @@ export function useMintTransaction({
     isCrossChain: !isHub,
     reqId,
     lzStatus,
-    lzFee,
 
     // Flags
     needsApproval,
@@ -453,6 +391,5 @@ export function useMintTransaction({
     tokenDecimals,
     priceBigInt,
     msgValue,
-    isQuotingLzFee: !isHub && (isQuotingLzFee || isFetchingLzFee),
   }
 }

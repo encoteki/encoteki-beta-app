@@ -88,7 +88,8 @@ export const MintButton = ({
 
   const getButtonLabel = () => {
     if (!mint.isReady) return 'Preparing...'
-    if (mint.phase === 'signing-approve' || mint.phase === 'signing') return 'Check Wallet...'
+    if (mint.phase === 'signing-approve' || mint.phase === 'signing')
+      return 'Check Wallet...'
     if (mint.phase === 'approving') return 'Approving...'
     if (mint.phase === 'mining')
       return mint.isCrossChain ? 'Sending...' : 'Minting...'
@@ -126,12 +127,6 @@ export const MintButton = ({
 
       {mint.errorMsg && (
         <p className="text-center text-sm text-red-500">{mint.errorMsg}</p>
-      )}
-
-      {mint.isCrossChain && mint.lzFee > BigInt(0) && mint.phase === 'idle' && (
-        <p className="text-center text-xs text-neutral-30">
-          Includes LayerZero cross-chain fee
-        </p>
       )}
     </div>
   )
