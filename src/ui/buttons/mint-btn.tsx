@@ -40,6 +40,7 @@ export const MintButton = ({
   // Sync mint phase → context status
   useEffect(() => {
     switch (mint.phase) {
+      case 'signing-approve':
       case 'approving':
         setStatus(MintStatus.APPROVING)
         break
@@ -87,7 +88,7 @@ export const MintButton = ({
 
   const getButtonLabel = () => {
     if (!mint.isReady) return 'Preparing...'
-    if (mint.phase === 'signing') return 'Check Wallet...'
+    if (mint.phase === 'signing-approve' || mint.phase === 'signing') return 'Check Wallet...'
     if (mint.phase === 'approving') return 'Approving...'
     if (mint.phase === 'mining')
       return mint.isCrossChain ? 'Sending...' : 'Minting...'
@@ -100,6 +101,7 @@ export const MintButton = ({
 
   const isDisabled =
     !mint.isReady ||
+    mint.phase === 'signing-approve' ||
     mint.phase === 'signing' ||
     mint.phase === 'approving' ||
     mint.phase === 'mining' ||

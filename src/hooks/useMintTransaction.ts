@@ -24,6 +24,7 @@ const TEN = BigInt(10)
 type MintPhase =
   | 'idle'
   | 'quoting'
+  | 'signing-approve'
   | 'approving'
   | 'signing'
   | 'mining'
@@ -240,7 +241,11 @@ export function useMintTransaction({
       return
     }
 
-    if (isApproveSigning || isMintSigning) {
+    if (isApproveSigning) {
+      setPhase('signing-approve')
+      return
+    }
+    if (isMintSigning) {
       setPhase('signing')
       return
     }
@@ -372,9 +377,10 @@ export function useMintTransaction({
     chainId,
   ])
 
-  // Auto-mint after approval succeeds and allowance is sufficient
+  // Auto-mint after approval succeeds — approval being mined is sufficient proof,
+  // no need to wait for the allowance refetch to reflect the new balance.
   useEffect(() => {
-    if (approveIsSuccess && !needsApproval && !mintHash && !abortRef.current) {
+    if (approveIsSuccess && !mintHash && !abortRef.current) {
       const functionName = 'mint'
       const args = [tokenAddress, referralCode || '']
 
@@ -389,7 +395,6 @@ export function useMintTransaction({
     }
   }, [
     approveIsSuccess,
-    needsApproval,
     mintHash,
     tokenAddress,
     referralCode,
