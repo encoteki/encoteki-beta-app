@@ -23,31 +23,19 @@ export async function submitReferralCode(code: string) {
   }
 
   try {
-    const { data: existingCode } = await supabaseAdmin
-      .from('users')
-      .select('ref_code')
-      .eq('ref_code', code)
-      .single()
+    const res = await fetch('https://api.encoteki.com/users/referralcode', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ userAddress: auth.address, refCode: code }),
+    })
 
-    if (existingCode) {
+    const json = await res.json()
+
+    if (!res.ok) {
       return {
         success: false,
-        error: 'Code exists, try again with a different code.',
+        error: json?.error ?? json?.message ?? 'Failed to create referral code',
       }
-    }
-
-    const { error: insertError } = await supabaseAdmin.from('users').upsert(
-      [
-        {
-          address: auth.address,
-          ref_code: code,
-        },
-      ],
-      { onConflict: 'address' },
-    )
-
-    if (insertError) {
-      return { success: false, error: 'Failed to create referral code' }
     }
 
     return { success: true, message: 'Successfully claimed referral code' }
@@ -63,18 +51,18 @@ export async function getUserReferralCode() {
   }
 
   try {
-    const { data: user, error } = await supabaseAdmin
-      .from('users')
-      .select('ref_code')
-      .eq('address', auth.address)
-      .single()
+    const res = await fetch(
+      `https://api.encoteki.com/users/${auth.address}/referralcode`,
+      { headers: { 'Content-Type': 'application/json' } },
+    )
 
-    if (error && error.code !== 'PGRST116') {
+    if (!res.ok) {
       return { success: false, error: 'Failed to fetch referral code' }
     }
 
-    return { success: true, data: user?.ref_code || null }
-  } catch (error) {
+    const json = await res.json()
+    return { success: true, data: (json?.ref_code as string | null) ?? null }
+  } catch {
     return { success: false, error: 'Internal Server Error' }
   }
 }
@@ -91,7 +79,7 @@ export async function getAppliedReferralCode() {
   try {
     const { data, error } = await supabaseAdmin
       .from('referral')
-      .select('code')
+      .select('code_applied')
       .eq('address', auth.address)
       .single()
 
@@ -103,7 +91,7 @@ export async function getAppliedReferralCode() {
       }
     }
 
-    return { success: true, code: data?.code || null }
+    return { success: true, code: data?.code_applied || null }
   } catch (error) {
     return { success: false, error: 'Internal Server Error', code: null }
   }
@@ -128,13 +116,13 @@ export async function applyReferralCode(code: string | null) {
       }
 
       // Verify the code exists as someone's ref_code
-      const { data: existingCode } = await supabaseAdmin
-        .from('users')
-        .select('id')
-        .eq('ref_code', requestedCode)
-        .single()
+      const verifyRes = await fetch(
+        `https://api.encoteki.com/users/${requestedCode}/referralcode`,
+        { headers: { 'Content-Type': 'application/json' } },
+      )
+      const verifyJson = await verifyRes.json()
 
-      if (!existingCode) {
+      if (!verifyRes.ok || !verifyJson?.ref_code) {
         return { success: false, error: 'Referral code does not exist' }
       }
     }
@@ -144,7 +132,7 @@ export async function applyReferralCode(code: string | null) {
       .upsert(
         {
           address: auth.address,
-          code: requestedCode,
+          code_applied: requestedCode,
           skip: true,
         },
         { onConflict: 'address' },

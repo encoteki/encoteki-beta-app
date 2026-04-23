@@ -115,7 +115,7 @@ function ReferralModal() {
       {existingCode ? (
         <div className="inline-block rounded-2xl border-2 border-dashed border-primary-green/30 bg-primary-green/5 px-6 py-4 text-center">
           <p className="mb-1 text-sm font-medium text-gray-500">
-            Your Active Referral Code
+            Your Referral Code
           </p>
           <p className="font-mono text-3xl font-bold tracking-[0.2em] text-primary-green">
             {existingCode}
