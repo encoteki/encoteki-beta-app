@@ -7,7 +7,7 @@ import { useDaoCtx } from '../../contexts/dao.context'
 import EmptyDao from './empty-list'
 import { Skeleton } from '@/ui/skeleton'
 import URL_ROUTES from '@/constants/url-route'
-import { fetchAllDaos } from '@/services/dao.service'
+import { fetchActiveDaos } from '@/services/dao.service'
 import { DaoRow } from '@/lib/supabase/database.types'
 import { getProposalTypeFromDaoType } from '@/types/dao.types'
 
@@ -63,7 +63,7 @@ export function DAOList() {
     setError(null)
 
     try {
-      const data = await fetchAllDaos()
+      const data = await fetchActiveDaos()
       setDaos(data)
     } catch (err) {
       console.error('[DAOList] Error loading DAOs:', err)
