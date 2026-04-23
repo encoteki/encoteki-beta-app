@@ -4,10 +4,11 @@ import { useState, useEffect } from 'react'
 import { AnimatePresence, motion } from 'motion/react'
 import DefaultButton from '@/ui/buttons/default-btn'
 import { submitReferralCode, getUserReferralCode } from '@/actions/referral'
+import Leaderboard from '@/components/points/leaderboard'
 
 export default function PointsPage() {
   return (
-    <main className="points-container gap-6">
+    <main className="points-container gap-10">
       <div className="flex flex-col gap-6">
         <div className="space-y-3">
           <h1>Your Referral</h1>
@@ -19,7 +20,7 @@ export default function PointsPage() {
         <ReferralModal />
       </div>
 
-      <div className=""></div>
+      <Leaderboard />
     </main>
   )
 }
