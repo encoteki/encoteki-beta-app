@@ -1,15 +1,27 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef, useCallback } from 'react'
 import { AnimatePresence, motion } from 'motion/react'
 import DefaultButton from '@/ui/buttons/default-btn'
 import { submitReferralCode, getUserReferralCode } from '@/actions/referral'
 import Leaderboard from '@/components/points/leaderboard'
 
+const overlayVariants = { hidden: { opacity: 0 }, visible: { opacity: 1 } }
+const modalVariants = {
+  hidden: { opacity: 0, y: 20, scale: 0.95 },
+  visible: {
+    opacity: 1,
+    y: 0,
+    scale: 1,
+    transition: { duration: 0.4, ease: [0.16, 1, 0.3, 1] as const },
+  },
+  exit: { opacity: 0, y: 20, scale: 0.95, transition: { duration: 0.2 } },
+}
+
 export default function PointsPage() {
   return (
     <main className="points-container gap-10">
-      <div className="flex flex-col gap-6">
+      <div className="flex max-w-xl flex-col gap-6">
         <div className="space-y-3">
           <h1>Your Referral</h1>
           <p>
@@ -27,14 +39,14 @@ export default function PointsPage() {
 
 function ReferralModal() {
   const [existingCode, setExistingCode] = useState<string | null>(null)
-
   const [isInitializing, setIsInitializing] = useState(true)
-
   const [isOpen, setIsOpen] = useState(false)
   const [referralCode, setReferralCode] = useState('')
-
   const [isLoading, setIsLoading] = useState(false)
   const [message, setMessage] = useState({ type: '', text: '' })
+
+  const lastFocusRef = useRef<HTMLElement | null>(null)
+  const modalRef = useRef<HTMLDivElement>(null)
 
   useEffect(() => {
     const fetchInitialCode = async () => {
@@ -53,14 +65,56 @@ function ReferralModal() {
     fetchInitialCode()
   }, [])
 
-  const openModal = () => setIsOpen(true)
-
-  const closeModal = () => {
+  const closeModal = useCallback(() => {
     setIsOpen(false)
+    lastFocusRef.current?.focus()
     setTimeout(() => {
       setReferralCode('')
       setMessage({ type: '', text: '' })
     }, 300)
+  }, [])
+
+  // Focus trap + Escape key
+  useEffect(() => {
+    if (!isOpen) return
+
+    const modal = modalRef.current
+    if (!modal) return
+
+    const focusable = modal.querySelectorAll<HTMLElement>(
+      'button, [href], input, select, textarea, [tabindex]:not([tabindex="-1"])',
+    )
+    const first = focusable[0]
+    const last = focusable[focusable.length - 1]
+    first?.focus()
+
+    function handleKeyDown(e: KeyboardEvent) {
+      if (e.key === 'Escape') {
+        closeModal()
+        return
+      }
+      if (e.key !== 'Tab' || focusable.length === 0) return
+
+      if (e.shiftKey) {
+        if (document.activeElement === first) {
+          e.preventDefault()
+          last?.focus()
+        }
+      } else {
+        if (document.activeElement === last) {
+          e.preventDefault()
+          first?.focus()
+        }
+      }
+    }
+
+    document.addEventListener('keydown', handleKeyDown)
+    return () => document.removeEventListener('keydown', handleKeyDown)
+  }, [isOpen, closeModal])
+
+  const openModal = () => {
+    lastFocusRef.current = document.activeElement as HTMLElement
+    setIsOpen(true)
   }
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -72,7 +126,7 @@ function ReferralModal() {
     if (message.type === 'error') setMessage({ type: '', text: '' })
   }
 
-  const handleSubmit = async (e: React.SubmitEvent) => {
+  const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault()
     setIsLoading(true)
     setMessage({ type: '', text: '' })
@@ -94,27 +148,15 @@ function ReferralModal() {
 
   const isButtonDisabled = referralCode.length !== 6 || isLoading
 
-  const overlayVariants = { hidden: { opacity: 0 }, visible: { opacity: 1 } }
-  const modalVariants = {
-    hidden: { opacity: 0, y: 20, scale: 0.95 },
-    visible: {
-      opacity: 1,
-      y: 0,
-      scale: 1,
-      transition: { type: 'spring' as const, stiffness: 300, damping: 25 },
-    },
-    exit: { opacity: 0, y: 20, scale: 0.95, transition: { duration: 0.2 } },
-  }
-
   if (isInitializing) {
-    return <div className="h-12 w-48 animate-pulse rounded-full bg-gray-200" />
+    return <div className="h-12 w-48 animate-pulse rounded-full bg-khaki-70" />
   }
 
   return (
-    <div className="">
+    <div>
       {existingCode ? (
         <div className="inline-block rounded-2xl border-2 border-dashed border-primary-green/30 bg-primary-green/5 px-6 py-4 text-center">
-          <p className="mb-1 text-sm font-medium text-gray-500">
+          <p className="mb-1 text-sm font-medium text-neutral-40">
             Your Referral Code
           </p>
           <p className="font-mono text-3xl font-bold tracking-[0.2em] text-primary-green">
@@ -123,6 +165,15 @@ function ReferralModal() {
         </div>
       ) : (
         <>
+          <div className="mb-4 inline-block rounded-2xl border-2 border-dashed border-khaki-70 bg-khaki-90 px-6 py-4 text-center">
+            <p className="mb-1 text-sm font-medium text-neutral-40">
+              Your Referral Code
+            </p>
+            <p className="text-sm italic text-neutral-40">
+              You haven&apos;t created a referral code yet
+            </p>
+          </div>
+
           <DefaultButton onClick={openModal}>
             Create Referral Code
           </DefaultButton>
@@ -139,29 +190,39 @@ function ReferralModal() {
                 onClick={closeModal}
               >
                 <motion.div
+                  ref={modalRef}
                   key="modal-content"
+                  role="dialog"
+                  aria-modal="true"
+                  aria-labelledby="referral-modal-heading"
                   variants={modalVariants}
                   onClick={(e) => e.stopPropagation()}
-                  className="relative w-full max-w-md overflow-hidden rounded-2xl bg-white p-6 shadow-2xl"
+                  className="relative w-full max-w-md overflow-hidden rounded-2xl bg-khaki-99 p-6 shadow-2xl"
                 >
-                  <h2 className="mb-2 text-2xl font-bold text-gray-800">
+                  <h2
+                    id="referral-modal-heading"
+                    className="mb-2 text-2xl font-bold text-neutral-10"
+                  >
                     Claim Your Referral Code
                   </h2>
-                  <p className="mb-4 text-sm text-gray-600">
+                  <p className="mb-4 text-sm text-neutral-40">
                     Create a unique 6-character alphanumeric code. Share it with
                     your network to earn rewards.
                   </p>
 
                   <form onSubmit={handleSubmit} className="flex flex-col gap-4">
                     <div>
+                      <label htmlFor="referral-code-input" className="sr-only">
+                        Referral code
+                      </label>
                       <input
+                        id="referral-code-input"
                         type="text"
                         value={referralCode}
                         onChange={handleInputChange}
                         placeholder="e.g., ALPHA1"
                         disabled={isLoading}
-                        className="w-full rounded-xl border-2 border-gray-200 px-4 py-4 text-center font-mono text-xl font-bold tracking-[0.2em] text-gray-700 uppercase transition-all focus:border-primary-green focus:ring-4 focus:ring-primary-green/20 focus:outline-none disabled:opacity-50"
-                        autoFocus
+                        className="w-full rounded-xl border-2 border-khaki-70 bg-khaki-90 px-4 py-4 text-center font-mono text-xl font-bold uppercase tracking-[0.2em] text-neutral-30 transition-all focus:border-primary-green focus:ring-4 focus:ring-primary-green/20 focus:outline-none disabled:opacity-50"
                       />
 
                       <div className="mt-2 flex items-center justify-between">
@@ -180,7 +241,7 @@ function ReferralModal() {
                         </div>
 
                         <div
-                          className={`text-xs font-medium transition-colors ${referralCode.length === 6 ? 'text-primary-green' : 'text-gray-400'}`}
+                          className={`text-xs font-medium transition-colors ${referralCode.length === 6 ? 'text-primary-green' : 'text-neutral-40'}`}
                         >
                           {referralCode.length} / 6 characters
                         </div>
@@ -192,7 +253,7 @@ function ReferralModal() {
                         type="button"
                         onClick={closeModal}
                         disabled={isLoading}
-                        className="rounded-xl px-5 py-2.5 font-medium text-gray-700 transition-colors hover:bg-gray-100 disabled:opacity-50"
+                        className="rounded-xl px-5 py-2.5 font-medium text-neutral-30 transition-colors hover:bg-khaki-80 disabled:opacity-50"
                       >
                         Cancel
                       </button>
