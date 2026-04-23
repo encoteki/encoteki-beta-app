@@ -1,27 +1,12 @@
-'use server'
+import { NextResponse } from 'next/server'
 
-export type LeaderboardEntry = {
-  rank: number
-  address: string
-  points: number
-}
-
-export async function getLeaderboard(): Promise<LeaderboardEntry[]> {
+export async function GET() {
   try {
     const res = await fetch('https://api.encoteki.com/graphql', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
-        query: `{
-          leaderboards(limit: 10000) {
-            items {
-              userAddress
-              codeApplied
-              points
-            }
-          }
-        }`,
-        variables: { chainId: 8453 },
+        query: `{ leaderboards(limit: 5) { items { userAddress points } } }`,
       }),
       next: { revalidate: 60 },
     })
@@ -30,14 +15,17 @@ export async function getLeaderboard(): Promise<LeaderboardEntry[]> {
     const items: { userAddress: string; points: number }[] =
       json?.data?.leaderboards?.items ?? []
 
-    return items
+    const entries = items
       .sort((a, b) => b.points - a.points)
       .map((item, i) => ({
         rank: i + 1,
         address: item.userAddress,
         points: item.points,
       }))
-  } catch {
-    return []
+
+    return NextResponse.json(entries)
+  } catch (err) {
+    console.error('[leaderboard]', err)
+    return NextResponse.json([], { status: 500 })
   }
 }
