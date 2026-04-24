@@ -2,9 +2,11 @@
 
 import { useState, useEffect, useRef, useCallback } from 'react'
 import { AnimatePresence, motion } from 'motion/react'
+import { useAccount } from 'wagmi'
 import DefaultButton from '@/ui/buttons/default-btn'
 import { submitReferralCode, getUserReferralCode } from '@/actions/referral'
-import Leaderboard from '@/components/points/leaderboard'
+import { Leaderboard } from '@/components/leaderboard'
+import type { LeaderboardUser } from '@/components/leaderboard'
 
 const overlayVariants = { hidden: { opacity: 0 }, visible: { opacity: 1 } }
 const modalVariants = {
@@ -19,6 +21,28 @@ const modalVariants = {
 }
 
 export default function PointsPage() {
+  const { address } = useAccount()
+  const [leaderboardUsers, setLeaderboardUsers] = useState<LeaderboardUser[]>(
+    [],
+  )
+  const [leaderboardLoading, setLeaderboardLoading] = useState(true)
+
+  useEffect(() => {
+    fetch('/api/leaderboard')
+      .then((r) => r.json())
+      .then((entries: { rank: number; address: string; points: number }[]) => {
+        setLeaderboardUsers(
+          entries.map((e) => ({
+            rank: e.rank,
+            walletAddress: e.address,
+            points: e.points,
+          })),
+        )
+      })
+      .catch(console.error)
+      .finally(() => setLeaderboardLoading(false))
+  }, [])
+
   return (
     <main className="points-container gap-10">
       <div className="flex max-w-xl flex-col gap-6">
@@ -32,7 +56,13 @@ export default function PointsPage() {
         <ReferralModal />
       </div>
 
-      <Leaderboard />
+      <Leaderboard
+        title="Leaderboard"
+        users={leaderboardUsers}
+        currentUserAddress={address}
+        pageSize={10}
+        loading={leaderboardLoading}
+      />
     </main>
   )
 }

@@ -6,7 +6,7 @@ export async function GET() {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
-        query: `{ leaderboards(limit: 999999) { items { userAddress points } } }`,
+        query: `{ leaderboards(limit: 1000) { items { userAddress points } } }`,
       }),
       next: { revalidate: 60 },
     })
