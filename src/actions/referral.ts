@@ -117,13 +117,17 @@ export async function applyReferralCode(code: string | null) {
 
       // Verify the code exists as someone's ref_code
       const verifyRes = await fetch(
-        `https://api.encoteki.com/users/${requestedCode}/referralcode`,
+        `https://api.encoteki.com/users/${auth.address}/referralcode`,
         { headers: { 'Content-Type': 'application/json' } },
       )
       const verifyJson = await verifyRes.json()
 
       if (!verifyRes.ok || !verifyJson?.ref_code) {
         return { success: false, error: 'Referral code does not exist' }
+      }
+
+      if (verifyJson.ref_code?.toUpperCase() !== requestedCode) {
+        return { success: false, error: 'Referral code does not match' }
       }
     }
 
