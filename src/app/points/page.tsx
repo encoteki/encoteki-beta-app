@@ -165,15 +165,6 @@ function ReferralModal() {
         </div>
       ) : (
         <>
-          <div className="mb-4 inline-block rounded-2xl border-2 border-dashed border-khaki-70 bg-khaki-90 px-6 py-4 text-center">
-            <p className="mb-1 text-sm font-medium text-neutral-40">
-              Your Referral Code
-            </p>
-            <p className="text-sm italic text-neutral-40">
-              You haven&apos;t created a referral code yet
-            </p>
-          </div>
-
           <DefaultButton onClick={openModal}>
             Create Referral Code
           </DefaultButton>
@@ -222,7 +213,7 @@ function ReferralModal() {
                         onChange={handleInputChange}
                         placeholder="e.g., ALPHA1"
                         disabled={isLoading}
-                        className="w-full rounded-xl border-2 border-khaki-70 bg-khaki-90 px-4 py-4 text-center font-mono text-xl font-bold uppercase tracking-[0.2em] text-neutral-30 transition-all focus:border-primary-green focus:ring-4 focus:ring-primary-green/20 focus:outline-none disabled:opacity-50"
+                        className="w-full rounded-xl border-2 border-khaki-70 bg-khaki-90 px-4 py-4 text-center font-mono text-xl font-bold tracking-[0.2em] text-neutral-30 uppercase transition-all focus:border-primary-green focus:ring-4 focus:ring-primary-green/20 focus:outline-none disabled:opacity-50"
                       />
 
                       <div className="mt-2 flex items-center justify-between">
