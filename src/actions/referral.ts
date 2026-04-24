@@ -115,19 +115,14 @@ export async function applyReferralCode(code: string | null) {
         }
       }
 
-      // Verify the code exists as someone's ref_code
+      // Verify the code exists
       const verifyRes = await fetch(
-        `https://api.encoteki.com/users/${auth.address}/referralcode`,
+        `https://api.encoteki.com/referralcode/${requestedCode}/validate`,
         { headers: { 'Content-Type': 'application/json' } },
       )
-      const verifyJson = await verifyRes.json()
 
-      if (!verifyRes.ok || !verifyJson?.ref_code) {
+      if (!verifyRes.ok) {
         return { success: false, error: 'Referral code does not exist' }
-      }
-
-      if (verifyJson.ref_code?.toUpperCase() !== requestedCode) {
-        return { success: false, error: 'Referral code does not match' }
       }
     }
 
