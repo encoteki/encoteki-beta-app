@@ -6,7 +6,7 @@ const URL_ROUTES = {
   HUB,
   MINT: `/mint`,
   DAO: `/dao`,
-  POINTS: `/points`,
+  LEADERBOARD: `/leaderboard`,
 }
 
 export default URL_ROUTES

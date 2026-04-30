@@ -1,8 +1,7 @@
 'use client'
 
-import { useState, useMemo } from 'react'
 import { AnimatePresence, motion, useReducedMotion } from 'motion/react'
-import type { LeaderboardUser } from './types'
+import type { LeaderboardUser, PaginationInfo } from './types'
 
 const GREEN = '#246234'
 
@@ -40,30 +39,24 @@ function isMe(entry: LeaderboardUser, currentAddress?: string) {
 interface LeaderboardListProps {
   users: LeaderboardUser[]
   currentUserAddress?: string
-  pageSize: number
+  pagination: PaginationInfo
+  onPageChange: (page: number) => void
 }
 
 export function LeaderboardList({
   users,
   currentUserAddress,
-  pageSize,
+  pagination,
+  onPageChange,
 }: LeaderboardListProps) {
-  const [page, setPage] = useState(1)
   const reduced = useReducedMotion() ?? false
-
-  const totalPages = Math.max(1, Math.ceil(users.length / pageSize))
-  const safePage = Math.min(page, totalPages)
-
-  const pageUsers = useMemo(
-    () => users.slice((safePage - 1) * pageSize, safePage * pageSize),
-    [users, safePage, pageSize],
-  )
+  const { page, totalPages } = pagination
 
   return (
     <div>
       <AnimatePresence mode="wait">
         <motion.ul
-          key={safePage}
+          key={page}
           initial={reduced ? false : { opacity: 0, x: 10 }}
           animate={{ opacity: 1, x: 0 }}
           exit={reduced ? {} : { opacity: 0, x: -10 }}
@@ -72,7 +65,7 @@ export function LeaderboardList({
           aria-label="Leaderboard entries"
           aria-live="polite"
         >
-          {pageUsers.map((entry, i) => {
+          {users.map((entry, i) => {
             const highlighted = isMe(entry, currentUserAddress)
             return (
               <motion.li
@@ -142,23 +135,23 @@ export function LeaderboardList({
       {totalPages > 1 && (
         <div className="flex items-center justify-between border-t border-khaki-70 px-3 py-3">
           <span className="text-xs text-neutral-40">
-            Page {safePage} of {totalPages}
+            Page {page} of {totalPages}
           </span>
           <div className="flex items-center gap-2">
             <button
-              onClick={() => setPage((p) => Math.max(1, p - 1))}
-              disabled={safePage === 1}
+              onClick={() => onPageChange(page - 1)}
+              disabled={page === 1}
               aria-label="Previous page"
               className="min-h-10 rounded-full border border-khaki-70 bg-khaki-99 px-4 py-2 text-xs font-medium text-neutral-30 transition-colors hover:bg-khaki-90 disabled:cursor-not-allowed disabled:opacity-40"
             >
               ← Prev
             </button>
             <span className="min-w-10 text-center text-xs font-medium text-neutral-30 tabular-nums">
-              {safePage} / {totalPages}
+              {page} / {totalPages}
             </span>
             <button
-              onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
-              disabled={safePage === totalPages}
+              onClick={() => onPageChange(page + 1)}
+              disabled={page === totalPages}
               aria-label="Next page"
               className="min-h-10 rounded-full border border-khaki-70 bg-khaki-99 px-4 py-2 text-xs font-medium text-neutral-30 transition-colors hover:bg-khaki-90 disabled:cursor-not-allowed disabled:opacity-40"
             >

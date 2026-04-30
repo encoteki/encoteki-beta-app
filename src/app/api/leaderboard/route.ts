@@ -1,31 +1,28 @@
 import { NextResponse } from 'next/server'
 
-export async function GET() {
+export async function GET(request: Request) {
+  const { searchParams } = new URL(request.url)
+  const page = Math.max(1, Number(searchParams.get('page') ?? '1'))
+  const limit = Math.max(1, Number(searchParams.get('limit') ?? '10'))
+
   try {
-    const res = await fetch('https://api.encoteki.com/graphql', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        query: `{ leaderboards(limit: 1000) { items { userAddress points } } }`,
-      }),
-      next: { revalidate: 60 },
-    })
+    const res = await fetch(
+      `https://api.encoteki.com/leaderboard?page=${page}&limit=${limit}&isAdmin=false`,
+      { next: { revalidate: 60 } },
+    )
 
     const json = await res.json()
-    const items: { userAddress: string; points: number }[] =
-      json?.data?.leaderboards?.items ?? []
+    const items: { userAddress: string; points: number }[] = json?.data ?? []
 
-    const entries = items
-      .sort((a, b) => b.points - a.points)
-      .map((item, i) => ({
-        rank: i + 1,
-        address: item.userAddress,
-        points: item.points,
-      }))
+    const entries = items.map((item, i) => ({
+      rank: (page - 1) * limit + i + 1,
+      address: item.userAddress,
+      points: item.points,
+    }))
 
-    return NextResponse.json(entries)
+    return NextResponse.json({ entries, pagination: json.pagination ?? null })
   } catch (err) {
     console.error('[leaderboard]', err)
-    return NextResponse.json([], { status: 500 })
+    return NextResponse.json({ entries: [], pagination: null }, { status: 500 })
   }
 }

@@ -107,12 +107,7 @@ export function LeaderboardPodium({ top3 }: LeaderboardPodiumProps) {
   const ordered = [top3[1], top3[0], top3[2]]
 
   return (
-    <div
-      className="relative flex items-end justify-center gap-2 px-4 pt-12 pb-0"
-      style={{
-        background: `radial-gradient(ellipse 100% 70% at 50% -5%, #F0C04055 0%, transparent 65%)`,
-      }}
-    >
+    <div className="relative flex items-end justify-center gap-2 pt-12 pb-0">
       {PODIUM.map((cfg, i) => {
         const entry = ordered[i]
         const isCenter = cfg.rank === 1

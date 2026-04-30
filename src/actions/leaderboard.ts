@@ -6,37 +6,24 @@ export type LeaderboardEntry = {
   points: number
 }
 
-export async function getLeaderboard(): Promise<LeaderboardEntry[]> {
+export async function getLeaderboard(
+  page = 1,
+  limit = 10,
+): Promise<LeaderboardEntry[]> {
   try {
-    const res = await fetch('https://api.encoteki.com/graphql', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        query: `{
-          leaderboards(limit: 10000) {
-            items {
-              userAddress
-              codeApplied
-              points
-            }
-          }
-        }`,
-        variables: { chainId: 8453 },
-      }),
-      next: { revalidate: 60 },
-    })
+    const res = await fetch(
+      `https://api.encoteki.com/leaderboard?page=${page}&limit=${limit}&isAdmin=false`,
+      { next: { revalidate: 60 } },
+    )
 
     const json = await res.json()
-    const items: { userAddress: string; points: number }[] =
-      json?.data?.leaderboards?.items ?? []
+    const items: { userAddress: string; points: number }[] = json?.data ?? []
 
-    return items
-      .sort((a, b) => b.points - a.points)
-      .map((item, i) => ({
-        rank: i + 1,
-        address: item.userAddress,
-        points: item.points,
-      }))
+    return items.map((item, i) => ({
+      rank: (page - 1) * limit + i + 1,
+      address: item.userAddress,
+      points: item.points,
+    }))
   } catch {
     return []
   }

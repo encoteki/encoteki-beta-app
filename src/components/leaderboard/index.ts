@@ -1,5 +1,5 @@
 export { Leaderboard } from './Leaderboard'
 export { LeaderboardPodium } from './LeaderboardPodium'
 export { LeaderboardList } from './LeaderboardList'
-export type { LeaderboardUser, LeaderboardProps } from './types'
+export type { LeaderboardUser, LeaderboardProps, PaginationInfo } from './types'
 export { mockLeaderboardData } from './mock-data'

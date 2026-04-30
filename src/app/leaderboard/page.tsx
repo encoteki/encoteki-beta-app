@@ -6,7 +6,7 @@ import { useConnection, useSignMessage } from 'wagmi'
 import DefaultButton from '@/ui/buttons/default-btn'
 import { submitReferralCode, getUserReferralCode } from '@/actions/referral'
 import { Leaderboard } from '@/components/leaderboard'
-import type { LeaderboardUser } from '@/components/leaderboard'
+import type { LeaderboardUser, PaginationInfo } from '@/components/leaderboard'
 
 const overlayVariants = { hidden: { opacity: 0 }, visible: { opacity: 1 } }
 const modalVariants = {
@@ -26,30 +26,46 @@ export default function PointsPage() {
     [],
   )
   const [leaderboardLoading, setLeaderboardLoading] = useState(true)
+  const [leaderboardPage, setLeaderboardPage] = useState(1)
+  const [leaderboardPagination, setLeaderboardPagination] = useState<
+    PaginationInfo | undefined
+  >()
 
   useEffect(() => {
-    fetch('/api/leaderboard')
-      .then((r) => r.json())
-      .then((entries: { rank: number; address: string; points: number }[]) => {
+    const load = async () => {
+      setLeaderboardLoading(true)
+      try {
+        const r = await fetch(
+          `/api/leaderboard?page=${leaderboardPage}&limit=10`,
+        )
+        const json = (await r.json()) as {
+          entries: { rank: number; address: string; points: number }[]
+          pagination: PaginationInfo | null
+        }
         setLeaderboardUsers(
-          entries.map((e) => ({
+          (json.entries ?? []).map((e) => ({
             rank: e.rank,
             walletAddress: e.address,
             points: e.points,
           })),
         )
-      })
-      .catch(console.error)
-      .finally(() => setLeaderboardLoading(false))
-  }, [])
+        setLeaderboardPagination(json.pagination ?? undefined)
+      } catch (err) {
+        console.error(err)
+      } finally {
+        setLeaderboardLoading(false)
+      }
+    }
+    load()
+  }, [leaderboardPage])
 
   return (
     <main className="points-container gap-10">
-      <div className="flex max-w-xl flex-col gap-6">
-        <div className="space-y-3">
-          <h1>Your Referral</h1>
+      <div className="flex w-full flex-col gap-6">
+        <div className="space-y-3 text-neutral-30">
+          <h1 className="text-primary-green">Leaderboard</h1>
           <p>
-            Share your referral link with friends and family to earn points!
+            Share your referral code with friends and family to earn points!
           </p>
         </div>
 
@@ -57,11 +73,12 @@ export default function PointsPage() {
       </div>
 
       <Leaderboard
-        title="Leaderboard"
+        title=""
         users={leaderboardUsers}
         currentUserAddress={address}
-        pageSize={10}
         loading={leaderboardLoading}
+        pagination={leaderboardPagination}
+        onPageChange={setLeaderboardPage}
       />
     </main>
   )
@@ -179,7 +196,10 @@ function ReferralModal() {
         setMessage({ type: 'error', text: result.error || '' })
       }
     } catch {
-      setMessage({ type: 'error', text: 'Signature rejected. Please try again.' })
+      setMessage({
+        type: 'error',
+        text: 'Signature rejected. Please try again.',
+      })
     }
 
     setIsLoading(false)

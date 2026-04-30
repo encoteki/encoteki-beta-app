@@ -4,7 +4,7 @@ import { useMemo } from 'react'
 import { motion, useReducedMotion } from 'motion/react'
 import { LeaderboardPodium } from './LeaderboardPodium'
 import { LeaderboardList } from './LeaderboardList'
-import type { LeaderboardProps, LeaderboardUser } from './types'
+import type { LeaderboardProps, LeaderboardUser, PaginationInfo } from './types'
 
 function SkeletonPodium() {
   const heights = [
@@ -14,7 +14,7 @@ function SkeletonPodium() {
   ] as const
   const avatarSizes = ['h-10 w-10', 'h-14 w-14', 'h-10 w-10'] as const
   return (
-    <div className="flex items-end justify-center gap-2 px-4 pt-12 pb-0">
+    <div className="flex items-end justify-center gap-2 pt-12 pb-0">
       {heights.map((h, i) => (
         <div key={i} className="flex flex-1 flex-col items-center">
           <div className="mb-2 flex flex-col items-center gap-1.5">
@@ -51,65 +51,49 @@ export function Leaderboard({
   users,
   currentUserAddress,
   updatedAt,
-  pageSize = 10,
   loading = false,
-}: LeaderboardProps & { loading?: boolean }) {
+  pagination,
+  onPageChange,
+}: LeaderboardProps) {
   const reduced = useReducedMotion() ?? false
+  const isFirstPage = !pagination || pagination.page === 1
 
-  const top3: (LeaderboardUser | null)[] = [
-    users[0] ?? null,
-    users[1] ?? null,
-    users[2] ?? null,
-  ]
-  const rest = useMemo(() => users.slice(3), [users])
+  const top3: (LeaderboardUser | null)[] = isFirstPage
+    ? [users[0] ?? null, users[1] ?? null, users[2] ?? null]
+    : [null, null, null]
 
-  const showPodium = loading || users.length >= 1
+  const rest = useMemo(
+    () => (isFirstPage ? users.slice(3) : users),
+    [users, isFirstPage],
+  )
+
+  const participantCount = pagination?.total ?? users.length
+  const showPodium = loading || (isFirstPage && users.length >= 1)
   const isEmpty = !loading && users.length === 0
+
+  const fallbackPagination: PaginationInfo = pagination ?? {
+    page: 1,
+    limit: 10,
+    total: users.length,
+    totalPages: 1,
+  }
 
   return (
     <section
       aria-labelledby="lb-heading"
-      className="overflow-hidden rounded-2xl border border-khaki-70 bg-khaki-99"
+      className="overflow-hidden rounded-2xl bg-transparent"
     >
-      {/* Header */}
-      <div className="flex items-end justify-between px-6 pt-6 pb-2">
-        <div className="flex flex-col gap-1">
-          <h2
-            id="lb-heading"
-            className="text-3xl leading-tight font-medium text-primary-green tablet:text-5xl"
-          >
-            {title}
-          </h2>
-        </div>
-
-        {!loading && users.length > 0 && (
-          <motion.div
-            initial={reduced ? false : { opacity: 0 }}
-            animate={{ opacity: 1 }}
-            transition={{ duration: 0.5, delay: 0.25 }}
-            className="flex flex-col items-end gap-0"
-          >
-            <span className="font-mono text-2xl leading-none font-bold text-primary-green tabular-nums">
-              {users.length}
-            </span>
-            <span className="text-[9.5px] font-semibold tracking-[0.2em] text-neutral-40 uppercase">
-              participants
-            </span>
-          </motion.div>
-        )}
-      </div>
-
       {/* Podium */}
       {showPodium && (
         <>
           {loading ? <SkeletonPodium /> : <LeaderboardPodium top3={top3} />}
-          <div className="mx-4 mt-4 border-t border-khaki-70" />
+          <div className="mt-4 border-t border-khaki-70" />
         </>
       )}
 
       {/* List */}
       {loading ? (
-        <ul className="divide-y divide-khaki-70/50 px-2 pt-1 pb-2">
+        <ul className="divide-y divide-khaki-70/50 pt-1 pb-2">
           {Array.from({ length: 5 }).map((_, i) => (
             <SkeletonRow key={i} delay={i * 60} />
           ))}
@@ -122,7 +106,8 @@ export function Leaderboard({
         <LeaderboardList
           users={rest}
           currentUserAddress={currentUserAddress}
-          pageSize={pageSize}
+          pagination={fallbackPagination}
+          onPageChange={onPageChange ?? (() => {})}
         />
       ) : null}
 

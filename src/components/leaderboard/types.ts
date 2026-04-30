@@ -5,11 +5,19 @@ export interface LeaderboardUser {
   isCurrentUser?: boolean
 }
 
+export interface PaginationInfo {
+  page: number
+  limit: number
+  total: number
+  totalPages: number
+}
+
 export interface LeaderboardProps {
   title: string
   users: LeaderboardUser[]
   currentUserAddress?: string
   updatedAt?: string
-  pageSize?: number
   loading?: boolean
+  pagination?: PaginationInfo
+  onPageChange?: (page: number) => void
 }

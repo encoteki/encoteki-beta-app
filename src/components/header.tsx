@@ -16,7 +16,7 @@ const hubNavs = [
   { label: 'Home', id: URL_ROUTES.HOME },
   { label: 'Mint', id: URL_ROUTES.MINT },
   { label: 'DAO', id: URL_ROUTES.DAO },
-  { label: 'Points', id: URL_ROUTES.POINTS },
+  { label: 'Leaderboard', id: URL_ROUTES.LEADERBOARD },
 ]
 
 export default function Header() {
