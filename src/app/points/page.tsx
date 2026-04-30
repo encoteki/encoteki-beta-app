@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useRef, useCallback } from 'react'
 import { AnimatePresence, motion } from 'motion/react'
-import { useAccount } from 'wagmi'
+import { useConnection, useSignMessage } from 'wagmi'
 import DefaultButton from '@/ui/buttons/default-btn'
 import { submitReferralCode, getUserReferralCode } from '@/actions/referral'
 import { Leaderboard } from '@/components/leaderboard'
@@ -21,7 +21,7 @@ const modalVariants = {
 }
 
 export default function PointsPage() {
-  const { address } = useAccount()
+  const { address } = useConnection()
   const [leaderboardUsers, setLeaderboardUsers] = useState<LeaderboardUser[]>(
     [],
   )
@@ -74,6 +74,7 @@ function ReferralModal() {
   const [referralCode, setReferralCode] = useState('')
   const [isLoading, setIsLoading] = useState(false)
   const [message, setMessage] = useState({ type: '', text: '' })
+  const { mutateAsync: signMessage } = useSignMessage()
 
   const lastFocusRef = useRef<HTMLElement | null>(null)
   const modalRef = useRef<HTMLDivElement>(null)
@@ -161,16 +162,24 @@ function ReferralModal() {
     setIsLoading(true)
     setMessage({ type: '', text: '' })
 
-    const result = await submitReferralCode(referralCode)
+    try {
+      const signature = await signMessage({
+        message: `Set ref code: ${referralCode}`,
+      })
 
-    if (result.success) {
-      setMessage({ type: 'success', text: result.message || '' })
-      setTimeout(() => {
-        closeModal()
-        setExistingCode(referralCode)
-      }, 2000)
-    } else {
-      setMessage({ type: 'error', text: result.error || '' })
+      const result = await submitReferralCode(referralCode, signature)
+
+      if (result.success) {
+        setMessage({ type: 'success', text: result.message || '' })
+        setTimeout(() => {
+          closeModal()
+          setExistingCode(referralCode)
+        }, 2000)
+      } else {
+        setMessage({ type: 'error', text: result.error || '' })
+      }
+    } catch {
+      setMessage({ type: 'error', text: 'Signature rejected. Please try again.' })
     }
 
     setIsLoading(false)

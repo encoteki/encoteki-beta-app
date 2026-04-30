@@ -8,7 +8,7 @@ import { getAuthSession } from './auth'
 
 // ─── User's OWN referral code (users table, ref_code column) ───
 
-export async function submitReferralCode(code: string) {
+export async function submitReferralCode(code: string, signature: string) {
   const auth = await getAuthSession()
   if (!auth.success || !auth.address) {
     return { success: false, error: auth.error }
@@ -26,7 +26,11 @@ export async function submitReferralCode(code: string) {
     const res = await fetch('https://api.encoteki.com/users/referralcode', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ userAddress: auth.address, refCode: code }),
+      body: JSON.stringify({
+        userAddress: auth.address,
+        refCode: code,
+        signature,
+      }),
     })
 
     const json = await res.json()
