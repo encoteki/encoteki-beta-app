@@ -1,7 +1,7 @@
 'use client'
 
 import { useCallback, useEffect, useState, useRef } from 'react'
-import { useChainId, useSwitchChain } from 'wagmi'
+import { useChainId, useConnection, useSwitchChain } from 'wagmi'
 import DefaultButton from '@/ui/buttons/default-btn'
 import { useMintCtx } from '../../contexts/mint.context'
 import {
@@ -61,8 +61,13 @@ export default function SelectPaymentMethod() {
     setSelectedChainId,
     restoreFromBackground,
   } = useMintCtx()
-  const walletChainId = useChainId()
-  const { switchChain } = useSwitchChain()
+  // useChainId() clamps to the wagmi config chains, so it can't detect when
+  // the wallet is on an unsupported chain. useConnection().chainId returns
+  // the real wallet chain.
+  const configChainId = useChainId()
+  const { chainId: connectionChainId } = useConnection()
+  const walletChainId = connectionChainId ?? configChainId
+  const { mutateAsync: switchChain } = useSwitchChain()
   const { isLoggedIn, isLoading: isUserLoading } = useUser()
   const { referralCode: globalReferralCode, backgroundMint } = useAppCtx()
 
@@ -85,12 +90,16 @@ export default function SelectPaymentMethod() {
   // The activeChainId will use selectedChainId when available, walletChainId as fallback
   // This prevents the chain from reverting back to default after successful switch
 
-  // Initialize selectedChainId from wallet chain on first load
+  // If the wallet boots on an unsupported chain, fall back to the first
+  // enabled chain so the dropdown and payment list render a valid target.
   useEffect(() => {
     if (selectedChainId === null && walletChainId) {
-      setSelectedChainId(walletChainId)
+      const isSupported = allChains.some((c) => c.chainId === walletChainId)
+      setSelectedChainId(
+        isSupported ? walletChainId : (enabledChains[0]?.chainId ?? walletChainId),
+      )
     }
-  }, []) // Only run once on mount
+  }, [])
 
   // Clear switch error when wallet chain matches selected chain
   useEffect(() => {
@@ -167,8 +176,12 @@ export default function SelectPaymentMethod() {
 
   const skeletonCount = paymentMethods.length > 0 ? paymentMethods.length : 2
 
+  const isWalletOnSupportedChain =
+    walletChainId !== undefined &&
+    allChains.some((c) => c.chainId === walletChainId)
   const needsChainSwitch =
-    selectedChainId !== null && selectedChainId !== walletChainId
+    selectedChainId !== null &&
+    (!isWalletOnSupportedChain || selectedChainId !== walletChainId)
 
   return (
     <div className="mx-auto flex w-full max-w-md flex-col">
