@@ -10,11 +10,8 @@ const nextConfig: NextConfig = {
   experimental: {
     // Speed up Fast Refresh and reduce bundle size
     optimizePackageImports: [
-      '@heroicons/react',
       'lucide-react',
       'framer-motion',
-      '@radix-ui/react-dialog',
-      '@radix-ui/react-slot',
       'viem',
       'wagmi',
     ],
