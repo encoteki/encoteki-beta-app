@@ -88,6 +88,7 @@ export const MintButton = ({
 
   const getButtonLabel = () => {
     if (!mint.isReady) return 'Preparing...'
+    if (mint.phase === 'switching-chain') return 'Switching Network...'
     if (mint.phase === 'signing-approve' || mint.phase === 'signing')
       return 'Check Wallet...'
     if (mint.phase === 'approving') return 'Approving...'
@@ -102,6 +103,7 @@ export const MintButton = ({
 
   const isDisabled =
     !mint.isReady ||
+    mint.phase === 'switching-chain' ||
     mint.phase === 'signing-approve' ||
     mint.phase === 'signing' ||
     mint.phase === 'approving' ||

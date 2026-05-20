@@ -4,6 +4,7 @@ import {
   useWriteContract,
   useWaitForTransactionReceipt,
   useConnection,
+  useSwitchChain,
 } from 'wagmi'
 import {
   Address,
@@ -22,6 +23,7 @@ const ZERO = BigInt(0)
 
 type MintPhase =
   | 'idle'
+  | 'switching-chain'
   | 'signing-approve'
   | 'approving'
   | 'signing'
@@ -46,7 +48,8 @@ export function useMintTransaction({
   targetContract,
   chainId,
 }: UseMintTransactionProps) {
-  const { address: userAddress } = useConnection()
+  const { address: userAddress, chainId: walletChainId } = useConnection()
+  const { mutateAsync: switchChainAsync } = useSwitchChain()
   const isHub = isHubChain(chainId)
   const abi = getAbi(chainId)
 
@@ -279,11 +282,27 @@ export function useMintTransaction({
   }, [approveIsSuccess, refetchAllowance])
 
   // ───────────── Execute ─────────────
-  const execute = useCallback(() => {
+  const execute = useCallback(async () => {
     if (!userAddress || !targetContract || priceBigInt < ZERO) return
 
     abortRef.current = false
     setErrorMsg(null)
+
+    if (walletChainId !== chainId) {
+      try {
+        setPhase('switching-chain')
+        await switchChainAsync({ chainId })
+      } catch (err: any) {
+        setPhase('error')
+        setErrorMsg(
+          err?.shortMessage ||
+            err?.message?.slice(0, 120) ||
+            'Failed to switch network',
+        )
+        return
+      }
+      if (abortRef.current) return
+    }
 
     // Step 1: Approve if needed
     if (needsApproval && !isNative) {
@@ -310,6 +329,9 @@ export function useMintTransaction({
     userAddress,
     targetContract,
     priceBigInt,
+    walletChainId,
+    chainId,
+    switchChainAsync,
     needsApproval,
     isNative,
     tokenAddress,
@@ -318,7 +340,6 @@ export function useMintTransaction({
     msgValue,
     writeApprove,
     writeMint,
-    chainId,
   ])
 
   // Auto-mint after approval succeeds
