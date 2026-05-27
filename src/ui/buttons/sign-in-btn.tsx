@@ -48,6 +48,9 @@ export function SignInButton() {
   // and completes login in one step.
   const attemptedPermissionRef = useRef(false)
   const [hasMounted, setHasMounted] = useState(false)
+  // Falls back to true after 8 s if xellarAccount never resolves, so an SDK
+  // failure doesn't leave the user permanently stuck on a spinner.
+  const [xellarHydrationTimedOut, setXellarHydrationTimedOut] = useState(false)
 
   useEffect(() => {
     shouldSignRef.current = readIntent()
@@ -68,11 +71,18 @@ export function SignInButton() {
       const issuedAt = new Date()
       const expirationTime = new Date(issuedAt.getTime() + 10 * 60 * 1000)
 
+      // Use the same domain source as the server-side verifier (getRequestHost).
+      // When NEXT_PUBLIC_APP_URL is set, both sides derive the host from it so
+      // proxy configurations that rewrite the Host header don't cause mismatches.
+      const appUrl = process.env.NEXT_PUBLIC_APP_URL
+      const domain = appUrl ? new URL(appUrl).host : window.location.host
+      const uri = appUrl ?? window.location.origin
+
       const message = new SiweMessage({
-        domain: window.location.host,
+        domain,
         address: address,
         statement: 'Sign in to Encoteki Beta App',
-        uri: window.location.origin,
+        uri,
         version: '1',
         chainId: chainId,
         nonce: nonce,
@@ -130,9 +140,21 @@ export function SignInButton() {
   // wagmi connector has rehydrated (isConnected=true, connectorId=xellar-passport)
   // but Xellar's own zustand store hasn't replayed yet (xellarAccount=null).
   // We must wait — otherwise we'd misread it as an external wallet and fire SIWE.
-  const isXellarHydrating = isXellarConnector && xellarAccount === null
+  // xellarHydrationTimedOut caps the wait so an SDK failure doesn't permanently block.
+  const isXellarHydrating =
+    isXellarConnector && xellarAccount === null && !xellarHydrationTimedOut
   const isXellarPermissionPending =
     xellarAccount !== null && !xellarAccount.isPermissionGranted
+
+  // If the Xellar connector is active but xellarAccount hasn't resolved after
+  // 8 s, the SDK likely failed to initialize. Mark the timeout so isXellarHydrating
+  // becomes false and the flow can proceed (the subsequent SIWE attempt will surface
+  // an SDK error with a retry path rather than silently spinning forever).
+  useEffect(() => {
+    if (!isXellarConnector || xellarAccount !== null) return
+    const timer = setTimeout(() => setXellarHydrationTimedOut(true), 8_000)
+    return () => clearTimeout(timer)
+  }, [isXellarConnector, xellarAccount])
 
   const isFinalizing =
     hasMounted &&

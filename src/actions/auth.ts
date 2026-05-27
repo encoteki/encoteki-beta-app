@@ -6,11 +6,19 @@ import { generateNonce, SiweMessage } from 'siwe'
 import { sessionOptions, SessionData, SESSION_TTL } from '@/lib/session'
 import { supabaseAdmin } from '@/lib/supabase/admin'
 
-// Pull the request's actual host (honoring proxy headers) so SIWE verification
-// can be bound to this origin — defeats cross-domain signature replay.
+// Returns the canonical app host for SIWE domain binding.
+// NEXT_PUBLIC_APP_URL is the authoritative source in production — it eliminates
+// header-injection attacks and ensures client/server domain consistency.
+// Falls back to the HTTP Host header (which always matches window.location.host
+// in standard deployments and cannot be forged past the load balancer).
 async function getRequestHost(): Promise<string | undefined> {
+  if (process.env.NEXT_PUBLIC_APP_URL) {
+    try {
+      return new URL(process.env.NEXT_PUBLIC_APP_URL).host
+    } catch {}
+  }
   const h = await headers()
-  return h.get('x-forwarded-host') ?? h.get('host') ?? undefined
+  return h.get('host') ?? undefined
 }
 
 // ─── Helpers ───
@@ -58,9 +66,19 @@ export async function verifySiweMessage(message: string, signature: string) {
     return { success: false, error: 'No active nonce' }
   }
 
+  // Consume the nonce before verifying so concurrent requests cannot both
+  // pass this check and replay the same nonce.
+  const consumedNonce = session.nonce
+  session.nonce = undefined
+  await session.save()
+
+  const expectedDomain = await getRequestHost()
+  if (!expectedDomain) {
+    return { success: false, error: 'Unable to determine request domain' }
+  }
+
   try {
     const siweMessage = new SiweMessage(message)
-    const expectedDomain = await getRequestHost()
     const { data } = await siweMessage.verify({
       signature,
       // Binds the signature to this origin, the session-issued nonce, and
@@ -68,7 +86,7 @@ export async function verifySiweMessage(message: string, signature: string) {
       // `expirationTime` or not-yet-valid `notBefore`); the catch below
       // covers it.
       domain: expectedDomain,
-      nonce: session.nonce,
+      nonce: consumedNonce,
       time: new Date().toISOString(),
     })
 
@@ -88,13 +106,11 @@ export async function verifySiweMessage(message: string, signature: string) {
     session.siwe = { address: userAddress }
     session.hasReferral = !!referralData
     session.createdAt = Date.now()
-    session.nonce = undefined
     await session.save()
 
     return { success: true, hasReferral: !!referralData }
   } catch (error) {
-    console.error(error)
-    session.destroy()
+    // Nonce is already consumed — no session data to clean up.
     return { success: false, error: 'Invalid signature' }
   }
 }
