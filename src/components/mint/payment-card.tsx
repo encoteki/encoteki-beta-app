@@ -1,5 +1,6 @@
 import Image from 'next/image'
-import { memo, useCallback } from 'react'
+import { memo, useCallback, useEffect } from 'react'
+import { motion, useAnimation } from 'framer-motion'
 import { Token } from '@/constants/contracts/tsb'
 import { formatIDR } from '../../utils/format-balance.util'
 
@@ -20,13 +21,27 @@ export const PaymentCard = memo(function PaymentCard({
     onSelect(idx)
   }, [idx, onSelect])
 
+  const controls = useAnimation()
+
+  useEffect(() => {
+    if (isActive) {
+      controls.start({
+        scale: [1, 1.025, 1],
+        transition: { duration: 0.28, ease: [0.16, 1, 0.3, 1] },
+      })
+    }
+  }, [isActive, controls])
+
   return (
-    <button
+    <motion.button
+      animate={controls}
+      whileTap={{ scale: 0.97 }}
+      transition={{ duration: 0.12, ease: [0.16, 1, 0.3, 1] }}
       onClick={handleClick}
-      className={`flex w-full items-center justify-between rounded-xl border p-3 text-left transition-all focus:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-1 focus-visible:ring-offset-background active:scale-[0.98] sm:p-4 ${
+      className={`flex w-full items-center justify-between rounded-xl border p-3 text-left transition-all focus:outline-none focus-visible:ring-2 focus-visible:ring-primary-green focus-visible:ring-offset-1 focus-visible:ring-offset-white sm:p-4 ${
         isActive
-          ? 'border-primary bg-primary/5'
-          : 'border-border hover:border-muted-foreground/30 hover:bg-muted/30'
+          ? 'border-primary-green bg-green-90 shadow-sm'
+          : 'border-neutral-60 bg-white hover:border-neutral-40/30 hover:bg-khaki-90'
       }`}
     >
       <div className="flex min-w-0 items-center gap-3 sm:gap-4">
@@ -40,17 +55,17 @@ export const PaymentCard = memo(function PaymentCard({
           />
         </figure>
         <div className="flex min-w-0 flex-col">
-          <span className="truncate text-sm font-medium text-foreground sm:text-base">
+          <span className="truncate text-sm font-semibold text-neutral-10 sm:text-base">
             {item.symbol}
           </span>
-          <span className="truncate text-[11px] text-muted-foreground sm:text-xs">
+          <span className="truncate text-[11px] text-neutral-40 sm:text-xs">
             {item.name}
           </span>
         </div>
       </div>
 
-      <div className="shrink-0 pl-2 text-right">
-        <span className="text-base font-semibold text-foreground sm:text-lg">
+      <div className="flex shrink-0 items-center gap-2.5 pl-2 text-right">
+        <span className="text-base font-bold text-neutral-10 tabular-nums sm:text-lg">
           {item.symbol === 'IDRX'
             ? new Intl.NumberFormat('en-US', {
                 minimumFractionDigits: 0,
@@ -58,7 +73,30 @@ export const PaymentCard = memo(function PaymentCard({
               }).format(Number(item.cost))
             : item.cost}
         </span>
+        <div
+          className={`flex h-4 w-4 shrink-0 items-center justify-center rounded-full transition-all duration-200 ${
+            isActive
+              ? 'bg-primary-green'
+              : 'border border-neutral-60 bg-transparent'
+          }`}
+        >
+          {isActive && (
+            <svg
+              className="h-2.5 w-2.5 text-white"
+              viewBox="0 0 10 10"
+              fill="none"
+            >
+              <path
+                d="M2 5l2.5 2.5L8 3"
+                stroke="currentColor"
+                strokeWidth="1.5"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+              />
+            </svg>
+          )}
+        </div>
       </div>
-    </button>
+    </motion.button>
   )
 })

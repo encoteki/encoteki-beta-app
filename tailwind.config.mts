@@ -10,6 +10,9 @@ export default {
   ],
   theme: {
     extend: {
+      fontFamily: {
+        display: ['var(--font-display)', 'Georgia', 'serif'],
+      },
       screens: {
         tablet: '768px',
         desktop: '1024px',

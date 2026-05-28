@@ -2,30 +2,25 @@ import type { NextConfig } from 'next'
 
 const nextConfig: NextConfig = {
   /* config options here */
-  
+
   // Disable typed routes for faster compilation
   typedRoutes: false,
-  
+
   // Optimize compilation performance
   experimental: {
     // Speed up Fast Refresh and reduce bundle size
-    optimizePackageImports: [
-      'lucide-react',
-      'framer-motion',
-      'viem',
-      'wagmi',
-    ],
+    optimizePackageImports: ['lucide-react', 'framer-motion', 'viem', 'wagmi'],
     // Turbo mode already enabled via CLI flag
-    
+
     // Optimize server component loading
     optimizeCss: true,
   },
-  
+
   // Turbopack configuration (used for builds in Next.js 16+)
   turbopack: {
     // Turbopack is used for builds, webpack config above is for legacy webpack builds only
   },
-  
+
   // Optimize webpack for faster builds (when using --webpack flag)
   webpack: (config, { isServer, dev }) => {
     // In development, skip heavy optimizations for faster compilation
@@ -36,11 +31,11 @@ const nextConfig: NextConfig = {
         removeEmptyChunks: false,
         splitChunks: false,
       }
-      
+
       // Faster module resolution
       config.resolve.symlinks = false
     }
-    
+
     // Exclude large ABI files from eager compilation
     if (!isServer && dev) {
       config.module = {
@@ -54,7 +49,7 @@ const nextConfig: NextConfig = {
         ],
       }
     }
-    
+
     // Skip type checking in development (use editor/CI for this)
     if (!isServer) {
       config.resolve.fallback = {
@@ -64,22 +59,22 @@ const nextConfig: NextConfig = {
         tls: false,
       }
     }
-    
+
     return config
   },
-  
+
   // Note: SWC minifier is the default in Next.js 16+
-  
+
   // Disable source maps in development for faster compilation
   productionBrowserSourceMaps: false,
-  
+
   // Reduce logging in development
   logging: {
     fetches: {
       fullUrl: false,
     },
   },
-  
+
   // Optimize images
   images: {
     formats: ['image/avif', 'image/webp'],
