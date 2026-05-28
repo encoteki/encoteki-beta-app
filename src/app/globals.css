@@ -5,6 +5,8 @@
 
 html {
   scroll-behavior: smooth;
+  font-optical-sizing: auto;
+  font-kerning: normal;
 }
 
 @layer base {
@@ -42,7 +44,7 @@ html {
   }
 
   .mint-container {
-    @apply flex min-h-screen w-full flex-col justify-center bg-khaki-90 px-6 py-16 tablet:px-12 tablet:py-24 desktop:py-42;
+    @apply flex min-h-screen w-full flex-col justify-center bg-khaki-90 px-4 py-10 sm:px-6 sm:py-16 tablet:px-12 tablet:py-24 desktop:py-42;
   }
   .mint-modal {
     @apply mx-auto flex w-full max-w-100 flex-col gap-2 rounded-4xl bg-white p-5 shadow-lg tablet:w-100 tablet:gap-4 tablet:p-6;

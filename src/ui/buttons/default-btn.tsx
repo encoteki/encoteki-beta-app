@@ -20,7 +20,7 @@ export default function DefaultButton({
       type={type}
       onClick={onClick}
       disabled={disabled}
-      className={`rounded-full px-4 py-3 transition-all duration-300 tablet:px-6 desktop:px-6 desktop:py-3 ${classname} ${
+      className={`rounded-full px-4 py-3 text-sm font-medium transition-all duration-300 tablet:px-6 desktop:px-6 desktop:py-3 ${classname} ${
         variant === 'primary'
           ? 'bg-primary-green text-white hover:enabled:bg-green-10'
           : 'border border-primary-green/10 bg-white text-primary-green hover:enabled:bg-primary-green/10'

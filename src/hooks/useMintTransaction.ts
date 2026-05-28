@@ -16,6 +16,7 @@ import {
   decodeEventLog,
 } from 'viem'
 import { getAbi, getExplorerUrl, isHubChain } from '@/constants/contracts/tsb'
+import { humanizeError } from '@/utils/humanize-error.util'
 import { tsbSatelliteABI } from '@/constants/abis/tsbSatellite.abi'
 import { useLayerZeroScan } from './useLayerZeroScan'
 
@@ -39,6 +40,10 @@ interface UseMintTransactionProps {
   referralCode?: string
   targetContract: Address
   chainId: number
+  // Pre-seed the tx hash when resuming after a remount (e.g. restore from
+  // background). Lets receipt watching and LZ polling pick up where they
+  // left off without requiring a new writeContract call.
+  initialHash?: Hex | null
 }
 
 export function useMintTransaction({
@@ -47,6 +52,7 @@ export function useMintTransaction({
   referralCode,
   targetContract,
   chainId,
+  initialHash,
 }: UseMintTransactionProps) {
   const { address: userAddress, chainId: walletChainId } = useConnection()
   const { mutateAsync: switchChainAsync } = useSwitchChain()
@@ -134,15 +140,20 @@ export function useMintTransaction({
     reset: resetMint,
   } = useWriteContract()
 
+  // Prefer the live wagmi hash; fall back to initialHash when resuming after
+  // a remount (e.g. restore-from-background). This re-enables receipt watching
+  // and LZ polling without a new on-chain write.
+  const effectiveMintHash = mintHash ?? initialHash ?? undefined
+
   const mintReceipt = useWaitForTransactionReceipt({
-    hash: mintHash,
-    query: { enabled: !!mintHash },
+    hash: effectiveMintHash,
+    query: { enabled: !!effectiveMintHash },
   })
 
   // ───────────── LZ Scan (Satellite cross-chain tracking) ─────────────
   const isSourceConfirmed = !isHub && mintReceipt.isSuccess
   const { lzStatus, dstTxHash } = useLayerZeroScan(
-    isSourceConfirmed ? mintHash : undefined,
+    isSourceConfirmed ? effectiveMintHash : undefined,
   )
 
   // ───────────── Extract events from mint receipt ─────────────
@@ -194,12 +205,7 @@ export function useMintTransaction({
 
     if (anyError) {
       setPhase('error')
-      const err = anyError as any
-      setErrorMsg(
-        err?.shortMessage ||
-          err?.message?.slice(0, 120) ||
-          'Transaction failed',
-      )
+      setErrorMsg(humanizeError(anyError))
       return
     }
 
@@ -292,19 +298,35 @@ export function useMintTransaction({
       try {
         setPhase('switching-chain')
         await switchChainAsync({ chainId })
-      } catch (err: any) {
+      } catch (err: unknown) {
         setPhase('error')
-        setErrorMsg(
-          err?.shortMessage ||
-            err?.message?.slice(0, 120) ||
-            'Failed to switch network',
-        )
+        setErrorMsg(humanizeError(err))
         return
       }
       if (abortRef.current) return
+
+      // After switching, `needsApproval` in this closure reflects the allowance
+      // fetched before the switch (possibly undefined if wallet was on the wrong
+      // chain). Re-fetch immediately and use the fresh value to decide whether
+      // to approve, so we don't skip the approve step on the new chain.
+      if (!isNative) {
+        const { data: freshAllowance } = await refetchAllowance()
+        if (abortRef.current) return
+        if (freshAllowance !== undefined && freshAllowance < priceBigInt) {
+          writeApprove({
+            chainId,
+            address: tokenAddress,
+            abi: erc20Abi,
+            functionName: 'approve',
+            args: [targetContract, priceBigInt],
+          })
+          return
+        }
+        // Fresh allowance sufficient — skip straight to mint below.
+      }
     }
 
-    // Step 1: Approve if needed
+    // Step 1: Approve if needed (wallet was already on the correct chain)
     if (needsApproval && !isNative) {
       writeApprove({
         chainId,
@@ -332,6 +354,7 @@ export function useMintTransaction({
     walletChainId,
     chainId,
     switchChainAsync,
+    refetchAllowance,
     needsApproval,
     isNative,
     tokenAddress,
@@ -379,9 +402,9 @@ export function useMintTransaction({
   const explorerUrl = useMemo(() => {
     const baseUrl = getExplorerUrl(chainId)
     if (!baseUrl) return null
-    if (mintHash) return `${baseUrl}${mintHash}`
+    if (effectiveMintHash) return `${baseUrl}${effectiveMintHash}`
     return null
-  }, [chainId, mintHash])
+  }, [chainId, effectiveMintHash])
 
   const isReady =
     !!userAddress &&
@@ -397,7 +420,7 @@ export function useMintTransaction({
     isReady,
 
     // Hashes
-    sourceHash: mintHash || null,
+    sourceHash: effectiveMintHash || null,
     dstTxHash,
     explorerUrl,
 

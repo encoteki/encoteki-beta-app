@@ -27,7 +27,17 @@ export const MintButton = ({
     setReqId,
     setDstTxHash,
     setErrorMessage,
+    sourceHash,
+    status,
   } = useMintCtx()
+
+  // When the component mounts after a restore-from-background, status is
+  // already INFLIGHT and sourceHash is the confirmed source tx hash. Pass it
+  // as initialHash so useMintTransaction can resume receipt watching and LZ
+  // polling immediately without a new on-chain write.
+  // On a fresh mint (status === REVIEW) sourceHash is null, so this is a no-op.
+  const initialHash =
+    status === MintStatus.INFLIGHT && sourceHash ? sourceHash : null
 
   const mint = useMintTransaction({
     tokenAddress,
@@ -35,6 +45,7 @@ export const MintButton = ({
     referralCode,
     targetContract,
     chainId,
+    initialHash,
   })
 
   // Sync mint phase → context status
@@ -88,17 +99,17 @@ export const MintButton = ({
 
   const getButtonLabel = () => {
     if (!mint.isReady) return 'Preparing...'
-    if (mint.phase === 'switching-chain') return 'Switching Network...'
+    if (mint.phase === 'switching-chain') return 'Switching network...'
     if (mint.phase === 'signing-approve' || mint.phase === 'signing')
-      return 'Check Wallet...'
+      return 'Check wallet...'
     if (mint.phase === 'approving') return 'Approving...'
     if (mint.phase === 'mining')
       return mint.isCrossChain ? 'Sending...' : 'Minting...'
-    if (mint.phase === 'inflight') return 'Cross-chain in flight...'
+    if (mint.phase === 'inflight') return 'Bridging tokens...'
     if (mint.phase === 'minting') return 'Minting...'
     if (mint.phase === 'error') return 'Retry'
     if (mint.phase === 'success') return 'Success!'
-    return mint.needsApproval ? 'Approve & Mint' : 'Confirm Mint'
+    return mint.needsApproval ? 'Approve & mint' : 'Confirm mint'
   }
 
   const isDisabled =
@@ -113,23 +124,17 @@ export const MintButton = ({
     mint.phase === 'success'
 
   return (
-    <div className="flex flex-col gap-3">
-      <DefaultButton
-        onClick={
-          mint.phase === 'error'
-            ? () => {
-                mint.reset()
-              }
-            : onClickConfirm
-        }
-        disabled={isDisabled}
-      >
-        {getButtonLabel()}
-      </DefaultButton>
-
-      {mint.errorMsg && (
-        <p className="text-center text-sm text-red-500">{mint.errorMsg}</p>
-      )}
-    </div>
+    <DefaultButton
+      onClick={
+        mint.phase === 'error'
+          ? () => {
+              mint.reset()
+            }
+          : onClickConfirm
+      }
+      disabled={isDisabled}
+    >
+      {getButtonLabel()}
+    </DefaultButton>
   )
 }

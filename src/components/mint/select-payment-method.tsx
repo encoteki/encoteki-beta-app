@@ -96,7 +96,9 @@ export default function SelectPaymentMethod() {
     if (selectedChainId === null && walletChainId) {
       const isSupported = allChains.some((c) => c.chainId === walletChainId)
       setSelectedChainId(
-        isSupported ? walletChainId : (enabledChains[0]?.chainId ?? walletChainId),
+        isSupported
+          ? walletChainId
+          : (enabledChains[0]?.chainId ?? walletChainId),
       )
     }
   }, [])
@@ -185,40 +187,68 @@ export default function SelectPaymentMethod() {
 
   return (
     <div className="mx-auto flex w-full max-w-md flex-col">
-      {/* Background mint toast */}
-      <AnimatePresence>
-        {backgroundMint && (
+      {/* Priority notifications — only one visible at a time; recovery beats background toast */}
+      <AnimatePresence mode="wait">
+        {!isHub && pendingReqId && mintRequestData ? (
+          <motion.div
+            key="recovery-notice"
+            initial={{ opacity: 0, y: -10 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -10 }}
+            transition={{ duration: 0.2, ease: [0.16, 1, 0.3, 1] as const }}
+            className="mb-6 rounded-xl border border-khaki-60 bg-khaki-90 p-4"
+          >
+            <div className="flex items-center gap-2">
+              <div className="h-2 w-2 animate-pulse rounded-full bg-neutral-40" />
+              <p className="text-sm font-semibold text-neutral-10">
+                Finish your pending mint
+              </p>
+            </div>
+            <p className="mt-2 text-xs leading-relaxed text-neutral-40">
+              A previous mint is still processing. Complete or cancel it before
+              starting a new one.
+            </p>
+            <button
+              onClick={() => setStatus(MintStatus.INFLIGHT)}
+              className="mt-3 text-xs font-semibold text-primary-green transition-colors hover:text-green-10"
+            >
+              Check status
+            </button>
+          </motion.div>
+        ) : backgroundMint ? (
           <motion.button
+            key="background-mint"
+            role="status"
             initial={{ opacity: 0, y: -10 }}
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0, scale: 0.95 }}
             transition={{ duration: 0.2, ease: [0.16, 1, 0.3, 1] as const }}
             onClick={restoreFromBackground}
-            className="mb-4 flex w-full items-center gap-3 rounded-xl border border-border bg-muted/20 p-3 text-left transition-all hover:bg-muted/40 active:scale-[0.98]"
+            className="mb-6 flex w-full items-center gap-3 rounded-xl border border-neutral-60 bg-khaki-90 p-3 text-left transition-all hover:bg-khaki-80 active:scale-[0.98]"
           >
-            <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-chart-3/10">
+            <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-khaki-80">
               {backgroundMint.status === MintStatus.SUCCESS ? (
-                <div className="h-3 w-3 rounded-full bg-chart-2" />
+                <div className="h-3 w-3 rounded-full bg-primary-green" />
               ) : backgroundMint.status === MintStatus.FAILED ? (
                 <div className="h-3 w-3 rounded-full bg-destructive" />
               ) : (
-                <div className="h-3 w-3 animate-pulse rounded-full bg-chart-3" />
+                <div className="h-3 w-3 animate-pulse rounded-full bg-neutral-40" />
               )}
             </div>
             <div className="flex-1">
-              <p className="text-sm font-medium text-foreground">
+              <p className="text-sm font-medium text-neutral-10">
                 {backgroundMint.status === MintStatus.SUCCESS
                   ? 'Mint completed!'
                   : backgroundMint.status === MintStatus.FAILED
                     ? 'Mint failed'
                     : 'Mint in progress'}
               </p>
-              <p className="text-xs text-muted-foreground">
+              <p className="text-xs text-neutral-40">
                 Tap to view transaction status
               </p>
             </div>
             <svg
-              className="h-4 w-4 text-muted-foreground"
+              className="h-4 w-4 text-neutral-40"
               fill="none"
               viewBox="0 0 24 24"
               stroke="currentColor"
@@ -231,70 +261,47 @@ export default function SelectPaymentMethod() {
               />
             </svg>
           </motion.button>
-        )}
+        ) : null}
       </AnimatePresence>
 
-      {/* Pending cross-chain recovery notice */}
-      {!isHub && pendingReqId && mintRequestData && (
-        <div className="mb-6 rounded-xl border border-chart-4/30 bg-chart-4/5 p-4">
-          <div className="flex items-center gap-2">
-            <div className="h-2 w-2 animate-pulse rounded-full bg-chart-4"></div>
-            <p className="text-sm font-semibold text-foreground">
-              Finish your pending mint
-            </p>
-          </div>
-          <p className="mt-2 text-xs leading-relaxed text-muted-foreground">
-            A previous LayerZero transfer is still processing. Complete or
-            cancel it before starting a new one.
-          </p>
-          <button
-            onClick={() => setStatus(MintStatus.INFLIGHT)}
-            className="mt-3 text-xs font-semibold text-chart-4 transition-colors hover:text-chart-4/80"
-          >
-            Check status
-          </button>
-        </div>
-      )}
-
-      {/* Chain Selection Dropdown */}
-      <div className="mb-3 text-left">
+      {/* Network Selection */}
+      <div className="mb-2 text-left">
         <h2
           ref={headingRef}
           tabIndex={-1}
-          className="text-lg font-semibold tracking-tight text-foreground focus:outline-none"
+          className="text-2xl leading-tight font-semibold tracking-tight text-neutral-10 focus:outline-none"
         >
           Network
         </h2>
       </div>
 
-      <div className="relative mb-6">
+      <div className="relative mb-8">
         <button
           aria-haspopup="listbox"
           aria-expanded={chainDropdownOpen}
           aria-controls="chain-dropdown"
-          role="combobox"
           onClick={() => setChainDropdownOpen(!chainDropdownOpen)}
-          className="flex w-full items-center justify-between rounded-xl border border-border bg-background px-4 py-3 shadow-sm transition-all hover:border-ring focus:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 active:scale-[0.98] sm:py-4"
+          className="flex w-full items-center justify-between rounded-xl border border-neutral-60 bg-white px-4 py-3 shadow-sm transition-colors hover:bg-khaki-90 focus:outline-none focus-visible:ring-2 focus-visible:ring-primary-green focus-visible:ring-offset-2"
         >
           <div className="flex items-center gap-3">
             {activeConfig && getChainIcon(activeConfig.key) && (
-              <figure className="flex h-6 w-6 items-center justify-center overflow-hidden rounded-full">
+              <figure className="flex h-7 w-7 shrink-0 items-center justify-center overflow-hidden rounded-full ring-1 ring-neutral-60">
                 <Image
                   src={getChainIcon(activeConfig.key)!}
                   alt={activeConfig.label}
-                  width={24}
-                  height={24}
+                  width={28}
+                  height={28}
                   className="object-cover"
                 />
               </figure>
             )}
-            <span className="truncate text-base font-medium text-foreground">
-              {activeConfig?.label ?? 'Select chain'}
+            <span className="text-base font-medium text-neutral-10">
+              {activeConfig?.label ?? 'Select network'}
             </span>
           </div>
           <ChevronDown
-            size={18}
-            className={`text-muted-foreground transition-transform duration-200 ${chainDropdownOpen ? 'rotate-180' : ''}`}
+            size={16}
+            className={`shrink-0 text-neutral-40 transition-transform duration-200 ${chainDropdownOpen ? 'rotate-180' : ''}`}
           />
         </button>
 
@@ -307,7 +314,7 @@ export default function SelectPaymentMethod() {
               animate={{ opacity: 1, y: 0, filter: 'blur(0px)' }}
               exit={{ opacity: 0, y: -10, filter: 'blur(4px)' }}
               transition={{ duration: 0.2, ease: [0.16, 1, 0.3, 1] as const }}
-              className="absolute z-20 mt-2 w-full overflow-hidden rounded-xl border border-border bg-background py-1 shadow-lg"
+              className="absolute z-20 mt-2 max-h-56 w-full overflow-hidden overflow-y-auto rounded-xl border border-neutral-60 bg-white shadow-lg"
             >
               {enabledChains.map((chain) => {
                 const isActive = chain.chainId === activeChainId
@@ -326,8 +333,8 @@ export default function SelectPaymentMethod() {
                         handleChainSelect(chain.chainId)
                       }
                     }}
-                    className={`flex w-full cursor-pointer items-center justify-between px-4 py-3 text-left transition-colors focus:bg-muted/30 focus:outline-none ${
-                      isActive ? 'bg-muted/50' : 'hover:bg-muted/30'
+                    className={`flex w-full cursor-pointer items-center justify-between px-4 py-3 text-left transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-primary-green/40 focus-visible:ring-inset ${
+                      isActive ? 'bg-khaki-80' : 'hover:bg-khaki-90'
                     }`}
                   >
                     <div className="flex items-center gap-3">
@@ -342,14 +349,16 @@ export default function SelectPaymentMethod() {
                           />
                         </figure>
                       )}
-                      <span
-                        className={`truncate text-base font-medium ${isActive ? 'font-semibold text-primary' : 'text-foreground'}`}
-                      >
-                        {chain.label}
-                      </span>
+                      <div className="flex flex-col">
+                        <span
+                          className={`text-sm font-medium ${isActive ? 'font-semibold text-primary-green' : 'text-neutral-10'}`}
+                        >
+                          {chain.label}
+                        </span>
+                      </div>
                     </div>
                     {isActive && (
-                      <div className="h-2 w-2 rounded-full bg-primary shadow-sm" />
+                      <div className="h-2 w-2 rounded-full bg-primary-green shadow-sm" />
                     )}
                   </li>
                 )
@@ -361,7 +370,11 @@ export default function SelectPaymentMethod() {
 
       {/* Chain switch error message */}
       {switchChainError && (
-        <div className="mb-6 rounded-xl border border-destructive/20 bg-destructive/5 p-4 text-left">
+        <div
+          role="alert"
+          aria-live="assertive"
+          className="mb-6 rounded-xl border border-destructive/20 bg-destructive/5 p-4 text-left"
+        >
           <div className="flex items-start gap-3">
             <div className="mt-0.5 shrink-0 rounded-full bg-destructive/10 p-1">
               <svg
@@ -379,12 +392,12 @@ export default function SelectPaymentMethod() {
               </svg>
             </div>
             <div>
-              <p className="text-sm font-medium text-foreground">
+              <p className="text-sm font-medium text-neutral-10">
                 Network switch failed
               </p>
-              <p className="mt-1 text-xs text-muted-foreground">
+              <p className="mt-1 text-xs text-neutral-40">
                 Switch to{' '}
-                <span className="font-semibold text-foreground">
+                <span className="font-semibold text-neutral-10">
                   {activeConfig?.label}
                 </span>{' '}
                 in your wallet or try again.
@@ -395,28 +408,28 @@ export default function SelectPaymentMethod() {
       )}
 
       {/* Payment Methods */}
-      <div className="mb-3 text-left">
-        <h3 className="text-lg font-semibold tracking-tight text-foreground">
+      <div className="mb-2 text-left">
+        <h3 className="text-xs font-semibold tracking-wider text-neutral-40 uppercase">
           Token
         </h3>
       </div>
 
-      <div className="mb-6 flex flex-col gap-3">
+      <div className="mb-8 flex flex-col gap-3">
         {isLoadingState ? (
           Array.from({ length: skeletonCount }).map((_, i) => (
             <div
               key={i}
-              className="flex w-full items-center justify-between rounded-xl border border-border bg-background p-3 sm:p-4"
+              className="flex w-full items-center justify-between rounded-xl border border-neutral-60 bg-white p-3 sm:p-4"
             >
               <div className="flex items-center gap-3 sm:gap-4">
-                <Skeleton className="h-8 w-8 shrink-0 rounded-full bg-muted sm:h-10 sm:w-10" />
+                <Skeleton className="h-8 w-8 shrink-0 rounded-full bg-khaki-70 sm:h-10 sm:w-10" />
                 <div className="flex flex-col gap-2 text-left">
-                  <Skeleton className="h-4 w-16 rounded bg-muted sm:w-20" />
-                  <Skeleton className="h-3 w-12 rounded bg-muted sm:w-16" />
+                  <Skeleton className="h-4 w-16 rounded bg-khaki-70 sm:w-20" />
+                  <Skeleton className="h-3 w-12 rounded bg-khaki-70 sm:w-16" />
                 </div>
               </div>
               <div className="text-right">
-                <Skeleton className="h-5 w-20 rounded bg-muted sm:w-24" />
+                <Skeleton className="h-5 w-20 rounded bg-khaki-70 sm:w-24" />
               </div>
             </div>
           ))
@@ -433,18 +446,19 @@ export default function SelectPaymentMethod() {
             ))}
           </>
         ) : (
-          <div className="py-6 text-center text-sm font-medium text-muted-foreground">
-            Tokens not available on{' '}
-            {activeConfig?.label ?? `Chain ID: ${activeChainId}`}
+          <div className="py-6 text-center text-sm text-neutral-40">
+            No tokens available on{' '}
+            {activeConfig?.label ?? `Chain ID: ${activeChainId}`}. Try switching
+            to Base or Arbitrum above.
           </div>
         )}
       </div>
 
       {/* Referral indicator (auto-applied from login) */}
       {globalReferralCode && (
-        <div className="mb-6 flex items-center gap-2 text-sm text-muted-foreground">
+        <div className="mb-6 flex items-center gap-2 text-sm text-neutral-40">
           <svg
-            className="h-4 w-4 text-chart-2"
+            className="h-4 w-4 text-primary-green"
             fill="none"
             viewBox="0 0 24 24"
             stroke="currentColor"
@@ -458,7 +472,7 @@ export default function SelectPaymentMethod() {
           </svg>
           <span>
             Referral code{' '}
-            <span className="max-w-50 truncate font-mono font-medium text-foreground">
+            <span className="max-w-50 truncate font-mono font-medium text-neutral-10">
               {globalReferralCode}
             </span>{' '}
             applied

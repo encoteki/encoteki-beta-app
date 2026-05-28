@@ -38,43 +38,39 @@ export default function MintPage() {
       status === MintStatus.MINTING) &&
     !!paymentMethod
 
-  // Animation variants
   const variants = {
-    initial: {
-      opacity: 0,
-      filter: prefersReducedMotion ? 'none' : 'blur(4px)',
-      scale: prefersReducedMotion ? 1 : 0.98,
-    },
+    initial: { opacity: 0 },
     animate: {
       opacity: 1,
-      filter: 'blur(0px)',
-      scale: 1,
+      transition: {
+        duration: prefersReducedMotion ? 0 : 0.2,
+        ease: [0.16, 1, 0.3, 1] as const,
+      },
     },
     exit: {
       opacity: 0,
-      filter: prefersReducedMotion ? 'none' : 'blur(4px)',
-      scale: prefersReducedMotion ? 1 : 0.98,
+      transition: {
+        duration: prefersReducedMotion ? 0 : 0.12,
+        ease: [0.4, 0, 1, 1] as const,
+      },
     },
-  }
-
-  const transition = {
-    duration: prefersReducedMotion ? 0 : 0.35,
-    ease: [0.16, 1, 0.3, 1] as const,
   }
 
   return (
     <main className="mint-container">
       <motion.div
-        layout="position"
+        layout
         className="mint-modal relative overflow-hidden"
         role="region"
         aria-label="Mint Transaction"
         transition={{
-          duration: prefersReducedMotion ? 0 : 0.4,
-          ease: [0.16, 1, 0.3, 1] as const,
+          layout: {
+            duration: prefersReducedMotion ? 0 : 0.25,
+            ease: [0.16, 1, 0.3, 1] as const,
+          },
         }}
       >
-        <AnimatePresence mode="popLayout" initial={false}>
+        <AnimatePresence mode="wait" initial={false}>
           {status === MintStatus.HOME && (
             <motion.div
               key="home"
@@ -82,7 +78,6 @@ export default function MintPage() {
               initial="initial"
               animate="animate"
               exit="exit"
-              transition={transition}
               className="w-full shrink-0"
             >
               <SelectPaymentMethod />
@@ -96,7 +91,6 @@ export default function MintPage() {
               initial="initial"
               animate="animate"
               exit="exit"
-              transition={transition}
               className={`w-full shrink-0 ${isMinting ? 'hidden' : ''}`}
             >
               <ReviewTransaction />
@@ -110,7 +104,6 @@ export default function MintPage() {
               initial="initial"
               animate="animate"
               exit="exit"
-              transition={transition}
               className="w-full shrink-0"
             >
               <TransactionStatus status={status} />
