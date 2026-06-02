@@ -2,6 +2,7 @@
 
 import { getIronSession } from 'iron-session'
 import { cookies } from 'next/headers'
+import { verifyMessage } from 'viem'
 import { supabaseAdmin } from '@/lib/supabase/admin'
 import { sessionOptions, SessionData } from '@/lib/session'
 import { getAuthSession } from './auth'
@@ -20,6 +21,16 @@ export async function submitReferralCode(code: string, signature: string) {
       error:
         'Invalid code format. Code must be 6 characters letters and numbers only.',
     }
+  }
+
+  const valid = await verifyMessage({
+    address: auth.address as `0x${string}`,
+    message: `Set ref code: ${code}`,
+    signature: signature as `0x${string}`,
+  }).catch(() => false)
+
+  if (!valid) {
+    return { success: false, error: 'Invalid signature' }
   }
 
   try {
@@ -107,8 +118,12 @@ export async function applyReferralCode(code: string | null) {
     return { success: false, error: auth.error }
   }
 
+  if (!code) {
+    return { success: false, error: 'A referral code is required.' }
+  }
+
   try {
-    let requestedCode = code ? code.toUpperCase().trim() : null
+    let requestedCode = code.toUpperCase().trim()
 
     if (requestedCode) {
       if (!/^[A-Z0-9]{6}$/.test(requestedCode)) {

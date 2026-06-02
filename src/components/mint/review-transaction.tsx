@@ -11,7 +11,7 @@ import { MockMintButton } from '../../ui/buttons/mock-mint-btn'
 import { Address } from 'viem'
 import { useConnection } from 'wagmi'
 
-const IS_DEV = process.env.NEXT_PUBLIC_APP_ENV === 'development'
+const IS_DEV = process.env.NODE_ENV === 'development'
 
 export default function ReviewTransaction() {
   const {
