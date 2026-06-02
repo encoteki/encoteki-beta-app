@@ -13,11 +13,11 @@ export interface PaginationInfo {
 }
 
 export interface LeaderboardProps {
-  title: string
   users: LeaderboardUser[]
   currentUserAddress?: string
-  updatedAt?: string
   loading?: boolean
+  error?: boolean
   pagination?: PaginationInfo
   onPageChange?: (page: number) => void
+  onRetry?: () => void
 }
