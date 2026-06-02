@@ -9,9 +9,9 @@ import { fmtPts, truncate, Gem } from './utils'
 // Maps fill percentage to elevation palette: alpine green → meadow straw → lowland dried-grass.
 // "You" always reads green regardless of standing.
 function fillBarColor(pct: number, highlighted: boolean): string {
-  if (highlighted || pct >= 0.70) return 'rgba(36,98,52,0.13)'    // canopy green — alpine
-  if (pct >= 0.35)               return 'rgba(218,218,159,0.55)'  // straw — meadow
-  return                                'rgba(231,231,192,0.48)'  // dried-grass — lowland
+  if (highlighted || pct >= 0.7) return 'rgba(36,98,52,0.13)' // canopy green — alpine
+  if (pct >= 0.35) return 'rgba(218,218,159,0.55)' // straw — meadow
+  return 'rgba(231,231,192,0.48)' // dried-grass — lowland
 }
 
 function isMe(entry: LeaderboardUser, currentAddress?: string) {
@@ -88,15 +88,20 @@ export function LeaderboardList({
                 <motion.span
                   aria-hidden
                   initial={{ scaleX: 0 }}
-                  animate={{ scaleX: Math.round((entry.points / maxPoints) * 100) / 100 }}
+                  animate={{
+                    scaleX: Math.round((entry.points / maxPoints) * 100) / 100,
+                  }}
                   transition={{
                     duration: 0.65,
                     ease: [0.16, 1, 0.3, 1],
                     delay: reduced ? 0 : Math.min(i * 0.04, 0.28) + 0.4,
                   }}
-                  className="absolute inset-y-1 left-1 right-1 rounded-lg"
+                  className="absolute inset-y-1 right-1 left-1 rounded-lg"
                   style={{
-                    backgroundColor: fillBarColor(entry.points / maxPoints, highlighted),
+                    backgroundColor: fillBarColor(
+                      entry.points / maxPoints,
+                      highlighted,
+                    ),
                     transformOrigin: 'left',
                   }}
                 />
@@ -117,7 +122,11 @@ export function LeaderboardList({
                     <motion.span
                       initial={reduced ? false : { opacity: 0, scale: 0.7 }}
                       animate={{ opacity: 1, scale: 1 }}
-                      transition={{ duration: 0.35, ease: [0.16, 1, 0.3, 1], delay: 0.15 }}
+                      transition={{
+                        duration: 0.35,
+                        ease: [0.16, 1, 0.3, 1],
+                        delay: 0.15,
+                      }}
                       className="ml-2 inline-block text-caption font-bold tracking-[0.2em] text-primary-green uppercase"
                     >
                       you
@@ -149,7 +158,7 @@ export function LeaderboardList({
               onClick={() => onPageChange(page - 1)}
               disabled={page === 1}
               aria-label="Previous page"
-              className="inline-flex min-h-11 items-center rounded-sm px-2 text-small font-medium text-neutral-40 transition-colors hover:text-neutral-10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-green/50 disabled:cursor-not-allowed disabled:opacity-30"
+              className="inline-flex min-h-11 items-center rounded-sm px-2 text-small font-medium text-neutral-40 transition-colors hover:text-neutral-10 focus-visible:ring-2 focus-visible:ring-primary-green/50 focus-visible:outline-none disabled:cursor-not-allowed disabled:opacity-30"
             >
               ← Previous
             </button>
@@ -157,7 +166,7 @@ export function LeaderboardList({
               onClick={() => onPageChange(page + 1)}
               disabled={page === totalPages}
               aria-label="Next page"
-              className="inline-flex min-h-11 items-center rounded-sm px-2 text-small font-medium text-neutral-40 transition-colors hover:text-neutral-10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-green/50 disabled:cursor-not-allowed disabled:opacity-30"
+              className="inline-flex min-h-11 items-center rounded-sm px-2 text-small font-medium text-neutral-40 transition-colors hover:text-neutral-10 focus-visible:ring-2 focus-visible:ring-primary-green/50 focus-visible:outline-none disabled:cursor-not-allowed disabled:opacity-30"
             >
               Next →
             </button>

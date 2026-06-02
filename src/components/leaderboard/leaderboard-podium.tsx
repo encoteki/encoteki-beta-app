@@ -8,9 +8,9 @@ import { fmtPts, truncate, Gem } from './utils'
 // Brand palette from DESIGN.md — single saturated accent at peak
 // fg: color for text/icons ON the colored bar
 // labelFg: color for text ABOVE the bar (against page bg khaki-90 #F6F6EC)
-const FIRST  = { bg: '#246234', fg: '#F0FAF3', labelFg: '#246234' }  // canopy green — darkest elevation
-const SECOND = { bg: '#5D9C72', fg: '#F0FAF3', labelFg: '#246234' }  // medium sage — mid elevation
-const THIRD  = { bg: '#9ECFB0', fg: '#246234', labelFg: '#246234' }  // light mint — lowest elevation
+const FIRST = { bg: '#246234', fg: '#F0FAF3', labelFg: '#246234' } // canopy green — darkest elevation
+const SECOND = { bg: '#5D9C72', fg: '#F0FAF3', labelFg: '#246234' } // medium sage — mid elevation
+const THIRD = { bg: '#9ECFB0', fg: '#246234', labelFg: '#246234' } // light mint — lowest elevation
 
 // Topographic silhouettes — natural terrain, not trophy pedestals
 const WAVES = [
@@ -21,11 +21,10 @@ const WAVES = [
 
 // Visual order: left=2nd, center=1st, right=3rd
 const PODIUM = [
-  { rank: 2, h: 'h-28 tablet:h-32', ...SECOND, wave: WAVES[0], delay: 0.1  },
-  { rank: 1, h: 'h-44 tablet:h-48', ...FIRST,  wave: WAVES[1], delay: 0.22 },
-  { rank: 3, h: 'h-20 tablet:h-24', ...THIRD,  wave: WAVES[2], delay: 0.34 },
+  { rank: 2, h: 'h-28 tablet:h-32', ...SECOND, wave: WAVES[0], delay: 0.1 },
+  { rank: 1, h: 'h-44 tablet:h-48', ...FIRST, wave: WAVES[1], delay: 0.22 },
+  { rank: 3, h: 'h-20 tablet:h-24', ...THIRD, wave: WAVES[2], delay: 0.34 },
 ] as const
-
 
 function CountUp({
   target,
@@ -104,7 +103,12 @@ function PodiumParticles() {
     canvas.width = canvas.offsetWidth || 1
     canvas.height = canvas.offsetHeight || 176
 
-    const io = new IntersectionObserver(([e]) => { visible = e.isIntersecting }, { threshold: 0 })
+    const io = new IntersectionObserver(
+      ([e]) => {
+        visible = e.isIntersecting
+      },
+      { threshold: 0 },
+    )
     io.observe(canvas)
 
     const mk = (): Pt => ({
@@ -176,7 +180,7 @@ export function LeaderboardPodium({ top3 }: LeaderboardPodiumProps) {
   }, [reduced])
 
   return (
-    <div className="relative flex items-end justify-center gap-3 tablet:gap-5 pt-8 pb-0">
+    <div className="relative flex items-end justify-center gap-3 pt-8 pb-0 tablet:gap-5">
       {PODIUM.map((cfg, i) => {
         const entry = ordered[i]
         const isCenter = cfg.rank === 1
@@ -201,7 +205,11 @@ export function LeaderboardPodium({ top3 }: LeaderboardPodiumProps) {
                 <motion.div
                   aria-hidden
                   animate={reduced ? {} : { y: [0, -3, 0] }}
-                  transition={{ duration: 2.8, repeat: Infinity, ease: 'easeInOut' }}
+                  transition={{
+                    duration: 2.8,
+                    repeat: Infinity,
+                    ease: 'easeInOut',
+                  }}
                 >
                   <Gem size={20} color={cfg.labelFg} />
                 </motion.div>
@@ -211,14 +219,18 @@ export function LeaderboardPodium({ top3 }: LeaderboardPodiumProps) {
                 <>
                   <span
                     className={`w-full truncate text-center font-mono ${
-                      isCenter ? 'text-small font-bold' : 'text-caption font-medium'
+                      isCenter
+                        ? 'text-small font-bold'
+                        : 'text-caption font-medium'
                     }`}
                     style={{ color: cfg.labelFg }}
                     title={entry.walletAddress}
                   >
                     {truncate(entry.walletAddress)}
                   </span>
-                  <div className={`flex items-center ${isCenter ? 'gap-1.5' : 'gap-1'}`}>
+                  <div
+                    className={`flex items-center ${isCenter ? 'gap-1.5' : 'gap-1'}`}
+                  >
                     <Gem size={isCenter ? 14 : 10} color={cfg.labelFg} />
                     <span
                       className={`font-mono font-black tracking-tight tabular-nums ${
@@ -235,7 +247,10 @@ export function LeaderboardPodium({ top3 }: LeaderboardPodiumProps) {
                   </div>
                 </>
               ) : (
-                <span style={{ color: cfg.labelFg, opacity: 0.35 }} className="text-caption">
+                <span
+                  style={{ color: cfg.labelFg, opacity: 0.35 }}
+                  className="text-caption"
+                >
                   —
                 </span>
               )}
@@ -258,7 +273,7 @@ export function LeaderboardPodium({ top3 }: LeaderboardPodiumProps) {
               }}
             >
               <span
-                className="absolute right-2 bottom-1 select-none font-mono text-7xl font-black leading-none"
+                className="absolute right-2 bottom-1 font-mono text-7xl leading-none font-black select-none"
                 style={{ color: cfg.fg, opacity: 0.15 }}
                 aria-hidden
               >

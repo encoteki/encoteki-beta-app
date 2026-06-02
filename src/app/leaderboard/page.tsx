@@ -5,7 +5,7 @@ import { AnimatePresence, motion } from 'motion/react'
 import { useConnection, useSignMessage } from 'wagmi'
 import DefaultButton from '@/ui/buttons/default-btn'
 import { submitReferralCode, getUserReferralCode } from '@/actions/referral'
-import { Leaderboard } from '@/components/leaderboard/Leaderboard'
+import { Leaderboard } from '@/components/leaderboard/leaderboard'
 import { fmtPts, Gem } from '@/components/leaderboard/utils'
 import type { LeaderboardUser, PaginationInfo } from '@/types/leaderboard.types'
 

@@ -2,23 +2,35 @@
 
 import { useCallback, useMemo, useRef, useState } from 'react'
 import { AnimatePresence, motion, useReducedMotion } from 'motion/react'
-import { LeaderboardPodium } from './LeaderboardPodium'
-import { LeaderboardList } from './LeaderboardList'
-import type { LeaderboardProps, LeaderboardUser, PaginationInfo } from '@/types/leaderboard.types'
+import { LeaderboardPodium } from './leaderboard-podium'
+import { LeaderboardList } from './leaderboard-list'
+import type {
+  LeaderboardProps,
+  LeaderboardUser,
+  PaginationInfo,
+} from '@/types/leaderboard.types'
 import { fmtPts, Gem } from './utils'
 
 function SkeletonPodium() {
-  const heights = ['h-28 tablet:h-32', 'h-44 tablet:h-48', 'h-20 tablet:h-24'] as const
+  const heights = [
+    'h-28 tablet:h-32',
+    'h-44 tablet:h-48',
+    'h-20 tablet:h-24',
+  ] as const
   return (
-    <div className="flex items-end justify-center gap-3 tablet:gap-5 pt-8 pb-0">
+    <div className="flex items-end justify-center gap-3 pt-8 pb-0 tablet:gap-5">
       {heights.map((h, i) => (
         <div key={i} className="flex flex-1 flex-col items-center">
           <div className="mb-2 flex flex-col items-center gap-1.5">
-            {i === 1 && <div className="h-5 w-5 motion-safe:animate-pulse rounded bg-khaki-70" />}
-            <div className="h-2.5 w-14 motion-safe:animate-pulse rounded bg-khaki-70" />
-            <div className="h-2.5 w-10 motion-safe:animate-pulse rounded bg-khaki-70" />
+            {i === 1 && (
+              <div className="h-5 w-5 rounded bg-khaki-70 motion-safe:animate-pulse" />
+            )}
+            <div className="h-2.5 w-14 rounded bg-khaki-70 motion-safe:animate-pulse" />
+            <div className="h-2.5 w-10 rounded bg-khaki-70 motion-safe:animate-pulse" />
           </div>
-          <div className={`${h} w-full motion-safe:animate-pulse rounded-t-2xl bg-khaki-70`} />
+          <div
+            className={`${h} w-full rounded-t-2xl bg-khaki-70 motion-safe:animate-pulse`}
+          />
         </div>
       ))}
     </div>
@@ -29,9 +41,18 @@ function SkeletonRow({ delay }: { delay: number }) {
   const s = { animationDelay: `${delay}ms` }
   return (
     <li className="flex items-center gap-3 px-3 py-3.5">
-      <div className="h-4 w-7 motion-safe:animate-pulse rounded bg-khaki-70" style={s} />
-      <div className="h-3 w-32 flex-1 motion-safe:animate-pulse rounded bg-khaki-70" style={s} />
-      <div className="h-3.5 w-12 motion-safe:animate-pulse rounded bg-khaki-70" style={s} />
+      <div
+        className="h-4 w-7 rounded bg-khaki-70 motion-safe:animate-pulse"
+        style={s}
+      />
+      <div
+        className="h-3 w-32 flex-1 rounded bg-khaki-70 motion-safe:animate-pulse"
+        style={s}
+      />
+      <div
+        className="h-3.5 w-12 rounded bg-khaki-70 motion-safe:animate-pulse"
+        style={s}
+      />
     </li>
   )
 }
@@ -80,13 +101,16 @@ export function Leaderboard({
   }, [users, currentUserAddress])
 
   // Detect whether the user's row is in the podium (always visible)
-  const isUserInPodium = isFirstPage && top3.some(
-    (u) =>
-      u &&
-      (u.isCurrentUser ||
-        (currentUserAddress &&
-          u.walletAddress.toLowerCase() === currentUserAddress.toLowerCase())),
-  )
+  const isUserInPodium =
+    isFirstPage &&
+    top3.some(
+      (u) =>
+        u &&
+        (u.isCurrentUser ||
+          (currentUserAddress &&
+            u.walletAddress.toLowerCase() ===
+              currentUserAddress.toLowerCase())),
+    )
 
   // IntersectionObserver for sticky rank bar
   const obsRef = useRef<IntersectionObserver | null>(null)
@@ -110,21 +134,14 @@ export function Leaderboard({
   }, [])
 
   const showStickyBar =
-    !loading &&
-    !!currentUserEntry &&
-    !isUserInPodium &&
-    !isUserRowVisible
+    !loading && !!currentUserEntry && !isUserInPodium && !isUserRowVisible
 
   return (
     <section aria-label="Leaderboard">
       {/* Podium */}
       {showPodium && (
         <>
-          {loading ? (
-            <SkeletonPodium />
-          ) : (
-            <LeaderboardPodium top3={top3} />
-          )}
+          {loading ? <SkeletonPodium /> : <LeaderboardPodium top3={top3} />}
           <div className="mt-6 border-t border-khaki-70/60" />
         </>
       )}
@@ -144,7 +161,7 @@ export function Leaderboard({
           {onRetry && (
             <button
               onClick={onRetry}
-              className="mt-3 rounded-sm text-small font-semibold text-primary-green hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-green/50"
+              className="mt-3 rounded-sm text-small font-semibold text-primary-green hover:underline focus-visible:ring-2 focus-visible:ring-primary-green/50 focus-visible:outline-none"
             >
               Try again
             </button>
@@ -152,7 +169,13 @@ export function Leaderboard({
         </div>
       ) : isEmpty ? (
         <div className="flex flex-col items-center gap-3 py-16 text-center">
-          <svg width="56" height="28" viewBox="0 0 56 28" fill="none" aria-hidden>
+          <svg
+            width="56"
+            height="28"
+            viewBox="0 0 56 28"
+            fill="none"
+            aria-hidden
+          >
             <path
               d="M0 18 C7 13, 14 20, 21 16 C28 12, 35 19, 42 15 C49 11, 52 17, 56 14 L56 28 L0 28 Z"
               fill="#E7E7C0"
@@ -163,7 +186,8 @@ export function Leaderboard({
             />
           </svg>
           <p className="text-small font-medium text-neutral-40">
-            The board is empty. Share your referral code to claim the first spot.
+            The board is empty. Share your referral code to claim the first
+            spot.
           </p>
         </div>
       ) : rest.length > 0 ? (
