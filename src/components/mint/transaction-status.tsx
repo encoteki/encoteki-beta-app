@@ -289,9 +289,7 @@ function MintSteps({
               opacity: step.status === 'pending' ? 0.5 : 1,
             }}
             transition={{ duration: 0.3 }}
-            className={`flex flex-1 justify-center tracking-wide ${
-              compact ? 'text-[10px]' : 'text-xs'
-            } ${
+            className={`flex flex-1 justify-center tracking-wide text-caption ${
               step.status === 'active' || step.status === 'failed'
                 ? 'font-semibold'
                 : 'font-medium'
@@ -588,11 +586,11 @@ export default function TransactionStatus({ status }: TransactionStatusProps) {
               <h3
                 ref={headingRef}
                 tabIndex={-1}
-                className="text-2xl leading-tight font-semibold text-balance text-neutral-10 focus:outline-none"
+                className="text-h2 font-semibold text-balance text-neutral-10 focus:outline-none"
               >
                 {data.message}
               </h3>
-              <p className="mx-auto max-w-[30ch] text-sm wrap-break-word text-neutral-40 sm:max-w-none tablet:text-base">
+              <p className="mx-auto max-w-[30ch] text-small wrap-break-word text-neutral-40 sm:max-w-none tablet:text-body">
                 {errorMessage || data.desc}
               </p>
             </motion.div>
@@ -622,10 +620,10 @@ export default function TransactionStatus({ status }: TransactionStatusProps) {
             exit={{ opacity: 0, y: -10 }}
             transition={{ duration: 0.4, ease: [0.16, 1, 0.3, 1] }}
           >
-            <p className="text-sm font-medium text-neutral-10">
+            <p className="text-small font-medium text-neutral-10">
               Collection sync complete!
             </p>
-            <p className="text-sm text-neutral-40">
+            <p className="text-small text-neutral-40">
               Your NFT is being minted on your chain now.
             </p>
           </motion.div>
@@ -646,7 +644,7 @@ export default function TransactionStatus({ status }: TransactionStatusProps) {
               href={explorerUrl}
               target="_blank"
               rel="noopener noreferrer"
-              className="flex min-h-11 w-full items-center justify-center rounded-full bg-primary-green px-4 text-center text-sm font-medium text-white transition-all duration-300 hover:scale-105 hover:bg-green-10 active:scale-95 tablet:px-6"
+              className="flex min-h-11 w-full items-center justify-center rounded-full bg-primary-green px-4 text-center text-small font-medium text-white transition-all duration-300 hover:scale-105 hover:bg-green-10 active:scale-95 tablet:px-6"
             >
               View transaction
             </a>
@@ -750,10 +748,10 @@ function BridgeRoute({ sourceChainId }: { sourceChainId: number | null }) {
               <div className="h-full w-full rounded-full bg-khaki-70" />
             )}
           </figure>
-          <span className="w-full truncate text-center text-[10px] font-medium text-neutral-10 sm:text-xs">
+          <span className="w-full truncate text-center text-caption font-medium text-neutral-10">
             {sourceChain?.label ?? 'Network'}
           </span>
-          <span className="text-center text-[10px] text-neutral-40 sm:text-xs">
+          <span className="text-center text-caption text-neutral-40">
             paying
           </span>
         </div>
@@ -794,19 +792,19 @@ function BridgeRoute({ sourceChainId }: { sourceChainId: number | null }) {
               />
             )}
           </figure>
-          <span className="w-full truncate text-center text-[10px] font-medium text-neutral-10 sm:text-xs">
+          <span className="w-full truncate text-center text-caption font-medium text-neutral-10">
             {hubChain.label}
           </span>
-          <span className="text-center text-[10px] text-neutral-40 sm:text-xs">
+          <span className="text-center text-caption text-neutral-40">
             minting
           </span>
         </div>
       </div>
 
-      <p className="mt-3 text-center text-xs text-neutral-40 sm:mt-4 sm:text-sm">
+      <p className="mt-3 text-center text-caption text-neutral-40 sm:mt-4 sm:text-small">
         Syncing your spot in the collection. Usually takes 1–5 minutes.
       </p>
-      <p className="mt-1 text-center text-xs text-neutral-10 sm:mt-1.5 sm:text-sm">
+      <p className="mt-1 text-center text-caption text-neutral-10 sm:mt-1.5 sm:text-small">
         You can safely close this page. The mint will complete automatically.
       </p>
     </div>
@@ -841,10 +839,10 @@ function CrossChainRecovery({ reqId }: { reqId: Hex }) {
   return (
     <div className="mt-4 flex flex-col items-center gap-4 border-t border-neutral-60 pt-4">
       <div className="space-y-1 text-center">
-        <p className="text-sm font-semibold text-neutral-10">
+        <p className="text-small font-semibold text-neutral-10">
           Recovery Options
         </p>
-        <p className="mx-auto max-w-70 text-xs leading-relaxed text-neutral-40">
+        <p className="mx-auto max-w-70 text-caption leading-relaxed text-neutral-40">
           {canExpire
             ? 'The timeout has passed. You can expire this mint and claim a refund.'
             : `You can retry the mint or wait for the timeout (${Math.ceil(recovery.mintTimeout / 60)} min) to expire it.`}
@@ -858,7 +856,7 @@ function CrossChainRecovery({ reqId }: { reqId: Hex }) {
               recovery.expirePendingMint(reqId)
             }}
             disabled={isRecoveryProcessing}
-            className="flex min-h-11 flex-1 items-center justify-center rounded-xl border border-neutral-60 bg-white px-4 text-sm font-medium text-destructive shadow-sm transition-colors hover:bg-destructive/10 disabled:cursor-not-allowed disabled:opacity-50"
+            className="flex min-h-11 flex-1 items-center justify-center rounded-xl border border-neutral-60 bg-white px-4 text-small font-medium text-destructive shadow-sm transition-colors hover:bg-destructive/10 disabled:cursor-not-allowed disabled:opacity-50"
           >
             {action === 'expire' && isRecoveryProcessing
               ? 'Expiring...'
@@ -871,7 +869,7 @@ function CrossChainRecovery({ reqId }: { reqId: Hex }) {
             recovery.retryPendingMint(reqId)
           }}
           disabled={isRecoveryProcessing}
-          className="flex min-h-11 flex-1 items-center justify-center rounded-xl border border-neutral-60 bg-white px-4 text-sm font-medium text-neutral-10 shadow-sm transition-colors hover:bg-khaki-90 disabled:cursor-not-allowed disabled:opacity-50"
+          className="flex min-h-11 flex-1 items-center justify-center rounded-xl border border-neutral-60 bg-white px-4 text-small font-medium text-neutral-10 shadow-sm transition-colors hover:bg-khaki-90 disabled:cursor-not-allowed disabled:opacity-50"
         >
           {action === 'retry' && isRecoveryProcessing
             ? 'Retrying...'
@@ -879,7 +877,7 @@ function CrossChainRecovery({ reqId }: { reqId: Hex }) {
         </button>
       </div>
       {recovery.error && (
-        <p className="text-center text-xs font-medium wrap-break-word text-destructive">
+        <p className="text-center text-caption font-medium wrap-break-word text-destructive">
           {humanizeError(recovery.error)}
         </p>
       )}

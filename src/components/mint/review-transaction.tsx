@@ -37,7 +37,7 @@ export default function ReviewTransaction() {
         <h2
           ref={headingRef}
           tabIndex={-1}
-          className="text-2xl leading-tight font-semibold tracking-tight text-neutral-10 focus:outline-none"
+          className="text-h2 font-semibold tracking-tight text-neutral-10 focus:outline-none"
         >
           Confirm mint
         </h2>
@@ -91,7 +91,7 @@ const TransactionCard = ({
     <div className="flex w-full flex-col gap-6">
       {/* SEND */}
       <div className="flex flex-col gap-3">
-        <span className="text-xs font-semibold tracking-wider text-neutral-40 uppercase">
+        <span className="text-caption font-semibold tracking-wider text-neutral-40 uppercase">
           You pay
         </span>
         <div className="flex items-center justify-between">
@@ -106,16 +106,16 @@ const TransactionCard = ({
               />
             </figure>
             <div className="flex min-w-0 flex-col text-left">
-              <span className="truncate text-sm font-medium text-neutral-10 sm:text-base">
+              <span className="truncate text-small font-medium text-neutral-10 sm:text-body">
                 {item?.symbol}
               </span>
-              <span className="truncate text-xs text-neutral-40 sm:text-sm">
+              <span className="truncate text-caption text-neutral-40 sm:text-small">
                 On {chainConfig?.label}
               </span>
             </div>
           </div>
           <div className="shrink-0 pl-2 text-right">
-            <span className="text-xl font-bold text-neutral-10 tabular-nums sm:text-2xl">
+            <span className="text-h3 font-bold text-neutral-10 tabular-nums sm:text-h2">
               {item?.symbol === 'IDRX'
                 ? formatIDR(Number(item?.cost || 0))
                 : item?.cost}
@@ -126,7 +126,7 @@ const TransactionCard = ({
 
       {/* RECEIVE */}
       <div className="flex flex-col gap-3">
-        <span className="text-xs font-semibold tracking-wider text-neutral-40 uppercase">
+        <span className="text-caption font-semibold tracking-wider text-neutral-40 uppercase">
           You receive
         </span>
         <div className="flex items-center justify-between">
@@ -141,16 +141,16 @@ const TransactionCard = ({
               />
             </figure>
             <div className="flex min-w-0 flex-col text-left">
-              <span className="truncate text-sm font-semibold text-neutral-10 sm:text-base">
+              <span className="truncate text-small font-semibold text-neutral-10 sm:text-body">
                 The Satwas Band Beta
               </span>
-              <span className="truncate text-xs text-neutral-40 sm:text-sm">
+              <span className="truncate text-caption text-neutral-40 sm:text-small">
                 Minted on {chainConfig?.label}
               </span>
             </div>
           </div>
           <div className="shrink-0 pl-2 text-right">
-            <span className="text-xl font-bold text-primary-green sm:text-2xl">
+            <span className="text-h3 font-bold text-primary-green sm:text-h2">
               + 1 NFT
             </span>
           </div>
@@ -159,7 +159,7 @@ const TransactionCard = ({
 
       {/* Recipient Address */}
       {recipientAddress && (
-        <div className="mt-2 flex items-center justify-between rounded-xl bg-khaki-90 p-3 text-sm">
+        <div className="mt-2 flex items-center justify-between rounded-xl bg-khaki-90 p-3 text-small">
           <span className="text-neutral-40">Delivering to</span>
           <span className="font-mono text-neutral-10">
             {recipientAddress.slice(0, 6)}...{recipientAddress.slice(-4)}

@@ -55,17 +55,17 @@ export const PaymentCard = memo(function PaymentCard({
           />
         </figure>
         <div className="flex min-w-0 flex-col">
-          <span className="truncate text-sm font-semibold text-neutral-10 sm:text-base">
+          <span className="truncate text-small font-semibold text-neutral-10 sm:text-body">
             {item.symbol}
           </span>
-          <span className="truncate text-[11px] text-neutral-40 sm:text-xs">
+          <span className="truncate text-caption text-neutral-40">
             {item.name}
           </span>
         </div>
       </div>
 
       <div className="flex shrink-0 items-center gap-2.5 pl-2 text-right">
-        <span className="text-base font-bold text-neutral-10 tabular-nums sm:text-lg">
+        <span className="text-body font-bold text-neutral-10 tabular-nums sm:text-h3">
           {item.symbol === 'IDRX'
             ? new Intl.NumberFormat('en-US', {
                 minimumFractionDigits: 0,
