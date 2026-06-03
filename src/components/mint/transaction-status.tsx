@@ -289,7 +289,7 @@ function MintSteps({
               opacity: step.status === 'pending' ? 0.5 : 1,
             }}
             transition={{ duration: 0.3 }}
-            className={`flex flex-1 justify-center tracking-wide text-caption ${
+            className={`flex flex-1 justify-center text-caption tracking-wide ${
               step.status === 'active' || step.status === 'failed'
                 ? 'font-semibold'
                 : 'font-medium'

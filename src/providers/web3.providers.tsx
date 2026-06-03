@@ -1,10 +1,15 @@
 'use client'
 
 import React from 'react'
-import { Config, cookieStorage, createStorage, WagmiProvider } from 'wagmi'
+import {
+  Config,
+  cookieStorage,
+  createStorage,
+  WagmiProvider,
+  http,
+} from 'wagmi'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { XellarKitProvider, defaultConfig, darkTheme } from '@xellar/kit'
-// Lazy load chains to reduce initial bundle size
 import { base, arbitrum, lisk, manta } from 'viem/chains'
 
 const walletConnectProjectId =
@@ -21,8 +26,17 @@ const config = defaultConfig({
   walletConnectProjectId,
   xellarAppId,
   xellarEnv: 'production',
-  // Only load production chains to reduce initial load
   chains: [base, arbitrum, lisk, manta],
+  // Explicit HTTP transports so cross-chain reads (wallet sidebar balances)
+  // work regardless of which chain the wallet is currently connected to.
+  // Without these, wagmi falls back to the wallet connector's transport only,
+  // which returns 0 for chains the wallet isn't actively on.
+  transports: {
+    [base.id]: http(),
+    [arbitrum.id]: http(),
+    [lisk.id]: http(),
+    [manta.id]: http(),
+  },
 }) as Config
 
 // Create query client once to avoid recreation

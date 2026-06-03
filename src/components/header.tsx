@@ -6,11 +6,15 @@ import Image from 'next/image'
 import { usePathname } from 'next/navigation'
 import { Menu, X } from 'lucide-react'
 import { motion, AnimatePresence } from 'framer-motion'
+import { useConnection } from 'wagmi'
 
 import Logo from '@/assets/logos/logo.webp'
 import URL_ROUTES from '../constants/url-route'
 import { AppNav } from '../ui/navs/app-nav'
 import { SignInButton } from '../ui/buttons/sign-in-btn'
+import { WalletSidebar } from './wallet/wallet-sidebar'
+import { WalletAvatar } from '@/ui/wallet-avatar'
+import { useUser } from '@/hooks/useUser'
 
 const hubNavs = [
   { label: 'Home', id: URL_ROUTES.HOME },
@@ -21,7 +25,10 @@ const hubNavs = [
 
 export default function Header() {
   const [isOpen, setIsOpen] = useState(false)
+  const [isWalletOpen, setIsWalletOpen] = useState(false)
   const pathname = usePathname()
+  const { isLoggedIn } = useUser()
+  const { address } = useConnection()
 
   // Close menu when route changes
   useEffect(() => {
@@ -65,7 +72,20 @@ export default function Header() {
 
         {/* Desktop Actions */}
         <section className="relative z-10 hidden w-auto items-center justify-end text-right tablet:flex tablet:w-48 desktop:w-56">
-          <SignInButton />
+          {isLoggedIn && address ? (
+            <button
+              onClick={() => setIsWalletOpen(true)}
+              aria-label="Open wallet panel"
+              className="flex items-center gap-2 rounded-full bg-white px-3 py-2 text-caption font-medium text-neutral-10 shadow-sm ring-1 ring-neutral-60/20 transition-all duration-200 hover:shadow-md hover:ring-primary-green/30 focus-visible:ring-2 focus-visible:ring-primary-green focus-visible:outline-none active:scale-[0.97]"
+            >
+              <WalletAvatar address={address} />
+              <span className="font-mono">
+                {address.slice(0, 6)}…{address.slice(-4)}
+              </span>
+            </button>
+          ) : (
+            <SignInButton />
+          )}
         </section>
 
         {/* Mobile Hamburger Toggle */}
@@ -138,12 +158,34 @@ export default function Header() {
               </ul>
 
               <div className="mt-3 border-t border-neutral-60/10 pt-5">
-                <SignInButton />
+                {isLoggedIn && address ? (
+                  <button
+                    onClick={() => {
+                      setIsOpen(false)
+                      setIsWalletOpen(true)
+                    }}
+                    aria-label="Open wallet panel"
+                    className="flex w-full items-center gap-2.5 rounded-full bg-white px-4 py-2.5 text-caption font-medium text-neutral-10 shadow-sm ring-1 ring-neutral-60/20 transition-all hover:shadow-md hover:ring-primary-green/30 focus-visible:ring-2 focus-visible:ring-primary-green focus-visible:outline-none"
+                  >
+                    <WalletAvatar address={address} size={24} />
+                    <span className="font-mono">
+                      {address.slice(0, 6)}…{address.slice(-4)}
+                    </span>
+                  </button>
+                ) : (
+                  <SignInButton />
+                )}
               </div>
             </div>
           </motion.div>
         )}
       </AnimatePresence>
+
+      {/* Wallet Sidebar */}
+      <WalletSidebar
+        isOpen={isWalletOpen}
+        onClose={() => setIsWalletOpen(false)}
+      />
     </nav>
   )
 }
