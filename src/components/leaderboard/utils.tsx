@@ -10,7 +10,13 @@ export function truncate(addr: string): string {
   return `${addr.slice(0, 6)}…${addr.slice(-4)}`
 }
 
-export function Gem({ size = 10, color = GREEN }: { size?: number; color?: string }) {
+export function Gem({
+  size = 10,
+  color = GREEN,
+}: {
+  size?: number
+  color?: string
+}) {
   return (
     <svg
       width={size}

@@ -200,17 +200,17 @@ export default function SelectPaymentMethod() {
           >
             <div className="flex items-center gap-2">
               <div className="h-2 w-2 animate-pulse rounded-full bg-neutral-40" />
-              <p className="text-sm font-semibold text-neutral-10">
+              <p className="text-small font-semibold text-neutral-10">
                 Finish your pending mint
               </p>
             </div>
-            <p className="mt-2 text-xs leading-relaxed text-neutral-40">
+            <p className="mt-2 text-caption leading-relaxed text-neutral-40">
               A previous mint is still processing. Complete or cancel it before
               starting a new one.
             </p>
             <button
               onClick={() => setStatus(MintStatus.INFLIGHT)}
-              className="mt-3 text-xs font-semibold text-primary-green transition-colors hover:text-green-10"
+              className="mt-3 text-caption font-semibold text-primary-green transition-colors hover:text-green-10"
             >
               Check status
             </button>
@@ -236,14 +236,14 @@ export default function SelectPaymentMethod() {
               )}
             </div>
             <div className="flex-1">
-              <p className="text-sm font-medium text-neutral-10">
+              <p className="text-small font-medium text-neutral-10">
                 {backgroundMint.status === MintStatus.SUCCESS
                   ? 'Mint completed!'
                   : backgroundMint.status === MintStatus.FAILED
                     ? 'Mint failed'
                     : 'Mint in progress'}
               </p>
-              <p className="text-xs text-neutral-40">
+              <p className="text-caption text-neutral-40">
                 Tap to view transaction status
               </p>
             </div>
@@ -269,7 +269,7 @@ export default function SelectPaymentMethod() {
         <h2
           ref={headingRef}
           tabIndex={-1}
-          className="text-2xl leading-tight font-semibold tracking-tight text-neutral-10 focus:outline-none"
+          className="text-h2 font-semibold tracking-tight text-neutral-10 focus:outline-none"
         >
           Network
         </h2>
@@ -295,7 +295,7 @@ export default function SelectPaymentMethod() {
                 />
               </figure>
             )}
-            <span className="text-base font-medium text-neutral-10">
+            <span className="text-body font-medium text-neutral-10">
               {activeConfig?.label ?? 'Select network'}
             </span>
           </div>
@@ -351,7 +351,7 @@ export default function SelectPaymentMethod() {
                       )}
                       <div className="flex flex-col">
                         <span
-                          className={`text-sm font-medium ${isActive ? 'font-semibold text-primary-green' : 'text-neutral-10'}`}
+                          className={`text-small font-medium ${isActive ? 'font-semibold text-primary-green' : 'text-neutral-10'}`}
                         >
                           {chain.label}
                         </span>
@@ -392,10 +392,10 @@ export default function SelectPaymentMethod() {
               </svg>
             </div>
             <div>
-              <p className="text-sm font-medium text-neutral-10">
+              <p className="text-small font-medium text-neutral-10">
                 Network switch failed
               </p>
-              <p className="mt-1 text-xs text-neutral-40">
+              <p className="mt-1 text-caption text-neutral-40">
                 Switch to{' '}
                 <span className="font-semibold text-neutral-10">
                   {activeConfig?.label}
@@ -409,7 +409,7 @@ export default function SelectPaymentMethod() {
 
       {/* Payment Methods */}
       <div className="mb-2 text-left">
-        <h3 className="text-xs font-semibold tracking-wider text-neutral-40 uppercase">
+        <h3 className="text-caption font-semibold tracking-wider text-neutral-40 uppercase">
           Token
         </h3>
       </div>
@@ -446,7 +446,7 @@ export default function SelectPaymentMethod() {
             ))}
           </>
         ) : (
-          <div className="py-6 text-center text-sm text-neutral-40">
+          <div className="py-6 text-center text-small text-neutral-40">
             No tokens available on{' '}
             {activeConfig?.label ?? `Chain ID: ${activeChainId}`}. Try switching
             to Base or Arbitrum above.
@@ -456,7 +456,7 @@ export default function SelectPaymentMethod() {
 
       {/* Referral indicator (auto-applied from login) */}
       {globalReferralCode && (
-        <div className="mb-6 flex items-center gap-2 text-sm text-neutral-40">
+        <div className="mb-6 flex items-center gap-2 text-small text-neutral-40">
           <svg
             className="h-4 w-4 text-primary-green"
             fill="none"

@@ -18,6 +18,7 @@ export function useSessionGuard() {
   const { isLoggedIn, expiresAt, mutate } = useUser()
   const logoutTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
   const isLoggingOutRef = useRef(false)
+  const wasLoggedInRef = useRef(false)
 
   const performLogout = useCallback(async () => {
     if (isLoggingOutRef.current) return
@@ -86,4 +87,28 @@ export function useSessionGuard() {
       performLogout()
     }
   }, [isLoggedIn, status, performLogout])
+
+  // --- SWR focus-revalidation expiry path ---
+  // When the user backgrounds the tab for 30 min and refocuses, SWR's
+  // revalidateOnFocus calls getSessionData(), which destroys the expired
+  // session server-side and returns { isLoggedIn: false }. The timer-based
+  // path never fires in this case (it's cleared when isLoggedIn goes false).
+  // This effect catches that transition and disconnects the wallet + redirects.
+  useEffect(() => {
+    if (wasLoggedInRef.current && !isLoggedIn && !isLoggingOutRef.current) {
+      isLoggingOutRef.current = true
+      const cleanup = async () => {
+        try {
+          if (isConnected) {
+            await disconnect.mutateAsync()
+          }
+        } finally {
+          isLoggingOutRef.current = false
+          window.location.href = '/login'
+        }
+      }
+      cleanup()
+    }
+    wasLoggedInRef.current = isLoggedIn
+  }, [isLoggedIn, isConnected, disconnect])
 }

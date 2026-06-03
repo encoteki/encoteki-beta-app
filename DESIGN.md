@@ -180,15 +180,15 @@ An earthy, tinted-neutral palette where green is the only saturated voice. The k
 
 Fixed `rem` scale for product surfaces. No raw `px` values or arbitrary `text-[Xpx]` utilities. Every text element in product UI references one of these tokens.
 
-| Token | Size | Px | Use |
-|---|---|---|---|
-| `text-display` | 3.5rem | 56 | Hero headings. One per page at most. |
-| `text-h1` | 2.25rem | 36 | Page titles |
-| `text-h2` | 1.75rem | 28 | Section headers, modal titles |
-| `text-h3` | 1.25rem | 20 | Card headings, subsections |
-| `text-body` | 1rem | 16 | Body baseline. All prose references this. |
-| `text-small` | 0.875rem | 14 | Secondary text, helper labels |
-| `text-caption` | 0.75rem | 12 | Metadata, timestamps, UI captions |
+| Token          | Size     | Px  | Use                                       |
+| -------------- | -------- | --- | ----------------------------------------- |
+| `text-display` | 3.5rem   | 56  | Hero headings. One per page at most.      |
+| `text-h1`      | 2.25rem  | 36  | Page titles                               |
+| `text-h2`      | 1.75rem  | 28  | Section headers, modal titles             |
+| `text-h3`      | 1.25rem  | 20  | Card headings, subsections                |
+| `text-body`    | 1rem     | 16  | Body baseline. All prose references this. |
+| `text-small`   | 0.875rem | 14  | Secondary text, helper labels             |
+| `text-caption` | 0.75rem  | 12  | Metadata, timestamps, UI captions         |
 
 Tokens are defined in `tailwind.config.mts` under `theme.extend.fontSize`. Line-heights are baked in per token so they never need to be specified separately.
 
