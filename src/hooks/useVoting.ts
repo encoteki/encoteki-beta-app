@@ -12,6 +12,7 @@ import { getChainId, getAllChains } from '@/constants/contracts/tsb'
 import { VotePower, ProposalOption, VotesByChain } from '@/types/dao.types'
 import { DaoRow } from '@/lib/supabase/database.types'
 import { proposalImplABI } from '@/constants/abis/proposalImplementation.abi'
+import { reportUnexpected } from '@/lib/telemetry'
 
 // ============================================
 // CHAIN CONFIGURATION
@@ -105,8 +106,8 @@ function daoToProposalState(dao: DaoRow): ProposalState {
         )
         totalVotes = options.reduce((sum, opt) => sum + opt.votes, 0)
       }
-    } catch (e) {
-      console.error('[useVoting] Failed to parse scoring:', e)
+    } catch {
+      // Malformed scoring payload — fall back to the default options below.
     }
   }
 
@@ -354,10 +355,6 @@ export function useVotingWithDao(dao: DaoRow) {
         votedContractAddress = getContractAddress(dao, votedChain)
         votedChainId = getChainId(votedChain)
 
-        console.log(
-          `[Vote] Chain: ${votedChain}, Contract: ${votedContractAddress}, Option: ${selectedOption}, ChainId: ${votedChainId}`,
-        )
-
         // Example vote call
         // await writeContractAsync({ ... })
       }
@@ -400,7 +397,7 @@ export function useVotingWithDao(dao: DaoRow) {
         return next
       })
     } catch (error) {
-      console.error('Vote failed:', error)
+      reportUnexpected(error, { flow: 'vote' })
     } finally {
       setIsVoting(false)
     }
@@ -517,7 +514,7 @@ export function useVoting(initialProposal: MockProposal) {
       setProposal(updated)
       setHasVoted(true)
     } catch (error) {
-      console.error('Vote failed:', error)
+      reportUnexpected(error, { flow: 'vote' })
     } finally {
       setIsVoting(false)
     }

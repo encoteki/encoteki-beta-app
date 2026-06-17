@@ -61,3 +61,24 @@ export function humanizeError(err: unknown): string {
 
   return 'Something went wrong. Please try again.'
 }
+
+const USER_REJECTION_RE =
+  /user rejected|user denied|rejected the request|action_rejected|userrejected/i
+
+/**
+ * True when an error represents the user declining a wallet prompt (signature,
+ * transaction, or chain switch). These are normal interactions — not bugs — and
+ * should never be reported to error tracking.
+ */
+export function isUserRejection(err: unknown): boolean {
+  const raw = [
+    (err as any)?.shortMessage,
+    (err as any)?.message,
+    (err as any)?.name,
+    String(err),
+  ]
+    .filter(Boolean)
+    .join(' ')
+
+  return USER_REJECTION_RE.test(raw)
+}

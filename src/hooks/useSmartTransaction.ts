@@ -70,9 +70,8 @@ export function useSmartTransaction(props: SimulateContractProps) {
   const write = () => {
     if (simulation.data?.request) {
       mutate(simulation.data.request)
-    } else {
-      console.error('Cannot write: Simulation failed or incomplete')
     }
+    // No-op when the simulation isn't ready; the trigger is disabled in that state.
   }
 
   const reset = () => {

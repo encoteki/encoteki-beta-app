@@ -15,6 +15,7 @@ import VoteProgressBar from '@/components/dao/vote-progress-bar'
 import VoteBreakdown from '@/components/dao/vote-breakdown'
 import { motion, AnimatePresence } from 'motion/react'
 import { fetchDaoById } from '@/services/dao.service'
+import { reportError } from '@/lib/telemetry'
 import { DaoRow } from '@/lib/supabase/database.types'
 import {
   getProposalTypeFromDaoType,
@@ -90,7 +91,7 @@ export default function DaoDetailPage({ params }: DaoDetailPageProps) {
         const data = await fetchDaoById(daoId)
         setDao(data)
       } catch (err) {
-        console.error('[DaoDetailPage] Error loading DAO:', err)
+        reportError(err, { source: 'DaoDetailPage.loadDao', code })
         setError('Failed to load proposal')
       } finally {
         setLoading(false)
@@ -103,7 +104,7 @@ export default function DaoDetailPage({ params }: DaoDetailPageProps) {
   // Loading state
   if (loading) {
     return (
-      <main className="dao-container">
+      <main id="main-content" tabIndex={-1} className="dao-container">
         <div className="dao-section">
           <header className="space-y-4">
             <Skeleton className="h-6 w-48" />
@@ -129,7 +130,7 @@ export default function DaoDetailPage({ params }: DaoDetailPageProps) {
   // Error state
   if (error) {
     return (
-      <main className="dao-container">
+      <main id="main-content" tabIndex={-1} className="dao-container">
         <div className="dao-section">
           <div className="flex h-96 flex-col items-center justify-center gap-4">
             <h2 className="font-medium text-red-500">{error}</h2>
@@ -148,7 +149,7 @@ export default function DaoDetailPage({ params }: DaoDetailPageProps) {
   // Not found state
   if (!dao) {
     return (
-      <main className="dao-container">
+      <main id="main-content" tabIndex={-1} className="dao-container">
         <div className="dao-section">
           <div className="flex h-96 flex-col items-center justify-center gap-4">
             <h2 className="font-medium">Proposal not found</h2>
@@ -214,7 +215,7 @@ function DaoDetailContent({ code, dao }: { code: string; dao: DaoRow }) {
   }, [supportedChains])
 
   return (
-    <main className="dao-container">
+    <main id="main-content" tabIndex={-1} className="dao-container">
       <div className="dao-section">
         {/* Header */}
         <header className="space-y-2 tablet:space-y-4 desktop:space-y-8">

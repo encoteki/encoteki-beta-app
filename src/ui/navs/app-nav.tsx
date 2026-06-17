@@ -4,7 +4,7 @@ import { useAppCtx } from '@/contexts/app.context'
 import { cn } from '@/lib/utils'
 import { useEffect } from 'react'
 import { useRouter, usePathname } from 'next/navigation'
-import { motion } from 'framer-motion'
+import { motion } from 'motion/react'
 
 export interface NavProps {
   label: string

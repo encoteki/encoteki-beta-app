@@ -1,7 +1,7 @@
 'use client'
 
 import dynamic from 'next/dynamic'
-import { AnimatePresence, motion, useReducedMotion } from 'framer-motion'
+import { AnimatePresence, motion, useReducedMotion } from 'motion/react'
 import SelectPaymentMethod from '@/components/mint/select-payment-method'
 import { MintStatus } from '@/enums/mint.enum'
 import { useMintCtx } from '@/contexts/mint.context'
@@ -57,7 +57,7 @@ export default function MintPage() {
   }
 
   return (
-    <main className="mint-container">
+    <main id="main-content" tabIndex={-1} className="mint-container">
       <motion.div
         layout
         className="mint-modal relative overflow-hidden"

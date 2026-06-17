@@ -33,7 +33,7 @@ const tabs = [
 
 export default function DaoPage() {
   return (
-    <main className="dao-container">
+    <main id="main-content" tabIndex={-1} className="dao-container">
       <div className="dao-section">
         <header className="space-y-2 tablet:space-y-4">
           <Breadcrumbs items={links} />

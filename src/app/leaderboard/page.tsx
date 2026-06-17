@@ -7,6 +7,8 @@ import DefaultButton from '@/ui/buttons/default-btn'
 import { submitReferralCode, getUserReferralCode } from '@/actions/referral'
 import { Leaderboard } from '@/components/leaderboard/leaderboard'
 import { fmtPts, Gem } from '@/components/leaderboard/utils'
+import { reportError } from '@/lib/telemetry'
+import { isUserRejection } from '@/utils/humanize-error.util'
 import type { LeaderboardUser, PaginationInfo } from '@/types/leaderboard.types'
 
 const overlayVariants = { hidden: { opacity: 0 }, visible: { opacity: 1 } }
@@ -77,7 +79,7 @@ export default function PointsPage() {
         setLeaderboardPagination(json.pagination ?? undefined)
       } catch (err) {
         if (err instanceof Error && err.name === 'AbortError') return
-        console.error(err)
+        reportError(err, { source: 'leaderboard-page', page: leaderboardPage })
         setLeaderboardError(true)
       } finally {
         setLeaderboardLoading(false)
@@ -88,7 +90,7 @@ export default function PointsPage() {
   }, [leaderboardPage, leaderboardRetry])
 
   return (
-    <main className="points-container">
+    <main id="main-content" tabIndex={-1} className="points-container">
       <div className="flex w-full flex-col desktop:flex-row desktop:items-start desktop:gap-12">
         {/* Main content */}
         <div className="flex flex-col gap-14 tablet:gap-16 desktop:flex-1">
@@ -99,8 +101,8 @@ export default function PointsPage() {
                 Leaderboard
               </h1>
               <p className="text-body text-neutral-30">
-                Your rank reflects your network's reach. When your referrals
-                mint, vote, or spend with our partners, you earn.
+                Your rank reflects your network&apos;s reach. When your
+                referrals mint, vote, or spend with our partners, you earn.
               </p>
             </div>
 
@@ -324,7 +326,7 @@ function ReferralModal() {
           setExistingCode(result.data)
         }
       } catch (error) {
-        console.error('Failed to fetch initial referral code', error)
+        reportError(error, { source: 'ReferralModal.fetchInitialCode' })
       } finally {
         setIsInitializing(false)
       }
@@ -413,13 +415,24 @@ function ReferralModal() {
           setExistingCode(referralCode)
         }, 2000)
       } else {
+        // Validasi gagal dari server → tampilkan saja, bukan bug.
         setMessage({ type: 'error', text: result.error || '' })
       }
-    } catch {
-      setMessage({
-        type: 'error',
-        text: 'Signature rejected. Please try again.',
-      })
+    } catch (err) {
+      if (isUserRejection(err)) {
+        // User menolak tanda tangan = normal, jangan lapor ke Sentry.
+        setMessage({
+          type: 'error',
+          text: 'Signature rejected. Please try again.',
+        })
+      } else {
+        // Error tak terduga (jaringan, SDK wallet, dll.) → lapor + pesan generik.
+        reportError(err, { flow: 'submit-referral-code' })
+        setMessage({
+          type: 'error',
+          text: 'Something went wrong. Please try again.',
+        })
+      }
     }
 
     setIsLoading(false)

@@ -5,7 +5,7 @@ import { useEffect, useState, useMemo, useRef } from 'react'
 import { useMintCtx } from '../../contexts/mint.context'
 import { Checkmark } from '../../ui/svg/checkmark'
 import { Crossmark } from '../../ui/svg/crossmark'
-import { motion, AnimatePresence, useReducedMotion } from 'framer-motion'
+import { motion, AnimatePresence, useReducedMotion } from 'motion/react'
 import Hidden from '@/assets/mint/hidden.png'
 import { MintStatus } from '../../enums/mint.enum'
 import { useSatelliteRecovery } from '@/hooks/useSatelliteRecovery'
@@ -668,7 +668,7 @@ export default function TransactionStatus({ status }: TransactionStatusProps) {
               classname="w-full"
               onClick={moveToBackground}
             >
-              I'll check back later
+              I&apos;ll check back later
             </DefaultButton>
           ) : status === MintStatus.MINTING ? (
             <DefaultButton variant="secondary" classname="w-full" disabled>
@@ -814,27 +814,41 @@ function BridgeRoute({ sourceChainId }: { sourceChainId: number | null }) {
 // ─────────── Cross-Chain Recovery Actions ───────────
 
 function CrossChainRecovery({ reqId }: { reqId: Hex }) {
-  const recovery = useSatelliteRecovery()
+  const {
+    isSuccess,
+    refetchPending,
+    refetchRequest,
+    mintRequestData,
+    mintTimeout,
+    isSigning,
+    isProcessing,
+    expirePendingMint,
+    retryPendingMint,
+    error,
+  } = useSatelliteRecovery()
   const [action, setAction] = useState<'idle' | 'expire' | 'refund' | 'retry'>(
     'idle',
   )
+  const [now, setNow] = useState(() => Date.now())
 
   useEffect(() => {
-    if (recovery.isSuccess) {
-      recovery.refetchPending()
-      recovery.refetchRequest()
-      setAction('idle')
+    if (isSuccess) {
+      refetchPending()
+      refetchRequest()
     }
-  }, [recovery.isSuccess])
+  }, [isSuccess, refetchPending, refetchRequest])
 
-  const canExpire = useMemo(() => {
-    if (!recovery.mintRequestData) return false
-    const timestamp = Number(recovery.mintRequestData[5]) // timestamp field
-    const elapsed = Date.now() / 1000 - timestamp
-    return elapsed >= recovery.mintTimeout
-  }, [recovery.mintRequestData, recovery.mintTimeout])
+  // Re-evaluate canExpire every 10 s so the UI updates when the timeout passes
+  useEffect(() => {
+    const id = setInterval(() => setNow(Date.now()), 10_000)
+    return () => clearInterval(id)
+  }, [])
 
-  const isRecoveryProcessing = recovery.isSigning || recovery.isProcessing
+  const canExpire = mintRequestData
+    ? now / 1000 - Number(mintRequestData[5]) >= mintTimeout
+    : false
+
+  const isRecoveryProcessing = isSigning || isProcessing
 
   return (
     <div className="mt-4 flex flex-col items-center gap-4 border-t border-neutral-60 pt-4">
@@ -845,7 +859,7 @@ function CrossChainRecovery({ reqId }: { reqId: Hex }) {
         <p className="mx-auto max-w-70 text-caption leading-relaxed text-neutral-40">
           {canExpire
             ? 'The timeout has passed. You can expire this mint and claim a refund.'
-            : `You can retry the mint or wait for the timeout (${Math.ceil(recovery.mintTimeout / 60)} min) to expire it.`}
+            : `You can retry the mint or wait for the timeout (${Math.ceil(mintTimeout / 60)} min) to expire it.`}
         </p>
       </div>
       <div className="flex w-full flex-col gap-2 sm:flex-row">
@@ -853,7 +867,7 @@ function CrossChainRecovery({ reqId }: { reqId: Hex }) {
           <button
             onClick={() => {
               setAction('expire')
-              recovery.expirePendingMint(reqId)
+              expirePendingMint(reqId)
             }}
             disabled={isRecoveryProcessing}
             className="flex min-h-11 flex-1 items-center justify-center rounded-xl border border-neutral-60 bg-white px-4 text-small font-medium text-destructive shadow-sm transition-colors hover:bg-destructive/10 disabled:cursor-not-allowed disabled:opacity-50"
@@ -866,7 +880,7 @@ function CrossChainRecovery({ reqId }: { reqId: Hex }) {
         <button
           onClick={() => {
             setAction('retry')
-            recovery.retryPendingMint(reqId)
+            retryPendingMint(reqId)
           }}
           disabled={isRecoveryProcessing}
           className="flex min-h-11 flex-1 items-center justify-center rounded-xl border border-neutral-60 bg-white px-4 text-small font-medium text-neutral-10 shadow-sm transition-colors hover:bg-khaki-90 disabled:cursor-not-allowed disabled:opacity-50"
@@ -876,9 +890,9 @@ function CrossChainRecovery({ reqId }: { reqId: Hex }) {
             : 'Retry mint'}
         </button>
       </div>
-      {recovery.error && (
+      {error && (
         <p className="text-center text-caption font-medium wrap-break-word text-destructive">
-          {humanizeError(recovery.error)}
+          {humanizeError(error)}
         </p>
       )}
     </div>

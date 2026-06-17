@@ -8,14 +8,16 @@ import {
   AnimatePresence,
   useReducedMotion,
   useAnimation,
-} from 'framer-motion'
+} from 'motion/react'
 import { X, Copy, Check } from 'lucide-react'
 import { useDisconnect, useConnection, useChainId } from 'wagmi'
 
 import { useUser } from '@/hooks/useUser'
 import { useChainBalances } from '@/hooks/useChainBalances'
 import { useNftMints, type MintItem } from '@/hooks/useNftMints'
+import { useFocusTrap } from '@/hooks/useFocusTrap'
 import { destroySession } from '@/actions/auth'
+import { reportError } from '@/lib/telemetry'
 import { getContract } from '@/constants/contracts/tsb'
 import { WalletAvatar } from '@/ui/wallet-avatar'
 import { NftDetailSheet } from './nft-detail-sheet'
@@ -108,24 +110,21 @@ export function WalletSidebar({ isOpen, onClose }: WalletSidebarProps) {
   const connectedChainId = useChainId()
   const signOutControls = useAnimation()
 
-  // Default to user's connected chain; fall back to Base if unsupported
-  const [activeChainId, setActiveChainId] = useState(8453)
-  const chainSyncedRef = useRef(false)
+  // Default to user's connected chain; fall back to Base if unsupported.
+  // Initialized lazily from wagmi so no sync-setState-in-effect is needed.
+  const [activeChainId, setActiveChainId] = useState(() => {
+    const isSupported = CHAIN_TABS.some((t) => t.chainId === connectedChainId)
+    return isSupported ? connectedChainId : 8453
+  })
 
   // Track previous tab index to compute slide direction on chain switch
-  const prevChainIdxRef = useRef(0)
+  const prevChainIdxRef = useRef(
+    Math.max(
+      0,
+      CHAIN_TABS.findIndex((t) => t.chainId === connectedChainId),
+    ),
+  )
   const [chainSwitchDir, setChainSwitchDir] = useState(0)
-
-  useEffect(() => {
-    if (!chainSyncedRef.current && connectedChainId) {
-      const idx = CHAIN_TABS.findIndex((t) => t.chainId === connectedChainId)
-      if (idx !== -1) {
-        setActiveChainId(connectedChainId)
-        prevChainIdxRef.current = idx
-      }
-      chainSyncedRef.current = true
-    }
-  }, [connectedChainId])
 
   const [copied, setCopied] = useState(false)
   const [isSigningOut, setIsSigningOut] = useState(false)
@@ -134,28 +133,37 @@ export function WalletSidebar({ isOpen, onClose }: WalletSidebarProps) {
 
   // NFT detail view — null means main view is shown
   const [selectedTokenId, setSelectedTokenId] = useState<bigint | null>(null)
+  const isDetailOpen = selectedTokenId !== null
+
+  // Focus trap for the dialog. Escape backs out of the NFT detail sheet first,
+  // then closes the whole panel — and focus is restored to the trigger on close.
+  const panelRef = useRef<HTMLElement>(null)
+  const handleEscape = useCallback(() => {
+    if (selectedTokenId !== null) setSelectedTokenId(null)
+    else onClose()
+  }, [selectedTokenId, onClose])
+  useFocusTrap(panelRef, isOpen, { onEscape: handleEscape })
 
   const { address } = useConnection()
   const { mutate: mutateUser } = useUser()
   const { mutateAsync: disconnectWallet } = useDisconnect()
 
-  // Balance hooks for all 4 chains — always mounted; wagmi caches inactive chains
-  const baseBalances = useChainBalances(
-    address as `0x${string}` | undefined,
-    8453,
-  )
-  const arbitrumBalances = useChainBalances(
-    address as `0x${string}` | undefined,
-    42161,
-  )
-  const liskBalances = useChainBalances(
-    address as `0x${string}` | undefined,
-    1135,
-  )
-  const mantaBalances = useChainBalances(
-    address as `0x${string}` | undefined,
-    169,
-  )
+  // Don't fan out 8 cross-chain reads (4 balance multicalls + 4 GraphQL queries)
+  // for a panel the user may never open. Latch on first open, then keep the
+  // hooks enabled so reopening is instant from cache.
+  // React "update state during render" pattern: guarded setState with no-revert
+  // condition prevents infinite loops while avoiding both effects and refs.
+  const [hasOpened, setHasOpened] = useState(isOpen)
+  if (isOpen && !hasOpened) setHasOpened(true)
+  const dataAddress = hasOpened
+    ? (address as `0x${string}` | undefined)
+    : undefined
+
+  // Balance hooks for all 4 chains — enabled only once the panel has opened.
+  const baseBalances = useChainBalances(dataAddress, 8453)
+  const arbitrumBalances = useChainBalances(dataAddress, 42161)
+  const liskBalances = useChainBalances(dataAddress, 1135)
+  const mantaBalances = useChainBalances(dataAddress, 169)
 
   const balancesMap = useMemo(
     () =>
@@ -168,11 +176,11 @@ export function WalletSidebar({ isOpen, onClose }: WalletSidebarProps) {
     [baseBalances, arbitrumBalances, liskBalances, mantaBalances],
   )
 
-  // NFT mints for all 4 chains via GraphQL — always mounted, fast
-  const baseMints = useNftMints(address, 8453)
-  const arbitrumMints = useNftMints(address, 42161)
-  const liskMints = useNftMints(address, 1135)
-  const mantaMints = useNftMints(address, 169)
+  // NFT mints for all 4 chains via GraphQL — enabled only once the panel opened.
+  const baseMints = useNftMints(dataAddress, 8453)
+  const arbitrumMints = useNftMints(dataAddress, 42161)
+  const liskMints = useNftMints(dataAddress, 1135)
+  const mantaMints = useNftMints(dataAddress, 169)
 
   const mintsMap = useMemo(
     () =>
@@ -224,15 +232,7 @@ export function WalletSidebar({ isOpen, onClose }: WalletSidebarProps) {
     [selectedTokenId, activeMints],
   )
 
-  // Close on Escape
-  useEffect(() => {
-    if (!isOpen) return
-    const handler = (e: KeyboardEvent) => {
-      if (e.key === 'Escape') onClose()
-    }
-    document.addEventListener('keydown', handler)
-    return () => document.removeEventListener('keydown', handler)
-  }, [isOpen, onClose])
+  // Escape handling is owned by useFocusTrap (see handleEscape above).
 
   // Lock body scroll while panel is open
   useEffect(() => {
@@ -279,7 +279,7 @@ export function WalletSidebar({ isOpen, onClose }: WalletSidebarProps) {
       onClose()
       window.location.href = '/login'
     } catch (e) {
-      console.error('Sign out error:', e)
+      reportError(e, { flow: 'wallet-sign-out' })
       setIsSigningOut(false)
       setConfirmingSignOut(false)
     }
@@ -376,6 +376,7 @@ export function WalletSidebar({ isOpen, onClose }: WalletSidebarProps) {
           {/* Panel shell — slides in from right */}
           <motion.aside
             key="wallet-panel"
+            ref={panelRef}
             role="dialog"
             aria-modal="true"
             aria-label="Wallet"
@@ -388,8 +389,11 @@ export function WalletSidebar({ isOpen, onClose }: WalletSidebarProps) {
             }}
             className="fixed top-0 right-0 z-50 flex h-dvh w-full flex-col overflow-hidden bg-khaki-99 shadow-2xl sm:max-w-95"
           >
-            {/* Scrollable body */}
-            <div className="flex flex-1 flex-col overflow-y-auto overscroll-contain">
+            {/* Scrollable body — inert while the NFT detail sheet overlays it */}
+            <div
+              inert={isDetailOpen}
+              className="flex flex-1 flex-col overflow-y-auto overscroll-contain"
+            >
               {/* ── Identity zone: cascades in from above ── */}
               <motion.div
                 {...sectionEntrance(0.08, -6)}
@@ -555,7 +559,7 @@ export function WalletSidebar({ isOpen, onClose }: WalletSidebarProps) {
                     ) : isError ? (
                       <li className="flex flex-col items-center gap-2 py-8">
                         <p className="text-center text-caption text-neutral-40">
-                          Couldn't load balances.
+                          Couldn&apos;t load balances.
                         </p>
                         <button
                           onClick={() => refetch()}
@@ -802,7 +806,10 @@ export function WalletSidebar({ isOpen, onClose }: WalletSidebarProps) {
             </AnimatePresence>
 
             {/* ── Footer (sticky) — sign-out pulses into confirm state ── */}
-            <div className="border-t border-khaki-70 px-6 py-4">
+            <div
+              inert={isDetailOpen}
+              className="border-t border-khaki-70 px-6 py-4"
+            >
               <motion.button
                 animate={signOutControls}
                 onClick={handleSignOutClick}

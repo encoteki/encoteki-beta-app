@@ -42,8 +42,7 @@ export const AnimatedTabs = ({ items, classname }: AnimatedTabsProps) => {
             onClick={() => handleClick(idx, item.type)}
             style={
               {
-                // eslint-disable-next-line @typescript-eslint/ban-ts-comment
-                // @ts-ignore - CSS var keys
+                // @ts-ignore - CSS custom property keys
                 '--tab-primary': item.primary,
                 '--tab-secondary': item.secondary,
               } as React.CSSProperties

@@ -4,6 +4,7 @@ import { useEffect, useRef, useCallback } from 'react'
 import { useDisconnect, useConnection } from 'wagmi'
 import { useUser } from './useUser'
 import { destroySession } from '@/actions/auth'
+import { reportError } from '@/lib/telemetry'
 
 /**
  * Session guard that automatically logs out the user when:
@@ -39,7 +40,7 @@ export function useSessionGuard() {
       // Redirect to login
       window.location.href = '/login'
     } catch (error) {
-      console.error('Session guard logout failed:', error)
+      reportError(error, { flow: 'session-guard-logout' })
     } finally {
       isLoggingOutRef.current = false
     }

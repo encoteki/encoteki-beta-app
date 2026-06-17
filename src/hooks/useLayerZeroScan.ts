@@ -36,23 +36,35 @@ async function fetchLzStatus(
     return null // still INFLIGHT or unknown
   } catch (err) {
     if ((err as Error).name === 'AbortError') throw err
-    console.error('LayerZero polling error:', err)
+    // Transient polling blip — the loop retries; surfaces as FAILED after max attempts.
     return null
   }
 }
 
 export function useLayerZeroScan(sourceHash?: string) {
-  const [lzStatus, setLzStatus] = useState<LzStatus>('IDLE')
-  const [dstTxHash, setDstTxHash] = useState<string | null>(null)
+  const [scanResult, setScanResult] = useState<{
+    hash: string
+    status: LzStatus
+    dstTxHash: string | null
+  } | null>(null)
   const activeRef = useRef(false)
+
+  // Derive status from whether the last scan result matches the current hash.
+  // When sourceHash changes, the key mismatches immediately → 'INFLIGHT' with no setState.
+  // Explicit null check so TypeScript narrows scanResult and avoids the false match
+  // of (null?.hash === undefined) when sourceHash is also undefined.
+  const matched = scanResult !== null && scanResult.hash === sourceHash
+  const lzStatus: LzStatus = matched
+    ? scanResult.status
+    : sourceHash
+      ? 'INFLIGHT'
+      : 'IDLE'
+  const dstTxHash = matched ? scanResult.dstTxHash : null
 
   useEffect(() => {
     if (!sourceHash) return
 
-    setLzStatus('INFLIGHT')
-    setDstTxHash(null)
     activeRef.current = true
-
     const controller = new AbortController()
     let timeoutId: ReturnType<typeof setTimeout>
     let attempts = 0
@@ -62,7 +74,7 @@ export function useLayerZeroScan(sourceHash?: string) {
 
       attempts += 1
       if (attempts > MAX_POLL_ATTEMPTS) {
-        setLzStatus('FAILED')
+        setScanResult({ hash: sourceHash, status: 'FAILED', dstTxHash: null })
         return
       }
 
@@ -73,8 +85,11 @@ export function useLayerZeroScan(sourceHash?: string) {
       if (!activeRef.current) return
 
       if (result) {
-        setLzStatus(result.status)
-        if (result.dstTxHash) setDstTxHash(result.dstTxHash)
+        setScanResult({
+          hash: sourceHash,
+          status: result.status,
+          dstTxHash: result.dstTxHash,
+        })
         activeRef.current = false
         return // terminal state — stop polling
       }
@@ -99,8 +114,11 @@ export function useLayerZeroScan(sourceHash?: string) {
 
     const result = await fetchLzStatus(sourceHash).catch(() => null)
     if (result) {
-      setLzStatus(result.status)
-      if (result.dstTxHash) setDstTxHash(result.dstTxHash)
+      setScanResult({
+        hash: sourceHash,
+        status: result.status,
+        dstTxHash: result.dstTxHash,
+      })
     }
   }, [sourceHash])
 
@@ -114,8 +132,11 @@ export function useLayerZeroScan(sourceHash?: string) {
         // Immediately fire one poll when tab becomes visible
         fetchLzStatus(sourceHash).then((result) => {
           if (!result || !activeRef.current) return
-          setLzStatus(result.status)
-          if (result.dstTxHash) setDstTxHash(result.dstTxHash)
+          setScanResult({
+            hash: sourceHash,
+            status: result.status,
+            dstTxHash: result.dstTxHash,
+          })
           activeRef.current = false
         })
       }

@@ -4,6 +4,7 @@ import React, {
   useContext,
   useEffect,
   useCallback,
+  useMemo,
   Dispatch,
   SetStateAction,
 } from 'react'
@@ -43,10 +44,22 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({
 }) => {
   const [activeIdx, setActiveIdx] = useState<number | undefined>(undefined)
   const [referralCode, setReferralCode] = useState<string | null>(null)
-  const [isReferralLoading, setIsReferralLoading] = useState(false)
+  const [referralFetchDone, setReferralFetchDone] = useState(false)
   const [backgroundMint, setBackgroundMint] = useState<BackgroundMint>(null)
 
   const { isLoggedIn, hasReferral } = useUser()
+
+  const shouldFetch = isLoggedIn && hasReferral
+  const [prevShouldFetch, setPrevShouldFetch] = useState(shouldFetch)
+
+  // Reset the fetch-done flag when the user logs out so loading shows again on re-login.
+  // React "derived state during render" — batched into the same commit, no extra renders.
+  if (prevShouldFetch !== shouldFetch) {
+    setPrevShouldFetch(shouldFetch)
+    if (!shouldFetch) setReferralFetchDone(false)
+  }
+
+  const isReferralLoading = shouldFetch && !referralFetchDone
 
   // ── Background LZ polling (persists even when /mint is unmounted) ──
   const bgSourceHash = backgroundMint?.isCrossChain
@@ -56,28 +69,26 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({
     bgSourceHash ?? undefined,
   )
 
-  useEffect(() => {
-    if (!backgroundMint || !bgSourceHash) return
-
+  // Derive final status from LZ scan — no state write needed; useMemo is pure
+  const effectiveBackgroundMint = useMemo<BackgroundMint>(() => {
+    if (!backgroundMint || !bgSourceHash) return backgroundMint
     if (bgLzStatus === 'DELIVERED') {
-      setBackgroundMint((prev) =>
-        prev
-          ? { ...prev, status: MintStatus.SUCCESS, dstTxHash: bgDstTxHash }
-          : null,
-      )
-    } else if (bgLzStatus === 'FAILED' || bgLzStatus === 'PAYLOAD_STORED') {
-      setBackgroundMint((prev) =>
-        prev
-          ? {
-              ...prev,
-              status: MintStatus.FAILED,
-              errorMessage:
-                'Cross-chain delivery failed. You can retry or claim a refund.',
-            }
-          : null,
-      )
+      return {
+        ...backgroundMint,
+        status: MintStatus.SUCCESS,
+        dstTxHash: bgDstTxHash,
+      }
     }
-  }, [bgLzStatus, bgDstTxHash, bgSourceHash, backgroundMint])
+    if (bgLzStatus === 'FAILED' || bgLzStatus === 'PAYLOAD_STORED') {
+      return {
+        ...backgroundMint,
+        status: MintStatus.FAILED,
+        errorMessage:
+          'Cross-chain delivery failed. You can retry or claim a refund.',
+      }
+    }
+    return backgroundMint
+  }, [backgroundMint, bgLzStatus, bgDstTxHash, bgSourceHash])
 
   const clearBackgroundMint = useCallback(() => {
     setBackgroundMint(null)
@@ -85,13 +96,9 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({
 
   // ── Referral fetch ──
   useEffect(() => {
-    if (!isLoggedIn || !hasReferral) {
-      setReferralCode(null)
-      return
-    }
+    if (!shouldFetch) return
 
     let cancelled = false
-    setIsReferralLoading(true)
 
     getAppliedReferralCode()
       .then((result) => {
@@ -101,22 +108,26 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({
       })
       .catch(() => {})
       .finally(() => {
-        if (!cancelled) setIsReferralLoading(false)
+        if (!cancelled) setReferralFetchDone(true)
       })
 
     return () => {
       cancelled = true
     }
-  }, [isLoggedIn, hasReferral])
+  }, [shouldFetch])
+
+  // Referral code is only valid while the user is logged in with a referral.
+  // Derive null instead of syncing setReferralCode(null) through an effect.
+  const effectiveReferralCode = isLoggedIn && hasReferral ? referralCode : null
 
   return (
     <AppContext.Provider
       value={{
         activeIdx,
         setActiveIdx,
-        referralCode,
+        referralCode: effectiveReferralCode,
         isReferralLoading,
-        backgroundMint,
+        backgroundMint: effectiveBackgroundMint,
         setBackgroundMint,
         clearBackgroundMint,
       }}

@@ -5,6 +5,8 @@ import { cookies } from 'next/headers'
 import { verifyMessage } from 'viem'
 import { supabaseAdmin } from '@/lib/supabase/admin'
 import { sessionOptions, SessionData } from '@/lib/session'
+import { RefCodeResponseSchema } from '@/lib/schemas'
+import { reportError } from '@/lib/telemetry'
 import { getAuthSession } from './auth'
 
 // ─── User's OWN referral code (users table, ref_code column) ───
@@ -55,6 +57,7 @@ export async function submitReferralCode(code: string, signature: string) {
 
     return { success: true, message: 'Successfully claimed referral code' }
   } catch (error) {
+    reportError(error, { action: 'submitReferralCode' })
     return { success: false, error: 'Internal Server Error' }
   }
 }
@@ -75,9 +78,13 @@ export async function getUserReferralCode() {
       return { success: false, error: 'Failed to fetch referral code' }
     }
 
-    const json = await res.json()
-    return { success: true, data: (json?.ref_code as string | null) ?? null }
-  } catch {
+    const parsed = RefCodeResponseSchema.safeParse(await res.json())
+    return {
+      success: true,
+      data: parsed.success ? (parsed.data.ref_code ?? null) : null,
+    }
+  } catch (error) {
+    reportError(error, { action: 'getUserReferralCode' })
     return { success: false, error: 'Internal Server Error' }
   }
 }
@@ -108,6 +115,7 @@ export async function getAppliedReferralCode() {
 
     return { success: true, code: data?.code_applied || null }
   } catch (error) {
+    reportError(error, { action: 'getAppliedReferralCode' })
     return { success: false, error: 'Internal Server Error', code: null }
   }
 }
@@ -172,7 +180,7 @@ export async function applyReferralCode(code: string | null) {
 
     return { success: true, message: 'Referral code applied' }
   } catch (error) {
-    console.error('Apply Referral Error:', error)
+    reportError(error, { action: 'applyReferralCode' })
     return { success: false, error: 'Failed to apply referral code' }
   }
 }

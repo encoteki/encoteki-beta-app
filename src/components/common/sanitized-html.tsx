@@ -3,6 +3,20 @@
 import { useMemo } from 'react'
 import DOMPurify from 'dompurify'
 
+// Force every anchor that opens a new tab to carry rel="noopener noreferrer",
+// closing the reverse-tabnabbing vector even for links present in the source
+// HTML. Registered once, lazily, so it only runs in the browser.
+let linkHardeningRegistered = false
+function ensureLinkHardeningHook() {
+  if (linkHardeningRegistered) return
+  DOMPurify.addHook('afterSanitizeAttributes', (node) => {
+    if (node.nodeName === 'A' && node.getAttribute('target')) {
+      node.setAttribute('rel', 'noopener noreferrer')
+    }
+  })
+  linkHardeningRegistered = true
+}
+
 interface SanitizedHTMLProps {
   html: string
   className?: string
@@ -21,6 +35,7 @@ export default function SanitizedHTML({
   allowedAttributes,
 }: SanitizedHTMLProps) {
   const sanitizedContent = useMemo(() => {
+    ensureLinkHardeningHook()
     // Default safe configuration
     const config = {
       ALLOWED_TAGS: allowedTags || [
