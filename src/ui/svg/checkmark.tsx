@@ -1,6 +1,6 @@
 'use client'
 
-import { motion, type Variants } from 'framer-motion' // ← use framer-motion
+import { motion, type Variants } from 'motion/react'
 
 interface CheckmarkProps {
   size?: number

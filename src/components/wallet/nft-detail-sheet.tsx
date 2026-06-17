@@ -1,12 +1,13 @@
 'use client'
 
-import { useState, useEffect, useCallback, useMemo } from 'react'
+import { useState, useEffect, useCallback, useMemo, useRef } from 'react'
 import Image from 'next/image'
-import { motion, AnimatePresence, useReducedMotion } from 'framer-motion'
+import { motion, AnimatePresence, useReducedMotion } from 'motion/react'
 import { ArrowLeft, ExternalLink, Copy, Check } from 'lucide-react'
 import { useReadContracts } from 'wagmi'
 import { getPaymentMethods } from '@/constants/contracts/tsb'
 import { type MintItem } from '@/hooks/useNftMints'
+import { NftMetadataSchema, type NftMetadata } from '@/lib/schemas'
 import HiddenNFT from '@/assets/mint/hidden.png'
 
 // ── ABIs (minimal) ─────────────────────────────────────────────────────────
@@ -86,13 +87,6 @@ function explorerUrl(
 
 // ── Types ────────────────────────────────────────────────────────────────────
 
-interface NftMeta {
-  name?: string
-  description?: string
-  image?: string
-  attributes?: { trait_type: string; value: string | number }[]
-}
-
 interface NftDetailSheetProps {
   tokenId: bigint
   chainId: number
@@ -114,9 +108,17 @@ export function NftDetailSheet({
 }: NftDetailSheetProps) {
   const shouldReduceMotion = useReducedMotion()
 
-  const [meta, setMeta] = useState<NftMeta | null>(null)
-  const [fetchingMeta, setFetchingMeta] = useState(false)
-  const [metaError, setMetaError] = useState(false)
+  // Pull focus into the sheet when it opens over the (now-inert) panel.
+  const backButtonRef = useRef<HTMLButtonElement>(null)
+  useEffect(() => {
+    backButtonRef.current?.focus()
+  }, [])
+
+  const [fetchState, setFetchState] = useState<{
+    key: string
+    meta: NftMetadata | null
+    error: boolean
+  }>({ key: '', meta: null, error: false })
   const [retryCount, setRetryCount] = useState(0)
   const [copiedContract, setCopiedContract] = useState(false)
 
@@ -153,34 +155,44 @@ export function NftDetailSheet({
       ? (data[1].result as string)
       : 'Tree Stewards'
 
+  // Stable key encoding both the URI and retry attempt — changes trigger the effect
+  const fetchKey = tokenUri ? `${tokenUri}:${retryCount}` : null
+
   useEffect(() => {
-    if (!tokenUri) return
+    if (!tokenUri || !fetchKey) return
     const controller = new AbortController()
     let active = true
-    setFetchingMeta(true)
-    setMeta(null)
-    setMetaError(false)
 
     fetch(resolveUri(tokenUri), { signal: controller.signal })
       .then((r) => {
         if (!r.ok) throw new Error('response-not-ok')
         return r.json()
       })
-      .then((json: NftMeta) => {
-        if (active) setMeta(json)
+      .then((json: unknown) => {
+        if (!active) return
+        // Validate untrusted IPFS metadata at the boundary.
+        const parsed = NftMetadataSchema.safeParse(json)
+        setFetchState(
+          parsed.success
+            ? { key: fetchKey, meta: parsed.data, error: false }
+            : { key: fetchKey, meta: null, error: true },
+        )
       })
       .catch((err: unknown) => {
-        if (active && (err as Error).name !== 'AbortError') setMetaError(true)
-      })
-      .finally(() => {
-        if (active) setFetchingMeta(false)
+        if (active && (err as Error).name !== 'AbortError')
+          setFetchState({ key: fetchKey, meta: null, error: true })
       })
 
     return () => {
       active = false
       controller.abort()
     }
-  }, [tokenUri, retryCount])
+  }, [fetchKey, tokenUri])
+
+  // Derive fetch state — loading is inferred from key mismatch; no sync setState needed
+  const meta = fetchState.key === fetchKey ? fetchState.meta : null
+  const metaError = fetchState.key === fetchKey ? fetchState.error : false
+  const fetchingMeta = !!fetchKey && fetchState.key !== fetchKey
 
   const contractError = useMemo(
     () => !isContractLoading && !!data && data[0]?.status !== 'success',
@@ -199,12 +211,10 @@ export function NftDetailSheet({
     () => formatMintDate(mintInfo?.mintDate ?? null),
     [mintInfo?.mintDate],
   )
+  const paymentToken = mintInfo?.paymentToken
   const paymentVia = useMemo(
-    () =>
-      mintInfo?.paymentToken
-        ? resolvePaymentSymbol(mintInfo.paymentToken, chainId)
-        : null,
-    [mintInfo?.paymentToken, chainId],
+    () => (paymentToken ? resolvePaymentSymbol(paymentToken, chainId) : null),
+    [paymentToken, chainId],
   )
   const link = useMemo(
     () => explorerUrl(chainId, contractAddress, tokenId),
@@ -236,6 +246,7 @@ export function NftDetailSheet({
       {/* Header */}
       <div className="flex items-center gap-3 border-b border-khaki-70 px-6 py-5">
         <button
+          ref={backButtonRef}
           onClick={onBack}
           aria-label="Back to collection"
           className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full text-neutral-40 transition-colors hover:bg-khaki-80 hover:text-neutral-10 focus-visible:ring-2 focus-visible:ring-primary-green focus-visible:outline-none"

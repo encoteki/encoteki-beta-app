@@ -17,6 +17,7 @@ import {
 } from 'viem'
 import { getAbi, getExplorerUrl, isHubChain } from '@/constants/contracts/tsb'
 import { humanizeError } from '@/utils/humanize-error.util'
+import { reportUnexpected } from '@/lib/telemetry'
 import { tsbSatelliteABI } from '@/constants/abis/tsbSatellite.abi'
 import { useLayerZeroScan } from './useLayerZeroScan'
 
@@ -59,10 +60,12 @@ export function useMintTransaction({
   const isHub = isHubChain(chainId)
   const abi = getAbi(chainId)
 
-  const [phase, setPhase] = useState<MintPhase>('idle')
-  const [errorMsg, setErrorMsg] = useState<string | null>(null)
-  const [reqId, setReqId] = useState<Hex | null>(null)
-  const [mintConfirmedByEvent, setMintConfirmedByEvent] = useState(false)
+  // Only holds phases that wagmi state can't represent on its own:
+  // 'switching-chain', 'error' (chain-switch fail), 'success' (after 4 s timer), 'idle' (reset)
+  // null = let wagmi state drive the derived phase below
+  const [imperativePhase, setImperativePhase] = useState<MintPhase | null>(null)
+  // Manual error string only for the chain-switch failure path
+  const [manualError, setManualError] = useState<string | null>(null)
 
   const abortRef = useRef(false)
 
@@ -159,11 +162,13 @@ export function useMintTransaction({
   // ───────────── Extract events from mint receipt ─────────────
   // Hub: look for MintSuccess event as truth check
   // Satellite: look for MintRequestSent (for reqId tracking)
-  useEffect(() => {
-    if (!mintReceipt.data) return
-
+  // Purely derived from receipt data — no setState needed.
+  const { mintConfirmedByEvent, reqId } = useMemo(() => {
+    if (!mintReceipt.data)
+      return { mintConfirmedByEvent: false, reqId: null as Hex | null }
     const currentAbi = isHub ? abi : tsbSatelliteABI
-
+    let mintConfirmedByEvent = false
+    let reqId: Hex | null = null
     try {
       for (const log of mintReceipt.data.logs) {
         try {
@@ -172,14 +177,9 @@ export function useMintTransaction({
             data: log.data,
             topics: log.topics,
           })
-
-          if (decoded.eventName === 'MintSuccess') {
-            setMintConfirmedByEvent(true)
-          }
-
-          if (!isHub && decoded.eventName === 'MintRequestSent') {
-            setReqId(decoded.args.reqId)
-          }
+          if (decoded.eventName === 'MintSuccess') mintConfirmedByEvent = true
+          if (!isHub && decoded.eventName === 'MintRequestSent')
+            reqId = decoded.args.reqId
         } catch {
           // Not every log matches our ABI
         }
@@ -187,6 +187,7 @@ export function useMintTransaction({
     } catch {
       // Ignore decode failures
     }
+    return { mintConfirmedByEvent, reqId }
   }, [mintReceipt.data, isHub, abi])
 
   // ───────────── Derive Phase ─────────────
@@ -197,84 +198,77 @@ export function useMintTransaction({
   const mintIsSuccess = mintReceipt.isSuccess
   const mintError = mintReceipt.error
 
-  useEffect(() => {
-    if (abortRef.current) return
+  // Replaces the old derive-phase effect + watchdog effect.
+  // imperativePhase takes precedence for transitions wagmi state can't represent.
+  const phase = useMemo((): MintPhase => {
+    if (imperativePhase === 'idle') return 'idle'
+    if (imperativePhase === 'switching-chain') return 'switching-chain'
+    if (imperativePhase === 'error') return 'error'
+    if (imperativePhase === 'success') return 'success'
 
     const anyError =
       approveWriteError || mintWriteError || approveError || mintError
-
-    if (anyError) {
-      setPhase('error')
-      setErrorMsg(humanizeError(anyError))
-      return
-    }
-
-    if (isApproveSigning) {
-      setPhase('signing-approve')
-      return
-    }
-    if (isMintSigning) {
-      setPhase('signing')
-      return
-    }
-    if (approveIsLoading) {
-      setPhase('approving')
-      return
-    }
-    if (mintIsLoading) {
-      setPhase('mining')
-      return
-    }
-
-    // Hub success — no LayerZero needed
-    if (isHub && (mintIsSuccess || mintConfirmedByEvent)) {
-      setPhase('success')
-      return
-    }
-
-    // Satellite: source confirmed → track LZ
+    if (anyError) return 'error'
+    if (isApproveSigning) return 'signing-approve'
+    if (isMintSigning) return 'signing'
+    if (approveIsLoading || (approveIsSuccess && !mintHash && !isMintSigning))
+      return 'approving'
+    if (mintIsLoading) return 'mining'
+    if (isHub && (mintIsSuccess || mintConfirmedByEvent)) return 'success'
     if (!isHub && mintIsSuccess) {
-      if (lzStatus === 'DELIVERED') {
-        setPhase('minting')
-      } else if (lzStatus === 'FAILED' || lzStatus === 'PAYLOAD_STORED') {
-        setPhase('error')
-        setErrorMsg(
-          'Cross-chain delivery failed. You can retry or claim a refund.',
-        )
-      } else {
-        setPhase('inflight')
-      }
-      return
+      if (lzStatus === 'DELIVERED') return 'minting'
+      if (lzStatus === 'FAILED' || lzStatus === 'PAYLOAD_STORED') return 'error'
+      return 'inflight'
     }
+    return 'idle'
   }, [
+    imperativePhase,
     approveWriteError,
     mintWriteError,
     approveError,
     mintError,
-    approveIsLoading,
-    approveIsSuccess,
-    mintIsLoading,
-    mintIsSuccess,
     isApproveSigning,
     isMintSigning,
+    approveIsLoading,
+    approveIsSuccess,
+    mintHash,
+    mintIsLoading,
+    mintIsSuccess,
     isHub,
-    lzStatus,
     mintConfirmedByEvent,
+    lzStatus,
   ])
 
-  // ───────────── Watchdog: catch stuck INFLIGHT → MINTING transition ─────────────
-  useEffect(() => {
-    if (phase === 'inflight' && lzStatus === 'DELIVERED') {
-      setPhase('minting')
+  const errorMsg = useMemo((): string | null => {
+    if (manualError) return manualError
+    const anyError =
+      approveWriteError || mintWriteError || approveError || mintError
+    if (anyError) return humanizeError(anyError)
+    if (
+      !isHub &&
+      mintIsSuccess &&
+      (lzStatus === 'FAILED' || lzStatus === 'PAYLOAD_STORED')
+    ) {
+      return 'Cross-chain delivery failed. You can retry or claim a refund.'
     }
-  }, [phase, lzStatus])
+    return null
+  }, [
+    manualError,
+    approveWriteError,
+    mintWriteError,
+    approveError,
+    mintError,
+    isHub,
+    mintIsSuccess,
+    lzStatus,
+  ])
 
   // ───────────── Auto-advance MINTING → SUCCESS ─────────────
   useEffect(() => {
     if (phase !== 'minting') return
 
     const timer = setTimeout(() => {
-      setPhase('success')
+      setImperativePhase('success')
     }, 4_000)
 
     return () => clearTimeout(timer)
@@ -292,15 +286,18 @@ export function useMintTransaction({
     if (!userAddress || !targetContract || priceBigInt < ZERO) return
 
     abortRef.current = false
-    setErrorMsg(null)
+    setManualError(null)
+    setImperativePhase(null) // hand control back to wagmi-derived phase
 
     if (walletChainId !== chainId) {
       try {
-        setPhase('switching-chain')
+        setImperativePhase('switching-chain')
         await switchChainAsync({ chainId })
+        setImperativePhase(null) // chain switched — let derivation take over
       } catch (err: unknown) {
-        setPhase('error')
-        setErrorMsg(humanizeError(err))
+        reportUnexpected(err, { flow: 'mint-switch-chain', chainId })
+        setImperativePhase('error')
+        setManualError(humanizeError(err))
         return
       }
       if (abortRef.current) return
@@ -391,10 +388,8 @@ export function useMintTransaction({
 
   const reset = useCallback(() => {
     abortRef.current = true
-    setPhase('idle')
-    setErrorMsg(null)
-    setReqId(null)
-    setMintConfirmedByEvent(false)
+    setImperativePhase('idle')
+    setManualError(null)
     resetApprove()
     resetMint()
   }, [resetApprove, resetMint])

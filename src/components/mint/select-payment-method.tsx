@@ -1,6 +1,6 @@
 'use client'
 
-import { useCallback, useEffect, useState, useRef } from 'react'
+import { useCallback, useEffect, useMemo, useState, useRef } from 'react'
 import { useChainId, useConnection, useSwitchChain } from 'wagmi'
 import DefaultButton from '@/ui/buttons/default-btn'
 import { useMintCtx } from '../../contexts/mint.context'
@@ -18,9 +18,10 @@ import { MintStatus } from '../../enums/mint.enum'
 import { useUser } from '@/hooks/useUser'
 import { useAppCtx } from '@/contexts/app.context'
 import { useSatelliteRecovery } from '@/hooks/useSatelliteRecovery'
+import { reportUnexpected } from '@/lib/telemetry'
 import { ChevronDown } from 'lucide-react'
 import Image from 'next/image'
-import { motion, AnimatePresence } from 'framer-motion'
+import { motion, AnimatePresence } from 'motion/react'
 
 // Chain icons
 import BaseIcon from '@/assets/chains/base.jpeg'
@@ -71,8 +72,8 @@ export default function SelectPaymentMethod() {
   const { isLoggedIn, isLoading: isUserLoading } = useUser()
   const { referralCode: globalReferralCode, backgroundMint } = useAppCtx()
 
-  const enabledChains = getEnabledChains()
-  const allChains = getAllChains()
+  const enabledChains = useMemo(() => getEnabledChains(), [])
+  const allChains = useMemo(() => getAllChains(), [])
 
   // Use selectedChainId if set, otherwise use walletChainId
   // This ensures user's chain choice persists and doesn't revert to default
@@ -101,7 +102,13 @@ export default function SelectPaymentMethod() {
           : (enabledChains[0]?.chainId ?? walletChainId),
       )
     }
-  }, [])
+  }, [
+    allChains,
+    enabledChains,
+    selectedChainId,
+    setSelectedChainId,
+    walletChainId,
+  ])
 
   // Clear switch error when wallet chain matches selected chain
   useEffect(() => {
@@ -139,8 +146,9 @@ export default function SelectPaymentMethod() {
         // Clear error on success
         setSwitchChainError(null)
       } catch (error) {
-        // If switch fails, keep the selectedChainId so user can retry
-        console.error('Chain switch failed:', error)
+        // If switch fails, keep the selectedChainId so user can retry.
+        // User rejection is normal and not reported; other failures are.
+        reportUnexpected(error, { flow: 'select-payment-switch-chain' })
         const errorMsg =
           error instanceof Error ? error.message : 'Failed to switch chain'
         setSwitchChainError(errorMsg)

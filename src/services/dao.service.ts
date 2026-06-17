@@ -52,7 +52,7 @@ export async function fetchAllDaos(): Promise<DaoRow[]> {
     .order('created_at', { ascending: false })
 
   if (error) {
-    console.error('[DAO Service] Error fetching DAOs:', error)
+    // Re-thrown to the calling boundary, which reports + shows fallback UI.
     throw error
   }
 
@@ -72,7 +72,6 @@ export async function fetchDaosByType(daoTypeId: number): Promise<DaoRow[]> {
     .order('created_at', { ascending: false })
 
   if (error) {
-    console.error('[DAO Service] Error fetching DAOs by type:', error)
     throw error
   }
 
@@ -92,7 +91,6 @@ export async function fetchActiveDaos(): Promise<DaoRow[]> {
     .order('created_at', { ascending: false })
 
   if (error) {
-    console.error('[DAO Service] Error fetching active DAOs:', error)
     throw error
   }
 
@@ -116,7 +114,6 @@ export async function fetchDaoById(daoId: number): Promise<DaoRow | null> {
       // No rows returned
       return null
     }
-    console.error('[DAO Service] Error fetching DAO by ID:', error)
     throw error
   }
 
@@ -148,7 +145,6 @@ export async function fetchDaoByCode(code: string): Promise<DaoRow | null> {
     if (error.code === 'PGRST116') {
       return null
     }
-    console.error('[DAO Service] Error fetching DAO by code:', error)
     throw error
   }
 
@@ -169,7 +165,6 @@ export async function fetchDaosByChain(chainKey: ChainKey): Promise<DaoRow[]> {
     .order('created_at', { ascending: false })
 
   if (error) {
-    console.error('[DAO Service] Error fetching DAOs by chain:', error)
     throw error
   }
 

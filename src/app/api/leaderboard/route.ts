@@ -1,4 +1,6 @@
 import { NextResponse } from 'next/server'
+import { LeaderboardUpstreamSchema } from '@/lib/schemas'
+import { reportError } from '@/lib/telemetry'
 
 export async function GET(request: Request) {
   const { searchParams } = new URL(request.url)
@@ -24,18 +26,25 @@ export async function GET(request: Request) {
       },
     )
 
-    const json = await res.json()
-    const items: { userAddress: string; points: number }[] = json?.data ?? []
+    // Validate the upstream payload at the boundary before reshaping it.
+    const parsed = LeaderboardUpstreamSchema.safeParse(await res.json())
+    if (!parsed.success) {
+      throw new Error('Malformed leaderboard response')
+    }
 
+    const items = parsed.data.data ?? []
     const entries = items.map((item, i) => ({
       rank: (page - 1) * limit + i + 1,
       address: item.userAddress,
       points: item.points,
     }))
 
-    return NextResponse.json({ entries, pagination: json.pagination ?? null })
+    return NextResponse.json({
+      entries,
+      pagination: parsed.data.pagination ?? null,
+    })
   } catch (err) {
-    console.error('[leaderboard]', err)
+    reportError(err, { route: 'GET /api/leaderboard', page, limit })
     return NextResponse.json({ entries: [], pagination: null }, { status: 500 })
   }
 }

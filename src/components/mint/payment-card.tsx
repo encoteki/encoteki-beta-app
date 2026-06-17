@@ -1,6 +1,6 @@
 import Image from 'next/image'
 import { memo, useCallback, useEffect } from 'react'
-import { motion, useAnimation } from 'framer-motion'
+import { motion, useAnimation } from 'motion/react'
 import { Token } from '@/constants/contracts/tsb'
 import { formatIDR } from '../../utils/format-balance.util'
 

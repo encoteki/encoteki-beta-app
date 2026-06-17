@@ -5,6 +5,7 @@ import { cookies, headers } from 'next/headers'
 import { generateNonce, SiweMessage } from 'siwe'
 import { sessionOptions, SessionData, SESSION_TTL } from '@/lib/session'
 import { supabaseAdmin } from '@/lib/supabase/admin'
+import { reportError } from '@/lib/telemetry'
 
 // Returns the canonical app host for SIWE domain binding.
 // NEXT_PUBLIC_APP_URL is the authoritative source in production — it eliminates
@@ -100,7 +101,7 @@ export async function verifySiweMessage(message: string, signature: string) {
       .single()
 
     if (error && error.code !== 'PGRST116') {
-      console.error('Referral Check Error:', error)
+      reportError(error, { action: 'verifySiweMessage', step: 'referralCheck' })
     }
 
     session.siwe = { address: userAddress }

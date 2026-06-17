@@ -35,18 +35,12 @@ function CountUp({
   delay: number
   reduced: boolean
 }) {
-  const [count, setCount] = useState(reduced ? target : 0)
-  const [settled, setSettled] = useState(reduced)
+  const [count, setCount] = useState(0)
+  const [settled, setSettled] = useState(false)
   const frameRef = useRef<number>(0)
 
   useEffect(() => {
-    if (reduced) {
-      setCount(target)
-      setSettled(true)
-      return
-    }
-    setCount(0)
-    setSettled(false)
+    if (reduced) return
     const timeout = setTimeout(() => {
       const start = performance.now()
       function tick(now: number) {
@@ -67,13 +61,16 @@ function CountUp({
     }
   }, [target, delay, reduced])
 
+  // When reduced motion is preferred, skip animation and show target directly
+  const displayCount = reduced ? target : count
+
   return (
     <motion.span
       animate={settled && !reduced ? { scale: [1, 1.08, 1] } : {}}
       transition={{ duration: 0.4, ease: [0.16, 1, 0.3, 1] }}
       className="inline-block"
     >
-      {fmtPts(count)}
+      {fmtPts(displayCount)}
     </motion.span>
   )
 }

@@ -6,34 +6,16 @@ import Logo from '@/assets/logos/icon-white.png'
 import { useUser } from '@/hooks/useUser'
 import { useState, useEffect } from 'react'
 import { useConnection } from 'wagmi'
-import { motion } from 'framer-motion'
+import { motion } from 'motion/react'
 import Bg from '@/assets/bg-login.png'
 import { applyReferralCode } from '@/actions/referral'
+import { reportError } from '@/lib/telemetry'
 import { Loader2 } from 'lucide-react'
 
-export default function SignInPage() {
-  const { isLoggedIn, hasReferral, isLoading, mutate } = useUser()
-  const { isConnected } = useConnection()
-
-  // State Form
+function ReferralCodeForm({ mutate }: { mutate: () => Promise<unknown> }) {
   const [code, setCode] = useState('')
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [errorMsg, setErrorMsg] = useState('')
-
-  // Auto Reset on Disconnect
-  useEffect(() => {
-    if (!isConnected) {
-      setCode('')
-      setErrorMsg('')
-    }
-  }, [isConnected])
-
-  // Auto Redirect if Eligible (Has Referral)
-  useEffect(() => {
-    if (isLoggedIn && hasReferral) {
-      window.location.href = '/mint'
-    }
-  }, [isLoggedIn, hasReferral])
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -44,21 +26,94 @@ export default function SignInPage() {
       const result = await applyReferralCode(code)
 
       if (!result.success) {
-        throw new Error(result.error || 'Failed to apply referral code')
+        setErrorMsg(result.error || 'Failed to apply referral code')
+        setIsSubmitting(false)
+        return
       }
 
       await mutate()
       window.location.href = '/mint'
-    } catch (err: any) {
-      setErrorMsg(err.message)
+    } catch (err) {
+      reportError(err, { flow: 'apply-referral-code' })
+      setErrorMsg('Something went wrong. Please try again.')
       setIsSubmitting(false)
     }
   }
 
+  return (
+    <div className="w-full text-left">
+      <form onSubmit={handleSubmit} className="flex flex-col gap-5">
+        <div className="flex flex-col gap-2">
+          <label
+            htmlFor="code"
+            className="pl-1 text-xs font-medium tracking-wider text-white/70 uppercase"
+          >
+            Referral Code
+          </label>
+          <input
+            id="code"
+            name="code"
+            type="text"
+            required
+            placeholder="Enter your invite code"
+            value={code}
+            onChange={(e) => setCode(e.target.value.toUpperCase())}
+            className="block w-full rounded-xl border border-white/10 bg-white/5 px-4 py-3.5 text-center text-lg tracking-widest text-white shadow-inner transition-all duration-200 placeholder:tracking-normal placeholder:text-white/20 focus:border-primary-green/50 focus:bg-white/10 focus:ring-1 focus:ring-primary-green/50 focus:outline-none"
+          />
+        </div>
+
+        {errorMsg && (
+          <motion.p
+            initial={{ opacity: 0, height: 0 }}
+            animate={{ opacity: 1, height: 'auto' }}
+            className="rounded-xl border border-red-500/20 bg-red-500/10 p-3 text-center text-sm font-medium text-red-200"
+          >
+            {errorMsg}
+          </motion.p>
+        )}
+
+        <button
+          type="submit"
+          disabled={isSubmitting || !code}
+          className="mt-2 flex w-full items-center justify-center gap-2 rounded-xl bg-primary-green px-4 py-3.5 text-sm font-medium text-white shadow-[0_0_20px_rgba(36,98,52,0.4)] transition-all duration-300 hover:bg-primary-green/90 hover:shadow-[0_0_24px_rgba(36,98,52,0.6)] active:scale-[0.98] disabled:cursor-not-allowed disabled:bg-white/10 disabled:text-white/40 disabled:shadow-none"
+        >
+          {isSubmitting ? (
+            <>
+              <Loader2 className="h-4 w-4 animate-spin" />
+              <span>Validating...</span>
+            </>
+          ) : (
+            'Enter Beta'
+          )}
+        </button>
+
+        <div className="mt-4 flex w-full flex-col items-center border-t border-white/5 pt-6">
+          <p className="mb-4 text-xs text-white/40">Switch Wallet</p>
+          <SignInButton />
+        </div>
+      </form>
+    </div>
+  )
+}
+
+export default function SignInPage() {
+  const { isLoggedIn, hasReferral, isLoading, mutate } = useUser()
+  const { isConnected } = useConnection()
+
+  useEffect(() => {
+    if (isLoggedIn && hasReferral) {
+      window.location.href = '/mint'
+    }
+  }, [isLoggedIn, hasReferral])
+
   const showLoginForm = !isConnected || !isLoggedIn
 
   return (
-    <main className="relative flex min-h-screen flex-col items-center justify-center overflow-hidden bg-neutral-10 py-12 sm:px-6 lg:px-8">
+    <main
+      id="main-content"
+      tabIndex={-1}
+      className="relative flex min-h-screen flex-col items-center justify-center overflow-hidden bg-neutral-10 py-12 sm:px-6 lg:px-8"
+    >
       {/* Background Image Layer */}
       <div className="absolute inset-0 z-0">
         <Image
@@ -123,60 +178,7 @@ export default function SignInPage() {
               className="flex w-full flex-col"
             >
               {!hasReferral ? (
-                <div className="w-full text-left">
-                  <form onSubmit={handleSubmit} className="flex flex-col gap-5">
-                    <div className="flex flex-col gap-2">
-                      <label
-                        htmlFor="code"
-                        className="pl-1 text-xs font-medium tracking-wider text-white/70 uppercase"
-                      >
-                        Referral Code
-                      </label>
-                      <input
-                        id="code"
-                        name="code"
-                        type="text"
-                        required
-                        placeholder="Enter your invite code"
-                        value={code}
-                        onChange={(e) => setCode(e.target.value.toUpperCase())}
-                        className="block w-full rounded-xl border border-white/10 bg-white/5 px-4 py-3.5 text-center text-lg tracking-widest text-white shadow-inner transition-all duration-200 placeholder:tracking-normal placeholder:text-white/20 focus:border-primary-green/50 focus:bg-white/10 focus:ring-1 focus:ring-primary-green/50 focus:outline-none"
-                      />
-                    </div>
-
-                    {errorMsg && (
-                      <motion.p
-                        initial={{ opacity: 0, height: 0 }}
-                        animate={{ opacity: 1, height: 'auto' }}
-                        className="rounded-xl border border-red-500/20 bg-red-500/10 p-3 text-center text-sm font-medium text-red-200"
-                      >
-                        {errorMsg}
-                      </motion.p>
-                    )}
-
-                    <button
-                      type="submit"
-                      disabled={isSubmitting || !code}
-                      className="mt-2 flex w-full items-center justify-center gap-2 rounded-xl bg-primary-green px-4 py-3.5 text-sm font-medium text-white shadow-[0_0_20px_rgba(36,98,52,0.4)] transition-all duration-300 hover:bg-primary-green/90 hover:shadow-[0_0_24px_rgba(36,98,52,0.6)] active:scale-[0.98] disabled:cursor-not-allowed disabled:bg-white/10 disabled:text-white/40 disabled:shadow-none"
-                    >
-                      {isSubmitting ? (
-                        <>
-                          <Loader2 className="h-4 w-4 animate-spin" />
-                          <span>Validating...</span>
-                        </>
-                      ) : (
-                        'Enter Beta'
-                      )}
-                    </button>
-
-                    <div className="mt-4 flex w-full flex-col items-center border-t border-white/5 pt-6">
-                      <p className="mb-4 text-xs text-white/40">
-                        Switch Wallet
-                      </p>
-                      <SignInButton />
-                    </div>
-                  </form>
-                </div>
+                <ReferralCodeForm key={String(isConnected)} mutate={mutate} />
               ) : (
                 <div className="flex flex-col items-center justify-center gap-4 py-8">
                   <Loader2 className="h-8 w-8 animate-spin text-primary-green" />

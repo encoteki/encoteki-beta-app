@@ -5,7 +5,7 @@ import Link from 'next/link'
 import Image from 'next/image'
 import { usePathname } from 'next/navigation'
 import { Menu, X } from 'lucide-react'
-import { motion, AnimatePresence, useReducedMotion } from 'framer-motion'
+import { motion, AnimatePresence, useReducedMotion } from 'motion/react'
 import { useConnection } from 'wagmi'
 
 import Logo from '@/assets/logos/logo.webp'
@@ -33,11 +33,6 @@ export default function Header() {
   const pathname = usePathname()
   const { isLoggedIn } = useUser()
   const { address } = useConnection()
-
-  // Close menu when route changes
-  useEffect(() => {
-    setIsOpen(false)
-  }, [pathname])
 
   // Prevent background scroll when mobile menu is open
   useEffect(() => {
@@ -219,6 +214,7 @@ export default function Header() {
                       <Link
                         href={nav.id}
                         aria-current={isActive ? 'page' : undefined}
+                        onClick={() => setIsOpen(false)}
                         className={`block rounded-2xl px-5 py-3.5 text-base font-medium tracking-wide transition-all duration-200 outline-none focus-visible:ring-2 focus-visible:ring-primary-green active:scale-[0.98] ${
                           isActive
                             ? 'bg-green-90 text-primary-green'

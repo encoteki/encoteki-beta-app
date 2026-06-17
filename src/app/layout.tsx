@@ -2,6 +2,8 @@ import type { Metadata } from 'next'
 import { Outfit } from 'next/font/google'
 import './globals.css'
 import Providers from '@/providers/providers'
+import { WebVitals } from '@/components/web-vitals'
+import { RouteFocus } from '@/components/route-focus'
 
 const outfit = Outfit({
   subsets: ['latin'],
@@ -23,6 +25,8 @@ export default function RootLayout({
   return (
     <html lang="en" suppressHydrationWarning>
       <body className={outfit.className} suppressHydrationWarning>
+        <WebVitals />
+        <RouteFocus />
         <div className="flex min-h-screen flex-col justify-between">
           <Providers>{children}</Providers>
         </div>

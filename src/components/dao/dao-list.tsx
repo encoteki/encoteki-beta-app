@@ -8,6 +8,7 @@ import EmptyDao from './empty-list'
 import { Skeleton } from '@/ui/skeleton'
 import URL_ROUTES from '@/constants/url-route'
 import { fetchActiveDaos } from '@/services/dao.service'
+import { reportError } from '@/lib/telemetry'
 import { DaoRow } from '@/lib/supabase/database.types'
 import { getProposalTypeFromDaoType } from '@/types/dao.types'
 
@@ -66,7 +67,7 @@ export function DAOList() {
       const data = await fetchActiveDaos()
       setDaos(data)
     } catch (err) {
-      console.error('[DAOList] Error loading DAOs:', err)
+      reportError(err, { source: 'DAOList.loadDaos' })
       setError('Failed to load proposals. Please try again.')
     } finally {
       setLoading(false)

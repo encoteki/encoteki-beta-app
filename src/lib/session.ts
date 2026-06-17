@@ -1,3 +1,4 @@
+import 'server-only'
 import { SessionOptions } from 'iron-session'
 
 // Session TTL in seconds (1 hour)

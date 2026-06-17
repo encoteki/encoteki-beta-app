@@ -48,6 +48,9 @@ export const MintButton = ({
     initialHash,
   })
 
+  // Destructure so the compiler tracks plain identifiers, not property accesses
+  const { execute } = mint
+
   // Sync mint phase → context status
   useEffect(() => {
     switch (mint.phase) {
@@ -91,11 +94,17 @@ export const MintButton = ({
     mint.reqId,
     mint.dstTxHash,
     mint.errorMsg,
+    setStatus,
+    setSourceHash,
+    setReqId,
+    setExplorerUrl,
+    setDstTxHash,
+    setErrorMessage,
   ])
 
   const onClickConfirm = useCallback(() => {
-    mint.execute()
-  }, [mint.execute])
+    execute()
+  }, [execute])
 
   const getButtonLabel = () => {
     if (!mint.isReady) return 'Preparing...'
