@@ -31,6 +31,8 @@ export type NftMintsResult = {
   mints: MintItem[]
   isLoading: boolean
   isError: boolean
+  isFetching: boolean
+  refetch: () => void
 }
 
 async function fetchMints(
@@ -82,7 +84,7 @@ export function useNftMints(
   address: string | undefined,
   chainId: number,
 ): NftMintsResult {
-  const { data, isLoading, isError } = useQuery({
+  const { data, isLoading, isFetching, isError, refetch } = useQuery({
     queryKey: ['nft-mints', chainId, address?.toLowerCase() ?? null],
     queryFn: () => fetchMints(address as string, chainId),
     enabled: !!address,
@@ -93,6 +95,8 @@ export function useNftMints(
   return {
     mints: data ?? [],
     isLoading,
+    isFetching,
     isError,
+    refetch,
   }
 }
