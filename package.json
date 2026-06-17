@@ -6,11 +6,13 @@
     "dev": "next dev --turbopack",
     "dev:fast": "NODE_OPTIONS='--max-old-space-size=4096' next dev --turbopack",
     "build": "next build",
+    "typecheck": "tsc --noEmit",
     "start": "next start",
     "lint": "eslint .",
     "lint:dev": "eslint .",
     "lint:fix": "eslint . --fix",
-    "format": "prettier --write --ignore-path .gitignore ."
+    "format": "prettier --write --ignore-path .gitignore .",
+    "prepare": "husky"
   },
   "dependencies": {
     "@sentry/nextjs": "^10.57.0",
@@ -46,10 +48,22 @@
     "@types/react-dom": "^19.2.3",
     "eslint": "9",
     "eslint-config-next": "^16.2.6",
+    "husky": "^9.1.7",
+    "lint-staged": "^17.0.7",
     "prettier": "^3.8.3",
     "prettier-plugin-tailwindcss": "^0.8.0",
     "tailwindcss": "^4.3.0",
     "typescript": "^6.0.3"
+  },
+  "lint-staged": {
+    "*.{ts,tsx,js,mjs,cjs,jsx}": [
+      "eslint --fix",
+      "prettier --write"
+    ],
+    "*.{json,css,md,yml,yaml}": "prettier --write"
+  },
+  "engines": {
+    "node": ">=20.9.0"
   },
   "packageManager": "yarn@4.15.0"
 }

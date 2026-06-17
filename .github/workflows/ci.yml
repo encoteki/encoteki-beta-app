@@ -1,0 +1,53 @@
+name: CI
+
+on:
+  pull_request: {}
+  push:
+    branches: [main, dev]
+
+# Cancel an in-progress run when a newer commit is pushed to the same ref —
+# saves Actions minutes and gives faster feedback on the latest code.
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  verify:
+    name: lint · typecheck · build
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      # corepack first so the `yarn` shim resolves to the version pinned in
+      # package.json (`packageManager: yarn@4.15.0`) before setup-node caches.
+      - run: corepack enable
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: yarn
+
+      - name: Install dependencies
+        run: yarn install --immutable
+
+      - name: Lint
+        run: yarn lint
+
+      # `next build` generates next-env.d.ts and .next/types, which `tsc` needs
+      # to resolve image imports and route types — so build runs before the
+      # standalone typecheck. The build itself also fails on type errors in the
+      # build graph; the explicit `tsc --noEmit` is a full-project backstop.
+      - name: Build
+        run: yarn build
+        env:
+          # Build-time placeholders only — NOT secrets. They exist so modules
+          # that read env at import time (iron-session password check, the
+          # Supabase admin client) don't throw during the build. No network
+          # calls are made at build time, so dummy values are safe here.
+          IRON_SESSION_PASSWORD: ci_build_placeholder_password_min_32_chars
+          NEXT_PUBLIC_SUPABASE_URL: https://placeholder.supabase.co
+          NEXT_PUBLIC_SUPABASE_ANON_KEY: placeholder-anon-key
+          SUPABASE_SERVICE_ROLE_KEY: placeholder-service-role-key
+
+      - name: Typecheck
+        run: yarn typecheck
