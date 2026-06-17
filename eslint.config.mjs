@@ -2,6 +2,7 @@
 // already bundles the Next core rules + `next/typescript`, so we consume it
 // directly — the old FlatCompat wrapper breaks under ESLint 10.
 import nextCoreWebVitals from 'eslint-config-next/core-web-vitals'
+import reactHooks from 'eslint-plugin-react-hooks'
 
 const eslintConfig = [
   {
@@ -16,6 +17,12 @@ const eslintConfig = [
   },
   ...nextCoreWebVitals,
   {
+    // Register the plugin in the SAME config object as the rules. The rules
+    // below resolve via this explicit object rather than relying on
+    // eslint-config-next's transitive registration + node_modules hoisting —
+    // a fresh CI install hoists differently than an incremental local one,
+    // which made ESLint report "could not find plugin react-hooks".
+    plugins: { 'react-hooks': reactHooks },
     rules: {
       // React Compiler rules (new in eslint-config-next 16) flag many legitimate
       // existing patterns (effect-driven sync, manual memoization, Date.now in a
