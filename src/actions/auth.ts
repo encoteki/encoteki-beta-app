@@ -101,7 +101,14 @@ export async function verifySiweMessage(message: string, signature: string) {
       .single()
 
     if (error && error.code !== 'PGRST116') {
+      // Any error other than "no rows found" means the DB is unreachable
+      // (paused, ENOTFOUND, etc). Block login entirely — do NOT save session
+      // so the user is never treated as having no referral.
       reportError(error, { action: 'verifySiweMessage', step: 'referralCheck' })
+      return {
+        success: false,
+        error: 'Service temporarily unavailable. Please try again.',
+      }
     }
 
     session.siwe = { address: userAddress }

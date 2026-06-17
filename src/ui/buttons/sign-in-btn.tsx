@@ -39,6 +39,7 @@ export function SignInButton() {
   const disconnect = useDisconnect()
   const { isLoggedIn, isLoading: isSessionLoading, mutate } = useUser()
   const [isSigningIn, setIsSigningIn] = useState(false)
+  const [loginError, setLoginError] = useState<string | null>(null)
   // Mirror sessionStorage into a ref so we can read it synchronously inside
   // effects without an extra render. Hydrated once on mount.
   const shouldSignRef = useRef(false)
@@ -63,6 +64,7 @@ export function SignInButton() {
     try {
       if (!address || !chainId) return
       setIsSigningIn(true)
+      setLoginError(null)
 
       const nonce = await generateSiweNonce()
 
@@ -98,7 +100,12 @@ export function SignInButton() {
 
       const result = await verifySiweMessage(messageToSign, signature)
 
-      if (!result.success) throw new Error('Failed to verify')
+      if (!result.success) {
+        setLoginError(result.error ?? 'Sign-in failed. Please try again.')
+        shouldSignRef.current = false
+        writeIntent(false)
+        return
+      }
 
       await mutate()
 
@@ -276,13 +283,20 @@ export function SignInButton() {
   // Connected wallet but no SIWE yet (rare: e.g. external wallet, page revisit)
   if (isConnected) {
     return (
-      <ButtonShell
-        variant="primary"
-        onClick={handleClick}
-        disabled={isSigningIn}
-      >
-        {isSigningIn ? <Loading label="Signing you in…" /> : 'Continue'}
-      </ButtonShell>
+      <div className="flex w-full flex-col items-center gap-1.5 tablet:w-auto">
+        <ButtonShell
+          variant="primary"
+          onClick={handleClick}
+          disabled={isSigningIn}
+        >
+          {isSigningIn ? <Loading label="Signing you in…" /> : 'Continue'}
+        </ButtonShell>
+        {loginError && (
+          <p role="alert" className="text-xs text-red-400">
+            {loginError}
+          </p>
+        )}
+      </div>
     )
   }
 
