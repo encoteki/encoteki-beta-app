@@ -13,12 +13,35 @@ const supabaseOrigin = (() => {
 })()
 const supabaseWs = supabaseOrigin.replace(/^https:/, 'wss:')
 
+// Derive the Encoteki API origin from NEXT_PUBLIC_API_URL so the allowlist
+// tracks whichever backend is configured (prod/beta/api-new) instead of being
+// pinned to one host. Falls back to the default in src/constants/api.ts.
+const apiBaseUrl = process.env.NEXT_PUBLIC_API_URL ?? 'https://api.encoteki.com'
+const apiOrigin = (() => {
+  try {
+    return new URL(apiBaseUrl).origin
+  } catch {
+    return ''
+  }
+})()
+
+// Same-origin dev proxy: in local dev the browser talks to a different site
+// than the API (localhost vs *.encoteki.com), so the SameSite=Lax session
+// cookie the backend sets can't be stored/sent cross-site. Rewriting
+// /be/* → the backend makes those calls same-origin, so the cookie is stored
+// for localhost and both the client and the auth middleware (src/proxy.ts) can
+// read it. Dev-only — production is same-site and needs no proxy.
+const isDev = process.env.NODE_ENV === 'development'
+
 // Endpoints the client actually talks to. Tune from CSP-report violations
 // before promoting the report-only policy below to enforced.
 const connectSrc = [
   "'self'",
   supabaseOrigin,
   supabaseWs,
+  apiOrigin,
+  // GraphQL NFT-mints endpoint is pinned to prod regardless of API base URL
+  // (see src/hooks/useNftMints.ts).
   'https://api.encoteki.com',
   'https://scan.layerzero-api.com',
   // WalletConnect relay + Xellar
@@ -101,6 +124,11 @@ const nextConfig: NextConfig = {
 
   async headers() {
     return [{ source: '/:path*', headers: securityHeaders }]
+  },
+
+  async rewrites() {
+    if (!isDev) return []
+    return [{ source: '/be/:path*', destination: `${apiBaseUrl}/:path*` }]
   },
 
   // Disable typed routes for faster compilation

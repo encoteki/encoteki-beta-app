@@ -2,14 +2,12 @@ import React, {
   createContext,
   useState,
   useContext,
-  useEffect,
   useCallback,
   useMemo,
   Dispatch,
   SetStateAction,
 } from 'react'
 import { useUser } from '@/hooks/useUser'
-import { getAppliedReferralCode } from '@/actions/referral'
 import { useLayerZeroScan } from '@/hooks/useLayerZeroScan'
 import { MintStatus } from '@/enums/mint.enum'
 import { Hex } from 'viem'
@@ -30,7 +28,6 @@ type AppContextType = {
   activeIdx: number | undefined
   setActiveIdx: Dispatch<SetStateAction<number | undefined>>
   referralCode: string | null
-  isReferralLoading: boolean
   // Background mint (lives here so it survives mint page unmount)
   backgroundMint: BackgroundMint
   setBackgroundMint: (bg: BackgroundMint) => void
@@ -43,23 +40,15 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({
   children,
 }) => {
   const [activeIdx, setActiveIdx] = useState<number | undefined>(undefined)
-  const [referralCode, setReferralCode] = useState<string | null>(null)
-  const [referralFetchDone, setReferralFetchDone] = useState(false)
   const [backgroundMint, setBackgroundMint] = useState<BackgroundMint>(null)
 
-  const { isLoggedIn, hasReferral } = useUser()
-
-  const shouldFetch = isLoggedIn && hasReferral
-  const [prevShouldFetch, setPrevShouldFetch] = useState(shouldFetch)
-
-  // Reset the fetch-done flag when the user logs out so loading shows again on re-login.
-  // React "derived state during render" — batched into the same commit, no extra renders.
-  if (prevShouldFetch !== shouldFetch) {
-    setPrevShouldFetch(shouldFetch)
-    if (!shouldFetch) setReferralFetchDone(false)
-  }
-
-  const isReferralLoading = shouldFetch && !referralFetchDone
+  // refCode is fetched together with hasReferral as part of the same
+  // POST /users/register call (see useUser) — no separate fetch/loading
+  // state needed, it's already sitting in the SWR cache by the time
+  // isLoggedIn && hasReferral is true.
+  const { isLoggedIn, hasReferral, user } = useUser()
+  const referralCode =
+    isLoggedIn && hasReferral ? (user?.refCode ?? null) : null
 
   // ── Background LZ polling (persists even when /mint is unmounted) ──
   const bgSourceHash = backgroundMint?.isCrossChain
@@ -94,39 +83,12 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({
     setBackgroundMint(null)
   }, [])
 
-  // ── Referral fetch ──
-  useEffect(() => {
-    if (!shouldFetch) return
-
-    let cancelled = false
-
-    getAppliedReferralCode()
-      .then((result) => {
-        if (!cancelled && result.success && result.code) {
-          setReferralCode(result.code)
-        }
-      })
-      .catch(() => {})
-      .finally(() => {
-        if (!cancelled) setReferralFetchDone(true)
-      })
-
-    return () => {
-      cancelled = true
-    }
-  }, [shouldFetch])
-
-  // Referral code is only valid while the user is logged in with a referral.
-  // Derive null instead of syncing setReferralCode(null) through an effect.
-  const effectiveReferralCode = isLoggedIn && hasReferral ? referralCode : null
-
   return (
     <AppContext.Provider
       value={{
         activeIdx,
         setActiveIdx,
-        referralCode: effectiveReferralCode,
-        isReferralLoading,
+        referralCode,
         backgroundMint: effectiveBackgroundMint,
         setBackgroundMint,
         clearBackgroundMint,

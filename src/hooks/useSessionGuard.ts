@@ -3,21 +3,21 @@
 import { useEffect, useRef, useCallback } from 'react'
 import { useDisconnect, useConnection } from 'wagmi'
 import { useUser } from './useUser'
-import { destroySession } from '@/actions/auth'
+import { logoutSession } from '@/lib/auth-client'
 import { reportError } from '@/lib/telemetry'
 
 /**
  * Session guard that automatically logs out the user when:
- * 1. The session expires (based on server-provided expiresAt)
- * 2. The wallet disconnects but the session is still active
+ * 1. The wallet disconnects but the session is still active
+ * 2. The backend session expires/is revoked (detected via SWR revalidation
+ *    returning isLoggedIn: false after previously being true)
  *
  * Should be mounted once near the top of the component tree.
  */
 export function useSessionGuard() {
   const { isConnected, status } = useConnection()
   const disconnect = useDisconnect()
-  const { isLoggedIn, expiresAt, mutate } = useUser()
-  const logoutTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
+  const { isLoggedIn, mutate } = useUser()
   const isLoggingOutRef = useRef(false)
   const wasLoggedInRef = useRef(false)
 
@@ -27,7 +27,7 @@ export function useSessionGuard() {
 
     try {
       // Clear server session
-      await destroySession()
+      await logoutSession()
 
       // Disconnect wallet if still connected
       if (isConnected) {
@@ -46,37 +46,6 @@ export function useSessionGuard() {
     }
   }, [isConnected, disconnect, mutate])
 
-  // --- Timer-based expiry: schedule logout when session expires ---
-  useEffect(() => {
-    // Clear any existing timer
-    if (logoutTimerRef.current) {
-      clearTimeout(logoutTimerRef.current)
-      logoutTimerRef.current = null
-    }
-
-    if (!isLoggedIn || !expiresAt) return
-
-    const remaining = expiresAt - Date.now()
-
-    if (remaining <= 0) {
-      // Already expired
-      performLogout()
-      return
-    }
-
-    // Schedule logout slightly before expiry (+1s buffer for network)
-    logoutTimerRef.current = setTimeout(() => {
-      performLogout()
-    }, remaining)
-
-    return () => {
-      if (logoutTimerRef.current) {
-        clearTimeout(logoutTimerRef.current)
-        logoutTimerRef.current = null
-      }
-    }
-  }, [isLoggedIn, expiresAt, performLogout])
-
   // --- Wallet disconnect detection ---
   // If the user is logged in via session but wallet is definitively disconnected,
   // clear the session to keep them in sync.
@@ -90,11 +59,10 @@ export function useSessionGuard() {
   }, [isLoggedIn, status, performLogout])
 
   // --- SWR focus-revalidation expiry path ---
-  // When the user backgrounds the tab for 30 min and refocuses, SWR's
-  // revalidateOnFocus calls getSessionData(), which destroys the expired
-  // session server-side and returns { isLoggedIn: false }. The timer-based
-  // path never fires in this case (it's cleared when isLoggedIn goes false).
-  // This effect catches that transition and disconnects the wallet + redirects.
+  // When the user backgrounds the tab and refocuses, SWR's revalidateOnFocus
+  // calls GET /auth/me again. If the backend session has expired or been
+  // revoked, that call 401s and isLoggedIn flips to false. This effect catches
+  // that transition and disconnects the wallet + redirects.
   useEffect(() => {
     if (wasLoggedInRef.current && !isLoggedIn && !isLoggingOutRef.current) {
       isLoggingOutRef.current = true

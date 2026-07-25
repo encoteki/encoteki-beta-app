@@ -16,7 +16,7 @@ import { useUser } from '@/hooks/useUser'
 import { useChainBalances } from '@/hooks/useChainBalances'
 import { useNftMints, type MintItem } from '@/hooks/useNftMints'
 import { useFocusTrap } from '@/hooks/useFocusTrap'
-import { destroySession } from '@/actions/auth'
+import { logoutSession } from '@/lib/auth-client'
 import { reportError } from '@/lib/telemetry'
 import { getContract } from '@/constants/contracts/tsb'
 import { WalletAvatar } from '@/ui/wallet-avatar'
@@ -282,7 +282,7 @@ export function WalletSidebar({ isOpen, onClose }: WalletSidebarProps) {
   const executeSignOut = useCallback(async () => {
     try {
       setIsSigningOut(true)
-      await destroySession()
+      await logoutSession()
       await disconnectWallet()
       await mutateUser(undefined, false)
       onClose()

@@ -8,7 +8,7 @@ import { useState, useEffect } from 'react'
 import { useConnection } from 'wagmi'
 import { motion } from 'motion/react'
 import Bg from '@/assets/bg-login.png'
-import { applyReferralCode } from '@/actions/referral'
+import { registerUser } from '@/lib/referral-client'
 import { reportError } from '@/lib/telemetry'
 import { Loader2 } from 'lucide-react'
 
@@ -23,9 +23,9 @@ function ReferralCodeForm({ mutate }: { mutate: () => Promise<unknown> }) {
     setErrorMsg('')
 
     try {
-      const result = await applyReferralCode(code)
+      const result = await registerUser(code)
 
-      if (!result.success) {
+      if (!result.ok || !result.hasReferral) {
         setErrorMsg(result.error || 'Failed to apply referral code')
         setIsSubmitting(false)
         return
