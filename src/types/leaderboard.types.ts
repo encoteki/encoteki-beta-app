@@ -16,7 +16,7 @@ export interface LeaderboardProps {
   users: LeaderboardUser[]
   currentUserAddress?: string
   loading?: boolean
-  error?: boolean
+  error?: boolean | 'rate-limited'
   pagination?: PaginationInfo
   onPageChange?: (page: number) => void
   onRetry?: () => void

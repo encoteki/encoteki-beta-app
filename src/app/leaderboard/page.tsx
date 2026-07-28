@@ -31,7 +31,9 @@ export default function PointsPage() {
     [],
   )
   const [leaderboardLoading, setLeaderboardLoading] = useState(true)
-  const [leaderboardError, setLeaderboardError] = useState(false)
+  const [leaderboardError, setLeaderboardError] = useState<
+    boolean | 'rate-limited'
+  >(false)
   const [leaderboardPage, setLeaderboardPage] = useState(1)
   const [leaderboardRetry, setLeaderboardRetry] = useState(0)
   const [leaderboardPagination, setLeaderboardPagination] = useState<
@@ -72,6 +74,10 @@ export default function PointsPage() {
           result.reason === 'unregistered'
         ) {
           router.replace('/login')
+          return
+        }
+        if (result.reason === 'rate_limited') {
+          setLeaderboardError('rate-limited')
           return
         }
         if (result.reason === 'error')
