@@ -12,7 +12,7 @@ export async function getLeaderboard(
 ): Promise<{
   entries: { rank: number; address: string; points: number }[]
   pagination: unknown | null
-  reason?: 'unauthenticated' | 'unregistered' | 'error'
+  reason?: 'unauthenticated' | 'unregistered' | 'rate_limited' | 'error'
 }> {
   try {
     const res = await fetch(
@@ -25,6 +25,12 @@ export async function getLeaderboard(
     }
     if (res.status === 403) {
       return { entries: [], pagination: null, reason: 'unregistered' }
+    }
+    // Shared 60 req/min per-IP budget across all routes (see API.md) — worth
+    // distinguishing from a generic fetch failure so the UI doesn't suggest
+    // retrying immediately.
+    if (res.status === 429) {
+      return { entries: [], pagination: null, reason: 'rate_limited' }
     }
 
     const parsed = LeaderboardUpstreamSchema.safeParse(await res.json())
