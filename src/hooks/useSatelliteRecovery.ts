@@ -9,6 +9,7 @@ import {
 import { Address, Hex } from 'viem'
 import { tsbSatelliteABI } from '@/constants/abis/tsbSatellite.abi'
 import { getContract } from '@/constants/contracts/tsb'
+import { useLayerZeroFeeQuote } from './useLayerZeroFeeQuote'
 
 export function useSatelliteRecovery() {
   const { address } = useConnection()
@@ -45,6 +46,24 @@ export function useSatelliteRecovery() {
     args: [pendingReqId as Hex],
     query: { enabled: hasPending },
   })
+
+  // retryPendingMint() carries over the ORIGINAL request's referral code (the
+  // caller doesn't submit a new one) — quote using that exact string, read
+  // straight off the request being retried, so the LZ payload size matches
+  // what will actually be re-sent.
+  const originalReferralCode =
+    hasPending && mintRequestData
+      ? ((mintRequestData as any)[5] as string)
+      : undefined
+
+  const { bufferedFee: retryFee, isLoaded: isRetryFeeLoaded } =
+    useLayerZeroFeeQuote({
+      isHub: false,
+      targetContract: contract,
+      chainId,
+      userAddress: address,
+      referralCode: originalReferralCode,
+    })
 
   const {
     mutate: writeContract,
@@ -87,15 +106,18 @@ export function useSatelliteRecovery() {
 
   const retryPendingMint = useCallback(
     (reqId: Hex) => {
-      if (!contract) return
+      // Guard against firing before the fee quote lands — that would send
+      // value: 0n and revert with TSBShared__InsufficientMsgValue.
+      if (!contract || !isRetryFeeLoaded) return
       writeContract({
         address: contract,
         abi: tsbSatelliteABI as any,
         functionName: 'retryPendingMint',
         args: [reqId],
+        value: retryFee,
       })
     },
-    [contract, writeContract],
+    [contract, writeContract, retryFee, isRetryFeeLoaded],
   )
 
   return {
@@ -108,6 +130,8 @@ export function useSatelliteRecovery() {
     expirePendingMint,
     claimRefund,
     retryPendingMint,
+    retryFee,
+    isRetryFeeLoaded,
 
     // TX state
     isSigning,
