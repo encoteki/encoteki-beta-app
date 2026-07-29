@@ -70,3 +70,42 @@ export type NftMetadata = z.infer<typeof NftMetadataSchema>
 export const RefCodeResponseSchema = z.object({
   ref_code: z.string().nullish(),
 })
+
+// ── Proposals (api.encoteki.com/proposals) ──────────────────────────────────
+
+const TimeRemainingSchema = z.object({
+  days: z.number().catch(0),
+  hours: z.number().catch(0),
+  minutes: z.number().catch(0),
+  seconds: z.number().catch(0),
+})
+
+const ProposalListItemSchema = z.object({
+  proposalId: z.string(),
+  proposalType: z.number().catch(0),
+  proposalName: z.string(),
+  votingEnds: z.string(),
+  timeRemaining: TimeRemainingSchema,
+})
+
+export const ProposalsUpstreamSchema = z.object({
+  data: z.array(ProposalListItemSchema).nullish(),
+  // Pagination shape is owned by the upstream; pass it through opaquely.
+  pagination: z.unknown().nullish(),
+})
+
+const ProposalOptionSchema = z.object({
+  index: z.number(),
+  label: z.string(),
+})
+
+const ProposalDeploymentSchema = z.object({
+  chainId: z.string(),
+  contractAddress: z.string(),
+})
+
+export const ProposalDetailSchema = ProposalListItemSchema.extend({
+  description: z.string().catch(''),
+  options: z.array(ProposalOptionSchema).catch([]),
+  deployments: z.array(ProposalDeploymentSchema).catch([]),
+})

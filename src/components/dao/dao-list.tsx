@@ -1,26 +1,25 @@
 'use client'
 
-import { useEffect, useMemo, useState, useCallback } from 'react'
-import { DaoType, ProposalType } from '../../enums/dao-types.enum'
+import { useEffect, useState, useCallback } from 'react'
+import { useRouter } from 'next/navigation'
+import { ProposalType } from '../../enums/dao-types.enum'
 import Badge from '../../ui/badge'
-import { useDaoCtx } from '../../contexts/dao.context'
 import EmptyDao from './empty-list'
 import { Skeleton } from '@/ui/skeleton'
 import URL_ROUTES from '@/constants/url-route'
-import { fetchActiveDaos } from '@/services/dao.service'
+import { getProposals } from '@/lib/proposals-client'
 import { reportError } from '@/lib/telemetry'
-import { DaoRow } from '@/lib/supabase/database.types'
-import { getProposalTypeFromDaoType } from '@/types/dao.types'
+import type { ProposalListItem, ProposalsPagination } from '@/types/dao.types'
+
+const PAGE_SIZE = 10
 
 /**
- * Compute a human-readable "time remaining" or "Voting ended" string.
+ * Live countdown to `votingEnds`, recomputed on every render — the API's
+ * `timeRemaining` is only a snapshot at response time and goes stale
+ * immediately.
  */
-function getTimeLabel(endDate: string | null): string {
-  if (!endDate) return 'No deadline'
-
-  const now = new Date()
-  const end = new Date(endDate)
-  const diffMs = end.getTime() - now.getTime()
+function getTimeLabel(votingEnds: string): string {
+  const diffMs = new Date(votingEnds).getTime() - Date.now()
 
   if (diffMs <= 0) return 'Voting ended'
 
@@ -31,61 +30,49 @@ function getTimeLabel(endDate: string | null): string {
   return `Voting ends in ${String(hours).padStart(2, '0')}:${String(minutes).padStart(2, '0')}:${String(seconds).padStart(2, '0')}`
 }
 
-function getCreatedLabel(createdAt: string): string {
-  const now = new Date()
-  const created = new Date(createdAt)
-  const diffDays = Math.floor(
-    (now.getTime() - created.getTime()) / (1000 * 60 * 60 * 24),
-  )
-
-  if (diffDays === 0) return 'Today'
-  if (diffDays === 1) return '1 day ago'
-  return `${diffDays} days ago`
-}
-
-/**
- * Map DaoType tabs to which ProposalTypes to show.
- */
-const TAB_FILTER: Record<DaoType, ProposalType[]> = {
-  [DaoType.GOVERNANCE]: [ProposalType.DONATION, ProposalType.PROPOSAL],
-  [DaoType.BUSINESS_PROPOSAL]: [ProposalType.BUSINESS],
-}
-
 export function DAOList() {
-  const [daos, setDaos] = useState<DaoRow[]>([])
+  const router = useRouter()
+  const [proposals, setProposals] = useState<ProposalListItem[]>([])
   const [loading, setLoading] = useState<boolean>(true)
   const [error, setError] = useState<string | null>(null)
+  const [page, setPage] = useState(1)
+  const [pagination, setPagination] = useState<
+    ProposalsPagination | undefined
+  >()
 
-  const { daoType } = useDaoCtx()
-
-  // Fetch DAOs from Supabase
-  const loadDaos = useCallback(async () => {
+  const loadProposals = useCallback(async () => {
     setLoading(true)
     setError(null)
 
     try {
-      const data = await fetchActiveDaos()
-      setDaos(data)
+      const result = await getProposals(page, PAGE_SIZE)
+
+      if (
+        result.reason === 'unauthenticated' ||
+        result.reason === 'unregistered'
+      ) {
+        router.replace('/login')
+        return
+      }
+      if (result.reason === 'error') {
+        throw new Error('Failed to load proposals')
+      }
+
+      setProposals(result.proposals)
+      setPagination(
+        (result.pagination as ProposalsPagination | null) ?? undefined,
+      )
     } catch (err) {
-      reportError(err, { source: 'DAOList.loadDaos' })
+      reportError(err, { source: 'DAOList.loadProposals', page })
       setError('Failed to load proposals. Please try again.')
     } finally {
       setLoading(false)
     }
-  }, [])
+  }, [page, router])
 
   useEffect(() => {
-    loadDaos()
-  }, [loadDaos])
-
-  // Filter DAOs based on selected tab
-  const filtered = useMemo(() => {
-    const allowedTypes = TAB_FILTER[daoType] || []
-    return daos.filter((dao) => {
-      const proposalType = getProposalTypeFromDaoType(dao.dao_type)
-      return allowedTypes.includes(proposalType)
-    })
-  }, [daoType, daos])
+    loadProposals()
+  }, [loadProposals])
 
   return (
     <>
@@ -112,7 +99,7 @@ export function DAOList() {
           <div className="flex h-48 flex-col items-center justify-center gap-4">
             <p className="text-red-500">{error}</p>
             <button
-              onClick={loadDaos}
+              onClick={loadProposals}
               className="rounded-lg bg-primary-green px-4 py-2 text-white hover:bg-green-700"
             >
               Retry
@@ -120,28 +107,28 @@ export function DAOList() {
           </div>
         )}
 
-        {!loading && !error && filtered.length === 0 ? (
+        {!loading && !error && proposals.length === 0 ? (
           <EmptyDao />
         ) : (
           <>
             {!loading &&
               !error &&
-              filtered.map((dao, index) => (
+              proposals.map((proposal) => (
                 <div
-                  key={`${dao.dao_id}-${index}`}
+                  key={proposal.proposalId}
                   className="proposal-card mb-8 transition-shadow duration-500 hover:shadow-lg"
                   onClick={() =>
-                    (window.location.href = `${URL_ROUTES.DAO}/${dao.dao_id}`)
+                    router.push(`${URL_ROUTES.DAO}/${proposal.proposalId}`)
                   }
                 >
-                  <Badge type={getProposalTypeFromDaoType(dao.dao_type)} />
-                  <h3 className="font-medium">{dao.dao_name}</h3>
+                  {/* proposalType is currently always 0 ("DAO") — collapse to
+                      a single badge until the backend sends more values
+                      (see BACKLOG.md). */}
+                  <Badge type={ProposalType.PROPOSAL} />
+                  <h3 className="font-medium">{proposal.proposalName}</h3>
                   <div className="flex justify-between">
                     <p className="text-neutral-30">
-                      {getTimeLabel(dao.end_date)}
-                    </p>
-                    <p className="text-neutral-30">
-                      {getCreatedLabel(dao.created_at)}
+                      {getTimeLabel(proposal.votingEnds)}
                     </p>
                   </div>
                 </div>
@@ -150,7 +137,31 @@ export function DAOList() {
         )}
       </section>
 
-      <div className="hidden w-full justify-center">pagination</div>
+      {!loading && !error && pagination && pagination.totalPages > 1 && (
+        <div className="flex w-full items-center justify-between px-2 pt-2">
+          <span className="text-sm text-neutral-30">
+            Page {pagination.page} of {pagination.totalPages}
+          </span>
+          <div className="flex items-center gap-3">
+            <button
+              onClick={() => setPage((p) => p - 1)}
+              disabled={pagination.page === 1}
+              aria-label="Previous page"
+              className="inline-flex min-h-11 items-center rounded-sm px-2 text-sm font-medium text-neutral-40 transition-colors hover:text-neutral-10 focus-visible:ring-2 focus-visible:ring-primary-green/50 focus-visible:outline-none disabled:cursor-not-allowed disabled:opacity-30"
+            >
+              ← Previous
+            </button>
+            <button
+              onClick={() => setPage((p) => p + 1)}
+              disabled={pagination.page === pagination.totalPages}
+              aria-label="Next page"
+              className="inline-flex min-h-11 items-center rounded-sm px-2 text-sm font-medium text-neutral-40 transition-colors hover:text-neutral-10 focus-visible:ring-2 focus-visible:ring-primary-green/50 focus-visible:outline-none disabled:cursor-not-allowed disabled:opacity-30"
+            >
+              Next →
+            </button>
+          </div>
+        </div>
+      )}
     </>
   )
 }

@@ -9,14 +9,14 @@ import {
   useReducedMotion,
   useAnimation,
 } from 'motion/react'
-import { X, Copy, Check } from 'lucide-react'
+import { X, Copy, Check, RefreshCw } from 'lucide-react'
 import { useDisconnect, useConnection, useChainId } from 'wagmi'
 
 import { useUser } from '@/hooks/useUser'
 import { useChainBalances } from '@/hooks/useChainBalances'
 import { useNftMints, type MintItem } from '@/hooks/useNftMints'
 import { useFocusTrap } from '@/hooks/useFocusTrap'
-import { destroySession } from '@/actions/auth'
+import { logoutSession } from '@/lib/auth-client'
 import { reportError } from '@/lib/telemetry'
 import { getContract } from '@/constants/contracts/tsb'
 import { WalletAvatar } from '@/ui/wallet-avatar'
@@ -224,6 +224,15 @@ export function WalletSidebar({ isOpen, onClose }: WalletSidebarProps) {
     () => activeMints.map((m) => m.tokenId),
     [activeMints],
   )
+
+  const activeMintsRefetch = mintsMap[activeChainId]?.refetch ?? (() => {})
+  const isNftFetching = mintsMap[activeChainId]?.isFetching ?? false
+
+  const handleRefreshNfts = useCallback(() => {
+    if (isNftFetching) return
+    activeMintsRefetch()
+  }, [isNftFetching, activeMintsRefetch])
+
   const selectedMintInfo = useMemo<MintItem | undefined>(
     () =>
       selectedTokenId !== null
@@ -273,7 +282,7 @@ export function WalletSidebar({ isOpen, onClose }: WalletSidebarProps) {
   const executeSignOut = useCallback(async () => {
     try {
       setIsSigningOut(true)
-      await destroySession()
+      await logoutSession()
       await disconnectWallet()
       await mutateUser(undefined, false)
       onClose()
@@ -638,15 +647,40 @@ export function WalletSidebar({ isOpen, onClose }: WalletSidebarProps) {
                   <p className="text-caption font-semibold tracking-widest text-neutral-40 uppercase">
                     Your Mints
                   </p>
-                  {nftCount > 0 && (
-                    <Link
-                      href="/mint"
-                      onClick={onClose}
-                      className="text-caption font-medium text-primary-green transition-colors hover:text-green-10 focus-visible:underline focus-visible:outline-none"
+                  <div className="flex items-center gap-2">
+                    <button
+                      onClick={handleRefreshNfts}
+                      aria-label="Refresh NFT collection"
+                      className="flex h-8 w-8 items-center justify-center rounded-full text-neutral-40 transition-colors hover:bg-khaki-80 hover:text-neutral-10 focus-visible:ring-2 focus-visible:ring-primary-green focus-visible:outline-none"
                     >
-                      View collection
-                    </Link>
-                  )}
+                      <motion.span
+                        animate={
+                          isNftFetching ? { rotate: 360 } : { rotate: 0 }
+                        }
+                        transition={
+                          isNftFetching
+                            ? {
+                                duration: 0.8,
+                                ease: 'linear',
+                                repeat: Infinity,
+                              }
+                            : { duration: 0.3, ease: [0.16, 1, 0.3, 1] }
+                        }
+                        style={{ display: 'flex' }}
+                      >
+                        <RefreshCw size={13} strokeWidth={2} />
+                      </motion.span>
+                    </button>
+                    {nftCount > 0 && (
+                      <Link
+                        href="/mint"
+                        onClick={onClose}
+                        className="text-caption font-medium text-primary-green transition-colors hover:text-green-10 focus-visible:underline focus-visible:outline-none"
+                      >
+                        View collection
+                      </Link>
+                    )}
+                  </div>
                 </div>
 
                 {/* Content fades when chain switches — key drives the AnimatePresence swap */}

@@ -23,9 +23,8 @@
     "@walletconnect/ethereum-provider": "^2.21.1",
     "@xellar/kit": "^3.1.1",
     "clsx": "^2.1.1",
-    "dompurify": "^3.4.5",
+    "dompurify": "^3.4.11",
     "ethers": "^6.16.0",
-    "iron-session": "^8.0.4",
     "lucide-react": "^1.16.0",
     "motion": "^12.39.0",
     "next": "16.2.6",
@@ -56,6 +55,19 @@
     "tailwindcss": "^4.3.0",
     "typescript": "^6.0.3"
   },
+  "resolutions": {
+    "dompurify": "^3.4.11",
+    "js-yaml@^4.1.1": "^4.2.0",
+    "undici@^6.25.0": "^6.27.0",
+    "form-data@^4.0.5": "^4.0.6",
+    "@babel/core@^7.24.4": "^7.29.6",
+    "ws@8.17.1": "^8.21.0",
+    "ws@8.20.1": "^8.21.0",
+    "postcss@8.4.31": "^8.5.10",
+    "postcss@8.4.49": "^8.5.10",
+    "js-cookie@^3.0.5": "^3.0.7",
+    "brace-expansion@^5.0.5": "^5.0.6"
+  },
   "lint-staged": {
     "*.{ts,tsx,js,mjs,cjs,jsx}": [
       "eslint --fix",
@@ -64,7 +76,7 @@
     "*.{json,css,md,yml,yaml}": "prettier --write"
   },
   "engines": {
-    "node": ">=20.9.0"
+    "node": "24.x"
   },
   "packageManager": "yarn@4.15.0"
 }

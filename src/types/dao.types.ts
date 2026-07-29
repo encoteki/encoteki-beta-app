@@ -92,6 +92,60 @@ export function isHtmlContent(content: string | null): boolean {
 }
 
 // ============================================
+// PROPOSALS API TYPES (GET /proposals, GET /proposals/:id)
+// ============================================
+
+export interface TimeRemaining {
+  days: number
+  hours: number
+  minutes: number
+  seconds: number
+}
+
+/**
+ * A single proposal as returned by `GET /proposals` (list view).
+ */
+export interface ProposalListItem {
+  proposalId: string
+  proposalType: number
+  proposalName: string
+  votingEnds: string
+  timeRemaining: TimeRemaining
+}
+
+export interface ProposalOptionApi {
+  index: number
+  label: string
+}
+
+/**
+ * Clone contract deployed for this proposal on one chain. `deployments` only
+ * lists chains that have actually seen a deployment event, so a proposal not
+ * yet propagated to every satellite has fewer than 4 entries.
+ */
+export interface ProposalDeployment {
+  chainId: string
+  contractAddress: string
+}
+
+/**
+ * Full proposal detail as returned by `GET /proposals/:id` — list fields
+ * plus `description`, `options`, and `deployments`.
+ */
+export interface ProposalDetail extends ProposalListItem {
+  description: string
+  options: ProposalOptionApi[]
+  deployments: ProposalDeployment[]
+}
+
+export interface ProposalsPagination {
+  page: number
+  limit: number
+  total: number
+  totalPages: number
+}
+
+// ============================================
 // LEGACY MOCK TYPES (for backwards compatibility)
 // ============================================
 

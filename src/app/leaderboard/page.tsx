@@ -1,14 +1,15 @@
 'use client'
 
 import { useState, useEffect, useRef, useCallback } from 'react'
+import { useRouter } from 'next/navigation'
 import { AnimatePresence, motion } from 'motion/react'
-import { useConnection, useSignMessage } from 'wagmi'
+import { useConnection } from 'wagmi'
 import DefaultButton from '@/ui/buttons/default-btn'
-import { submitReferralCode, getUserReferralCode } from '@/actions/referral'
+import { submitReferralCode, getUserReferralCode } from '@/lib/referral-client'
+import { getLeaderboard } from '@/lib/leaderboard-client'
 import { Leaderboard } from '@/components/leaderboard/leaderboard'
 import { fmtPts, Gem } from '@/components/leaderboard/utils'
 import { reportError } from '@/lib/telemetry'
-import { isUserRejection } from '@/utils/humanize-error.util'
 import type { LeaderboardUser, PaginationInfo } from '@/types/leaderboard.types'
 
 const overlayVariants = { hidden: { opacity: 0 }, visible: { opacity: 1 } }
@@ -24,12 +25,15 @@ const modalVariants = {
 }
 
 export default function PointsPage() {
+  const router = useRouter()
   const { address } = useConnection()
   const [leaderboardUsers, setLeaderboardUsers] = useState<LeaderboardUser[]>(
     [],
   )
   const [leaderboardLoading, setLeaderboardLoading] = useState(true)
-  const [leaderboardError, setLeaderboardError] = useState(false)
+  const [leaderboardError, setLeaderboardError] = useState<
+    boolean | 'rate-limited'
+  >(false)
   const [leaderboardPage, setLeaderboardPage] = useState(1)
   const [leaderboardRetry, setLeaderboardRetry] = useState(0)
   const [leaderboardPagination, setLeaderboardPagination] = useState<
@@ -60,25 +64,36 @@ export default function PointsPage() {
       setLeaderboardLoading(true)
       setLeaderboardError(false)
       try {
-        const r = await fetch(
-          `/api/leaderboard?page=${leaderboardPage}&limit=10`,
-          { signal: controller.signal },
+        const result = await getLeaderboard(
+          leaderboardPage,
+          10,
+          controller.signal,
         )
-        if (!r.ok) throw new Error(`HTTP ${r.status}`)
-        const json = (await r.json()) as {
-          entries: { rank: number; address: string; points: number }[]
-          pagination: PaginationInfo | null
+        if (
+          result.reason === 'unauthenticated' ||
+          result.reason === 'unregistered'
+        ) {
+          router.replace('/login')
+          return
         }
+        if (result.reason === 'rate_limited') {
+          setLeaderboardError('rate-limited')
+          return
+        }
+        if (result.reason === 'error')
+          throw new Error('Leaderboard fetch failed')
         setLeaderboardUsers(
-          (json.entries ?? []).map((e) => ({
+          result.entries.map((e) => ({
             rank: e.rank,
             walletAddress: e.address,
             points: e.points,
           })),
         )
-        setLeaderboardPagination(json.pagination ?? undefined)
+        setLeaderboardPagination(
+          (result.pagination as PaginationInfo | null) ?? undefined,
+        )
       } catch (err) {
-        if (err instanceof Error && err.name === 'AbortError') return
+        if (err instanceof DOMException && err.name === 'AbortError') return
         reportError(err, { source: 'leaderboard-page', page: leaderboardPage })
         setLeaderboardError(true)
       } finally {
@@ -87,7 +102,7 @@ export default function PointsPage() {
     }
     load()
     return () => controller.abort()
-  }, [leaderboardPage, leaderboardRetry])
+  }, [leaderboardPage, leaderboardRetry, router])
 
   return (
     <main id="main-content" tabIndex={-1} className="points-container">
@@ -306,6 +321,7 @@ function LeaderboardSidebar({
 }
 
 function ReferralModal() {
+  const { address } = useConnection()
   const [existingCode, setExistingCode] = useState<string | null>(null)
   const [isInitializing, setIsInitializing] = useState(true)
   const [isOpen, setIsOpen] = useState(false)
@@ -313,15 +329,19 @@ function ReferralModal() {
   const [isLoading, setIsLoading] = useState(false)
   const [message, setMessage] = useState({ type: '', text: '' })
   const [copied, setCopied] = useState(false)
-  const { mutateAsync: signMessage } = useSignMessage()
 
   const lastFocusRef = useRef<HTMLElement | null>(null)
   const modalRef = useRef<HTMLDivElement>(null)
 
   useEffect(() => {
+    if (!address) {
+      setIsInitializing(false)
+      return
+    }
+
     const fetchInitialCode = async () => {
       try {
-        const result = await getUserReferralCode()
+        const result = await getUserReferralCode(address)
         if (result.success && result.data) {
           setExistingCode(result.data)
         }
@@ -333,7 +353,7 @@ function ReferralModal() {
     }
 
     fetchInitialCode()
-  }, [])
+  }, [address])
 
   const closeModal = useCallback(() => {
     setIsOpen(false)
@@ -402,11 +422,7 @@ function ReferralModal() {
     setMessage({ type: '', text: '' })
 
     try {
-      const signature = await signMessage({
-        message: `Set ref code: ${referralCode}`,
-      })
-
-      const result = await submitReferralCode(referralCode, signature)
+      const result = await submitReferralCode(referralCode)
 
       if (result.success) {
         setMessage({ type: 'success', text: result.message || '' })
@@ -419,20 +435,11 @@ function ReferralModal() {
         setMessage({ type: 'error', text: result.error || '' })
       }
     } catch (err) {
-      if (isUserRejection(err)) {
-        // User menolak tanda tangan = normal, jangan lapor ke Sentry.
-        setMessage({
-          type: 'error',
-          text: 'Signature rejected. Please try again.',
-        })
-      } else {
-        // Error tak terduga (jaringan, SDK wallet, dll.) → lapor + pesan generik.
-        reportError(err, { flow: 'submit-referral-code' })
-        setMessage({
-          type: 'error',
-          text: 'Something went wrong. Please try again.',
-        })
-      }
+      reportError(err, { flow: 'submit-referral-code' })
+      setMessage({
+        type: 'error',
+        text: 'Something went wrong. Please try again.',
+      })
     }
 
     setIsLoading(false)

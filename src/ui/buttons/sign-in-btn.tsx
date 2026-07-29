@@ -3,13 +3,10 @@
 import { useState, useEffect, useRef } from 'react'
 import { useSignMessage, useChainId, useDisconnect, useConnection } from 'wagmi'
 import { SiweMessage } from 'siwe'
+import { getAddress } from 'viem'
 import { useConnectModal, useXellarAccount } from '@xellar/kit'
 import { useUser } from '@/hooks/useUser'
-import {
-  generateSiweNonce,
-  verifySiweMessage,
-  destroySession,
-} from '@/actions/auth'
+import { fetchNonce, loginWithSiwe, logoutSession } from '@/lib/auth-client'
 import { reportError } from '@/lib/telemetry'
 
 // Sign-in intent persists across the page reload that Xellar performs after
@@ -66,7 +63,7 @@ export function SignInButton() {
       setIsSigningIn(true)
       setLoginError(null)
 
-      const nonce = await generateSiweNonce()
+      const nonce = await fetchNonce()
 
       // 10-minute signing window. Tight enough to make captured signatures
       // useless after the user walks away, loose enough that a slow signer
@@ -74,16 +71,19 @@ export function SignInButton() {
       const issuedAt = new Date()
       const expirationTime = new Date(issuedAt.getTime() + 10 * 60 * 1000)
 
-      // Use the same domain source as the server-side verifier (getRequestHost).
-      // When NEXT_PUBLIC_APP_URL is set, both sides derive the host from it so
-      // proxy configurations that rewrite the Host header don't cause mismatches.
+      // Must match the backend's SIWE_DOMAIN exactly. When NEXT_PUBLIC_APP_URL
+      // is set, derive the host from it so proxy configurations that rewrite
+      // the Host header don't cause mismatches.
       const appUrl = process.env.NEXT_PUBLIC_APP_URL
       const domain = appUrl ? new URL(appUrl).host : window.location.host
       const uri = appUrl ?? window.location.origin
 
+      // Backend compares the address in the message against the signature's
+      // recovered address case-sensitively (EIP-55) — checksum defensively in
+      // case the connector ever hands us a lowercase address.
       const message = new SiweMessage({
         domain,
-        address: address,
+        address: getAddress(address),
         statement: 'Sign in to Encoteki Beta App',
         uri,
         version: '1',
@@ -98,9 +98,9 @@ export function SignInButton() {
         message: messageToSign,
       })
 
-      const result = await verifySiweMessage(messageToSign, signature)
+      const result = await loginWithSiwe(messageToSign, signature)
 
-      if (!result.success) {
+      if (!result.ok) {
         setLoginError(result.error ?? 'Sign-in failed. Please try again.')
         shouldSignRef.current = false
         writeIntent(false)
@@ -127,7 +127,7 @@ export function SignInButton() {
   // Logout
   const handleLogout = async () => {
     try {
-      await destroySession()
+      await logoutSession()
       if (isConnected) {
         await disconnect.mutateAsync()
       }

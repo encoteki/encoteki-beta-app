@@ -1,20 +1,8 @@
 import { redirect } from 'next/navigation'
-import { cookies } from 'next/headers'
-import { getIronSession } from 'iron-session'
-import { sessionOptions, SessionData } from '@/lib/session'
 
-export default async function App() {
-  // Check authentication before redirecting
-  const session = await getIronSession<SessionData>(
-    await cookies(),
-    sessionOptions,
-  )
-
-  // If not authenticated or no referral, redirect to login
-  if (!session.siwe?.address || !session.hasReferral) {
-    redirect('/login')
-  }
-
-  // If authenticated, redirect to mint
+// Middleware (src/proxy.ts) already guarantees that any request reaching this
+// page is authenticated and has a referral applied — otherwise it would have
+// redirected to /login before this component ever rendered.
+export default function App() {
   redirect('/mint')
 }

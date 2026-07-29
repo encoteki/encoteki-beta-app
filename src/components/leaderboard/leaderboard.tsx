@@ -156,7 +156,9 @@ export function Leaderboard({
       ) : error ? (
         <div className="py-14 text-center">
           <p className="text-small font-medium text-neutral-40">
-            Could not load the leaderboard.
+            {error === 'rate-limited'
+              ? "You're refreshing a bit too fast. Try again in a moment."
+              : 'Could not load the leaderboard.'}
           </p>
           {onRetry && (
             <button
