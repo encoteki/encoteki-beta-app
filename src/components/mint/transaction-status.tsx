@@ -844,8 +844,10 @@ function CrossChainRecovery({ reqId }: { reqId: Hex }) {
     return () => clearInterval(id)
   }, [])
 
+  // MintRequest struct order: [minter, status, timestamp, paymentToken,
+  // mintPrice, referralCode] — timestamp is index 2, not 5.
   const canExpire = mintRequestData
-    ? now / 1000 - Number(mintRequestData[5]) >= mintTimeout
+    ? now / 1000 - Number(mintRequestData[2]) >= mintTimeout
     : false
 
   const isRecoveryProcessing = isSigning || isProcessing
