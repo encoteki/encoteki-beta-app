@@ -1,19 +1,21 @@
 'use client'
 
 import { useQuery } from '@tanstack/react-query'
+import { API_BASE_URL } from '@/constants/api'
 import { MintsResponseSchema } from '@/lib/schemas'
 
-const GRAPHQL_URL = 'https://api.encoteki.com/graphql'
+const GRAPHQL_URL = `${API_BASE_URL}/graphql`
 
+// tsb_tokens.owner is only ever set by a Transfer event (i.e. the token was
+// actually minted on-chain), so filtering on owner already excludes
+// pending/failed/canceled mint attempts without needing a status filter --
+// same assumption src/api/routes/tokens.ts in encoteki-be relies on.
 const MINTS_QUERY = `
-  query GetMintsByMinterAndChain($chainId: BigInt!, $minter: String!) {
-    mints(where: { chainId: $chainId, minter: $minter }) {
+  query GetTokensByOwnerAndChain($owner: String!, $originChainId: BigInt!) {
+    tsbTokenss(where: { owner: $owner, originChainId: $originChainId }) {
       items {
         tokenId
-        paymentToken
-        status
-        statusDesc
-        mintDate
+        mintedAt
       }
     }
   }
@@ -21,9 +23,6 @@ const MINTS_QUERY = `
 
 export type MintItem = {
   tokenId: bigint
-  paymentToken: string
-  status: number
-  statusDesc: string
   mintDate: string | null
 }
 
@@ -44,7 +43,7 @@ async function fetchMints(
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({
       query: MINTS_QUERY,
-      variables: { chainId, minter: address.toLowerCase() },
+      variables: { owner: address.toLowerCase(), originChainId: chainId },
     }),
   })
 
@@ -55,7 +54,7 @@ async function fetchMints(
   const parsed = MintsResponseSchema.safeParse(await res.json())
   if (!parsed.success) throw new Error('Malformed mints response')
 
-  const items = parsed.data.data?.mints?.items ?? []
+  const items = parsed.data.data?.tsbTokenss?.items ?? []
   const result: MintItem[] = []
   for (const item of items) {
     let tokenId: bigint
@@ -67,10 +66,7 @@ async function fetchMints(
     }
     result.push({
       tokenId,
-      paymentToken: item.paymentToken ?? '',
-      status: Number(item.status ?? 0) || 0,
-      statusDesc: item.statusDesc ?? '',
-      mintDate: item.mintDate ?? null,
+      mintDate: item.mintedAt != null ? String(item.mintedAt) : null,
     })
   }
   return result
