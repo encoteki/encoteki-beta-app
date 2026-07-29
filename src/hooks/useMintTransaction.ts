@@ -20,6 +20,7 @@ import { humanizeError } from '@/utils/humanize-error.util'
 import { reportUnexpected } from '@/lib/telemetry'
 import { tsbSatelliteABI } from '@/constants/abis/tsbSatellite.abi'
 import { useLayerZeroScan } from './useLayerZeroScan'
+import { useLayerZeroFeeQuote } from './useLayerZeroFeeQuote'
 
 const ZERO = BigInt(0)
 
@@ -94,13 +95,24 @@ export function useMintTransaction({
     }
   }, [price, isNative, tokenDecimals])
 
+  // ───────────── LayerZero Fee Quote (Satellite only) ─────────────
+  const { bufferedFee: bufferedLzFee, isLoaded: isLzFeeLoaded } =
+    useLayerZeroFeeQuote({
+      isHub,
+      targetContract,
+      chainId,
+      userAddress,
+      referralCode,
+    })
+
   // ───────────── Compute msg.value ─────────────
-  // LZ fee is covered by the contract.
-  // Only send the price when paying with native ETH; send 0 for ERC20.
+  // Hub: native pays exactly the price (no LZ round-trip); ERC20 pays 0.
+  // Satellite: the LZ fee is always paid in native currency, on top of the
+  // price when paying native, or by itself when paying ERC20 (spec §5).
   const msgValue = useMemo(() => {
-    if (!isNative) return ZERO
-    return priceBigInt
-  }, [isNative, priceBigInt])
+    if (isHub) return isNative ? priceBigInt : ZERO
+    return isNative ? priceBigInt + bufferedLzFee : bufferedLzFee
+  }, [isHub, isNative, priceBigInt, bufferedLzFee])
 
   // ───────────── Allowance Check (ERC20 only) ─────────────
   const { data: currentAllowance, refetch: refetchAllowance } = useReadContract(
@@ -405,7 +417,8 @@ export function useMintTransaction({
     !!userAddress &&
     !!targetContract &&
     priceBigInt >= ZERO &&
-    (isNative || tokenDecimals !== undefined)
+    (isNative || tokenDecimals !== undefined) &&
+    isLzFeeLoaded
 
   return {
     execute,
@@ -430,5 +443,6 @@ export function useMintTransaction({
     tokenDecimals,
     priceBigInt,
     msgValue,
+    lzFee: bufferedLzFee,
   }
 }
