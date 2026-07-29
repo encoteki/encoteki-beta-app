@@ -76,7 +76,7 @@
     "*.{json,css,md,yml,yaml}": "prettier --write"
   },
   "engines": {
-    "node": ">=20.9.0"
+    "node": "24.x"
   },
   "packageManager": "yarn@4.15.0"
 }
