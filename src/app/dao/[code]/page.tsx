@@ -3,6 +3,7 @@
 import Badge from '@/ui/badge'
 import Breadcrumbs from '@/ui/navs/breadcrumbs'
 import DefaultButton from '@/ui/buttons/default-btn'
+import { SignInButton } from '@/ui/buttons/sign-in-btn'
 import { use, useEffect, useState, useMemo } from 'react'
 import { useRouter } from 'next/navigation'
 import URL_ROUTES from '@/constants/url-route'
@@ -13,6 +14,8 @@ import { isHtmlContent } from '@/types/dao.types'
 import type { ProposalDetail } from '@/types/dao.types'
 import { Skeleton } from '@/ui/skeleton'
 import SanitizedHTML from '@/components/common/sanitized-html'
+import { useAppCtx } from '@/contexts/app.context'
+import { useProposalVoting, VotePhase } from '@/hooks/useProposalVoting'
 
 interface DaoDetailPageProps {
   params: Promise<{ code: string }>
@@ -33,6 +36,22 @@ function getTimeRemaining(votingEnds: string): string {
   const seconds = Math.floor((diffMs % (1000 * 60)) / 1000)
 
   return `Voting ends in ${String(hours).padStart(2, '0')}:${String(minutes).padStart(2, '0')}:${String(seconds).padStart(2, '0')}`
+}
+
+function getVoteButtonLabel(phase: VotePhase, isLoadingPower: boolean): string {
+  if (isLoadingPower) return 'Checking…'
+  switch (phase) {
+    case 'switching-chain':
+      return 'Switching network…'
+    case 'signing':
+      return 'Confirm in wallet…'
+    case 'mining':
+      return 'Casting vote…'
+    case 'success':
+      return 'Vote again'
+    default:
+      return 'Vote'
+  }
 }
 
 export default function DaoDetailPage({ params }: DaoDetailPageProps) {
@@ -148,10 +167,9 @@ export default function DaoDetailPage({ params }: DaoDetailPageProps) {
 }
 
 /**
- * Metadata-only rendering — options are read-only (no selection/voting UI)
- * and there is no vote-tally/breakdown/contract section yet. Those need
- * on-chain data (`proposal.deployments`) and come back in a later pass;
- * see BACKLOG.md.
+ * Options are selectable and wired to a real on-chain `vote()` call via
+ * `useProposalVoting` (per-NFT voting power, one deployment chain at a
+ * time). Live tallies/breakdown are still out of scope — see BACKLOG.md.
  */
 function DaoDetailContent({
   code,
@@ -161,6 +179,23 @@ function DaoDetailContent({
   proposal: ProposalDetail
 }) {
   const hasHtmlContent = isHtmlContent(proposal.description)
+  const [selectedOption, setSelectedOption] = useState<number | undefined>(
+    undefined,
+  )
+  const { referralCode } = useAppCtx()
+  const voting = useProposalVoting({ proposal, refCode: referralCode })
+  const isVoteInFlight =
+    voting.phase === 'switching-chain' ||
+    voting.phase === 'signing' ||
+    voting.phase === 'mining'
+  const canVote =
+    voting.isConnected &&
+    voting.deployments.length > 0 &&
+    selectedOption !== undefined &&
+    voting.powerForSelectedChain > 0 &&
+    voting.isActiveOnSelectedChain &&
+    !voting.isLoadingPower &&
+    !isVoteInFlight
 
   const links = useMemo(
     () => [
@@ -195,20 +230,131 @@ function DaoDetailContent({
 
         {/* Content Grid */}
         <div className="flex flex-col gap-8 desktop:flex-row desktop:gap-12">
-          {/* Left: Options (read-only) */}
+          {/* Left: Options + cast-a-vote panel */}
           <section className="flex-2/5 space-y-6 rounded-4xl bg-white p-6 tablet:p-8">
             <div className="space-y-6">
               <h2 className="font-medium">Options:</h2>
-              <div className="space-y-3">
-                {proposal.options.map((opt) => (
-                  <div
-                    key={opt.index}
-                    className="w-full rounded-full border border-neutral-60 bg-white py-3 text-center"
-                  >
-                    {opt.label}
-                  </div>
-                ))}
+              <div
+                role="radiogroup"
+                aria-label="Vote options"
+                className="space-y-3"
+              >
+                {proposal.options.map((opt) => {
+                  const isSelected = selectedOption === opt.index
+                  return (
+                    <button
+                      key={opt.index}
+                      type="button"
+                      role="radio"
+                      aria-checked={isSelected}
+                      disabled={isVoteInFlight}
+                      onClick={() => setSelectedOption(opt.index)}
+                      className={`w-full rounded-full border py-3 text-center transition-colors disabled:cursor-not-allowed disabled:opacity-60 ${
+                        isSelected
+                          ? 'border-primary-green bg-primary-green/10 font-medium text-primary-green'
+                          : 'border-neutral-60 bg-white hover:border-primary-green/40'
+                      }`}
+                    >
+                      {opt.label}
+                    </button>
+                  )
+                })}
               </div>
+            </div>
+
+            {/* Cast-a-vote panel */}
+            <div className="border-neutral-80 space-y-4 border-t pt-6">
+              {!voting.isConnected ? (
+                <div className="space-y-2">
+                  <p className="text-sm text-neutral-30">
+                    Connect your wallet to vote.
+                  </p>
+                  <SignInButton />
+                </div>
+              ) : voting.deployments.length === 0 ? (
+                <p className="text-sm text-neutral-30">
+                  Voting isn&rsquo;t available on any chain for this proposal
+                  yet.
+                </p>
+              ) : (
+                <>
+                  <div className="flex flex-wrap gap-2">
+                    {voting.deployments.map((d) => {
+                      const isActiveChoice =
+                        d.chainId === voting.selectedChainId
+                      const disabled = d.unvotedCount === 0
+                      return (
+                        <button
+                          key={d.chainId}
+                          type="button"
+                          disabled={disabled || isVoteInFlight}
+                          onClick={() => voting.setSelectedChainId(d.chainId)}
+                          title={
+                            disabled
+                              ? 'No eligible NFTs on this chain'
+                              : undefined
+                          }
+                          className={`rounded-full border px-4 py-2 text-xs font-medium transition-colors disabled:cursor-not-allowed disabled:opacity-40 ${
+                            isActiveChoice
+                              ? 'border-primary-green bg-primary-green text-white'
+                              : 'text-neutral-20 border-neutral-60 bg-white hover:border-primary-green/40'
+                          }`}
+                        >
+                          {d.label}
+                          {d.unvotedCount > 0 && ` (${d.unvotedCount})`}
+                        </button>
+                      )
+                    })}
+                  </div>
+
+                  <p className="text-xs text-neutral-30">
+                    {voting.isLoadingPower
+                      ? 'Checking your voting power…'
+                      : voting.totalPower === 0
+                        ? "You don't have any eligible TSB NFTs to vote with on this proposal."
+                        : voting.selectedChainId != null &&
+                            !voting.isActiveOnSelectedChain
+                          ? 'Voting is closed on this chain.'
+                          : `${voting.powerForSelectedChain} vote${voting.powerForSelectedChain === 1 ? '' : 's'} available on this chain.`}
+                  </p>
+
+                  <DefaultButton
+                    type="button"
+                    disabled={!canVote}
+                    onClick={() =>
+                      selectedOption !== undefined &&
+                      voting.vote(selectedOption)
+                    }
+                  >
+                    {getVoteButtonLabel(voting.phase, voting.isLoadingPower)}
+                  </DefaultButton>
+
+                  {voting.errorMsg && (
+                    <p role="alert" className="text-xs text-red-500">
+                      {voting.errorMsg}
+                    </p>
+                  )}
+
+                  {voting.phase === 'success' && (
+                    <p className="text-xs text-primary-green">
+                      Vote submitted.
+                      {voting.explorerUrl && (
+                        <>
+                          {' '}
+                          <a
+                            href={voting.explorerUrl}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="underline"
+                          >
+                            View transaction
+                          </a>
+                        </>
+                      )}
+                    </p>
+                  )}
+                </>
+              )}
             </div>
           </section>
 
