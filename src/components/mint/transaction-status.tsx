@@ -9,6 +9,7 @@ import { motion, AnimatePresence, useReducedMotion } from 'motion/react'
 import Hidden from '@/assets/mint/hidden.png'
 import { MintStatus, OnChainMintStatus } from '../../enums/mint.enum'
 import { useSatelliteRecovery } from '@/hooks/useSatelliteRecovery'
+import { useHubMintDiagnostic } from '@/hooks/useHubMintDiagnostic'
 import { Hex } from 'viem'
 import Image from 'next/image'
 import {
@@ -969,6 +970,7 @@ function CrossChainRecovery({ reqId }: { reqId: Hex }) {
             {humanizeError(error)}
           </p>
         )}
+        <HubQuotaNote reqId={reqId} />
       </div>
     )
   }
@@ -1011,6 +1013,87 @@ function CrossChainRecovery({ reqId }: { reqId: Hex }) {
             : 'Claim refund'}
         </button>
       </div>
+      {error && (
+        <p className="text-center text-caption font-medium wrap-break-word text-destructive">
+          {humanizeError(error)}
+        </p>
+      )}
+      <HubQuotaNote reqId={reqId} />
+    </div>
+  )
+}
+
+// ─────────── Hub Wallet-Quota Diagnostic (spec §9) ───────────
+//
+// maxMintPerWallet is enforced only on the Hub, and a Satellite-side
+// expire/refund never touches it — so a self-refunded user's mint slot on
+// Base can stay reserved until reclaimStuckMint() is called there. Shown
+// underneath the Satellite-side recovery actions since it's an independent,
+// Hub-side concern that can apply whether the Satellite request is still
+// PENDING (Failure 2c: Hub already ASSIGNED, Satellite never heard back) or
+// already FAILED.
+function HubQuotaNote({ reqId }: { reqId: Hex }) {
+  const { diagnosis, availableAt, now, reclaim, isProcessing, error } =
+    useHubMintDiagnostic(reqId)
+  const [triggered, setTriggered] = useState(false)
+
+  if (diagnosis === 'loading' || diagnosis === 'not-on-hub') return null
+
+  if (diagnosis === 'minted') {
+    return (
+      <p className="mt-3 text-center text-caption text-neutral-40">
+        Base shows this mint actually went through — refresh to see your NFT.
+      </p>
+    )
+  }
+
+  if (diagnosis === 'canceled') {
+    return (
+      <p className="mt-3 text-center text-caption text-neutral-40">
+        Your mint slot on Base has been freed — you&apos;re clear to mint again.
+      </p>
+    )
+  }
+
+  if (diagnosis === 'settling') {
+    const minsLeft = availableAt
+      ? Math.max(0, Math.ceil((availableAt - now / 1000) / 60))
+      : null
+    return (
+      <p className="mt-3 text-center text-caption text-neutral-40">
+        Your mint slot on Base is still settling
+        {minsLeft !== null ? ` (~${minsLeft} min)` : ''} — check back soon.
+      </p>
+    )
+  }
+
+  if (diagnosis === 'needs-admin') {
+    return (
+      <p className="mt-3 text-center text-caption text-neutral-40">
+        Your mint slot on Base needs manual cleanup — contact support with this
+        request ID if you can&apos;t mint again.
+      </p>
+    )
+  }
+
+  // reclaimable
+  return (
+    <div className="mt-3 flex flex-col items-center gap-2 border-t border-neutral-60/60 pt-3">
+      <p className="text-center text-caption leading-relaxed text-neutral-40">
+        Your mint slot on Base is still marked reserved from this request.
+      </p>
+      <button
+        onClick={() => {
+          setTriggered(true)
+          reclaim()
+        }}
+        disabled={isProcessing}
+        className="flex min-h-11 w-full items-center justify-center rounded-xl border border-neutral-60 bg-white px-4 text-small font-medium text-neutral-10 shadow-sm transition-colors hover:bg-khaki-90 disabled:cursor-not-allowed disabled:opacity-50"
+      >
+        {triggered && isProcessing
+          ? 'Freeing mint slot...'
+          : 'Free up my mint slot'}
+      </button>
       {error && (
         <p className="text-center text-caption font-medium wrap-break-word text-destructive">
           {humanizeError(error)}
