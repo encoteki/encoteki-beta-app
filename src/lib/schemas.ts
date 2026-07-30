@@ -106,3 +106,10 @@ export const ProposalDetailSchema = ProposalListItemSchema.extend({
   options: z.array(ProposalOptionSchema).catch([]),
   deployments: z.array(ProposalDeploymentSchema).catch([]),
 })
+
+// ── Proposal description content (fetched from IPFS when `description` is an
+// `ipfs://` URI rather than inline text) ────────────────────────────────────
+
+export const ProposalIpfsContentSchema = z.object({
+  description: z.string().nullish(),
+})

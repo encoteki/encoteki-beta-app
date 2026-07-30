@@ -6,6 +6,8 @@ import DefaultButton from '@/ui/buttons/default-btn'
 import { SignInButton } from '@/ui/buttons/sign-in-btn'
 import { use, useEffect, useState, useMemo } from 'react'
 import { useRouter } from 'next/navigation'
+import { ChevronDown } from 'lucide-react'
+import Image from 'next/image'
 import URL_ROUTES from '@/constants/url-route'
 import { ProposalType } from '@/enums/dao-types.enum'
 import { getProposal } from '@/lib/proposals-client'
@@ -16,26 +18,14 @@ import { Skeleton } from '@/ui/skeleton'
 import SanitizedHTML from '@/components/common/sanitized-html'
 import { useAppCtx } from '@/contexts/app.context'
 import { useProposalVoting, VotePhase } from '@/hooks/useProposalVoting'
+import { useProposalDescription } from '@/hooks/useProposalDescription'
+import { useCountdown } from '@/hooks/useCountdown'
+import { formatVotingEndsAbsolute } from '@/utils/dao-time.util'
+import { getChain } from '@/constants/contracts/tsb'
+import { getChainIcon } from '@/utils/chain-icon.util'
 
 interface DaoDetailPageProps {
   params: Promise<{ code: string }>
-}
-
-/**
- * Live countdown to `votingEnds`, recomputed on every render — the API's
- * `timeRemaining` is only a snapshot at response time and goes stale
- * immediately.
- */
-function getTimeRemaining(votingEnds: string): string {
-  const diffMs = new Date(votingEnds).getTime() - Date.now()
-
-  if (diffMs <= 0) return 'Voting ended'
-
-  const hours = Math.floor(diffMs / (1000 * 60 * 60))
-  const minutes = Math.floor((diffMs % (1000 * 60 * 60)) / (1000 * 60))
-  const seconds = Math.floor((diffMs % (1000 * 60)) / 1000)
-
-  return `Voting ends in ${String(hours).padStart(2, '0')}:${String(minutes).padStart(2, '0')}:${String(seconds).padStart(2, '0')}`
 }
 
 function getVoteButtonLabel(phase: VotePhase, isLoadingPower: boolean): string {
@@ -178,10 +168,17 @@ function DaoDetailContent({
   code: string
   proposal: ProposalDetail
 }) {
-  const hasHtmlContent = isHtmlContent(proposal.description)
+  const {
+    description: resolvedDescription,
+    isLoading: isDescriptionLoading,
+    isError: isDescriptionError,
+  } = useProposalDescription(proposal.description)
+  const hasHtmlContent = isHtmlContent(resolvedDescription)
+  const timeRemaining = useCountdown(proposal.votingEnds)
   const [selectedOption, setSelectedOption] = useState<number | undefined>(
     undefined,
   )
+  const [chainDropdownOpen, setChainDropdownOpen] = useState(false)
   const { referralCode } = useAppCtx()
   const voting = useProposalVoting({ proposal, refCode: referralCode })
   const isVoteInFlight =
@@ -222,8 +219,11 @@ function DaoDetailContent({
                 BACKLOG.md). */}
             <Badge type={ProposalType.PROPOSAL} />
             <h1 className="text-48">{proposal.proposalName}</h1>
-            <div className="flex justify-between text-neutral-30">
-              <p>{getTimeRemaining(proposal.votingEnds)}</p>
+            <div className="flex flex-col gap-1 text-neutral-30 tablet:flex-row tablet:items-center tablet:justify-between">
+              <p>{timeRemaining}</p>
+              <p className="text-sm">
+                Ends {formatVotingEndsAbsolute(proposal.votingEnds)}
+              </p>
             </div>
           </div>
         </header>
@@ -249,13 +249,44 @@ function DaoDetailContent({
                       aria-checked={isSelected}
                       disabled={isVoteInFlight}
                       onClick={() => setSelectedOption(opt.index)}
-                      className={`w-full rounded-full border py-3 text-center transition-colors disabled:cursor-not-allowed disabled:opacity-60 ${
+                      className={`flex w-full items-center justify-between rounded-xl border p-4 text-left transition-colors disabled:cursor-not-allowed disabled:opacity-60 ${
                         isSelected
-                          ? 'border-primary-green bg-primary-green/10 font-medium text-primary-green'
-                          : 'border-neutral-60 bg-white hover:border-primary-green/40'
+                          ? 'border-primary-green bg-green-90'
+                          : 'border-neutral-60 bg-white hover:border-primary-green/40 hover:bg-khaki-90'
                       }`}
                     >
-                      {opt.label}
+                      <span
+                        className={
+                          isSelected
+                            ? 'font-medium text-primary-green'
+                            : 'text-neutral-10'
+                        }
+                      >
+                        {opt.label}
+                      </span>
+                      <span
+                        className={`flex h-4 w-4 shrink-0 items-center justify-center rounded-full transition-all duration-200 ${
+                          isSelected
+                            ? 'bg-primary-green'
+                            : 'border border-neutral-60 bg-transparent'
+                        }`}
+                      >
+                        {isSelected && (
+                          <svg
+                            className="h-2.5 w-2.5 text-white"
+                            viewBox="0 0 10 10"
+                            fill="none"
+                          >
+                            <path
+                              d="M2 5l2.5 2.5L8 3"
+                              stroke="currentColor"
+                              strokeWidth="1.5"
+                              strokeLinecap="round"
+                              strokeLinejoin="round"
+                            />
+                          </svg>
+                        )}
+                      </span>
                     </button>
                   )
                 })}
@@ -278,33 +309,123 @@ function DaoDetailContent({
                 </p>
               ) : (
                 <>
-                  <div className="flex flex-wrap gap-2">
-                    {voting.deployments.map((d) => {
-                      const isActiveChoice =
-                        d.chainId === voting.selectedChainId
-                      const disabled = d.unvotedCount === 0
-                      return (
-                        <button
-                          key={d.chainId}
-                          type="button"
-                          disabled={disabled || isVoteInFlight}
-                          onClick={() => voting.setSelectedChainId(d.chainId)}
-                          title={
-                            disabled
-                              ? 'No eligible NFTs on this chain'
-                              : undefined
-                          }
-                          className={`rounded-full border px-4 py-2 text-xs font-medium transition-colors disabled:cursor-not-allowed disabled:opacity-40 ${
-                            isActiveChoice
-                              ? 'border-primary-green bg-primary-green text-white'
-                              : 'text-neutral-20 border-neutral-60 bg-white hover:border-primary-green/40'
-                          }`}
-                        >
-                          {d.label}
-                          {d.unvotedCount > 0 && ` (${d.unvotedCount})`}
-                        </button>
-                      )
-                    })}
+                  <div className="relative">
+                    <button
+                      type="button"
+                      aria-haspopup="listbox"
+                      aria-expanded={chainDropdownOpen}
+                      aria-controls="vote-chain-dropdown"
+                      disabled={isVoteInFlight}
+                      onClick={() => setChainDropdownOpen((open) => !open)}
+                      className="flex w-full items-center justify-between rounded-xl border border-neutral-60 bg-white px-4 py-3 text-left shadow-sm transition-colors hover:bg-khaki-90 disabled:cursor-not-allowed disabled:opacity-60"
+                    >
+                      {(() => {
+                        const active = voting.deployments.find(
+                          (d) => d.chainId === voting.selectedChainId,
+                        )
+                        const icon = active
+                          ? getChainIcon(getChain(active.chainId)?.key ?? '')
+                          : null
+                        return (
+                          <span className="flex min-w-0 items-center gap-3">
+                            {icon && (
+                              <figure className="flex h-6 w-6 shrink-0 items-center justify-center overflow-hidden rounded-full ring-1 ring-neutral-60">
+                                <Image
+                                  src={icon}
+                                  alt={active?.label ?? ''}
+                                  width={24}
+                                  height={24}
+                                  className="object-cover"
+                                />
+                              </figure>
+                            )}
+                            <span className="truncate text-sm font-medium text-neutral-10">
+                              {active
+                                ? `${active.label}${active.unvotedCount > 0 ? ` (${active.unvotedCount})` : ''}`
+                                : 'Select network'}
+                            </span>
+                          </span>
+                        )
+                      })()}
+                      <ChevronDown
+                        size={16}
+                        className={`shrink-0 text-neutral-40 transition-transform duration-200 ${chainDropdownOpen ? 'rotate-180' : ''}`}
+                      />
+                    </button>
+
+                    {chainDropdownOpen && (
+                      <ul
+                        id="vote-chain-dropdown"
+                        role="listbox"
+                        className="absolute z-20 mt-2 max-h-56 w-full overflow-hidden overflow-y-auto rounded-xl border border-neutral-60 bg-white shadow-lg"
+                      >
+                        {voting.deployments.map((d) => {
+                          const isActiveChoice =
+                            d.chainId === voting.selectedChainId
+                          const disabled = d.unvotedCount === 0
+                          const icon = getChainIcon(
+                            getChain(d.chainId)?.key ?? '',
+                          )
+                          return (
+                            <li
+                              key={d.chainId}
+                              role="option"
+                              aria-selected={isActiveChoice}
+                              aria-disabled={disabled}
+                              tabIndex={disabled ? -1 : 0}
+                              title={
+                                disabled
+                                  ? 'No eligible NFTs on this chain'
+                                  : undefined
+                              }
+                              onClick={() => {
+                                if (disabled) return
+                                voting.setSelectedChainId(d.chainId)
+                                setChainDropdownOpen(false)
+                              }}
+                              onKeyDown={(e) => {
+                                if (
+                                  !disabled &&
+                                  (e.key === 'Enter' || e.key === ' ')
+                                ) {
+                                  e.preventDefault()
+                                  voting.setSelectedChainId(d.chainId)
+                                  setChainDropdownOpen(false)
+                                }
+                              }}
+                              className={`flex w-full items-center justify-between px-4 py-3 text-left transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-primary-green/40 focus-visible:ring-inset ${
+                                disabled
+                                  ? 'cursor-not-allowed opacity-40'
+                                  : 'cursor-pointer'
+                              } ${isActiveChoice ? 'bg-khaki-80' : 'hover:bg-khaki-90'}`}
+                            >
+                              <span className="flex items-center gap-3">
+                                {icon && (
+                                  <figure className="flex h-6 w-6 items-center justify-center overflow-hidden rounded-full">
+                                    <Image
+                                      src={icon}
+                                      alt={d.label}
+                                      width={24}
+                                      height={24}
+                                      className="object-cover"
+                                    />
+                                  </figure>
+                                )}
+                                <span
+                                  className={`text-sm font-medium ${isActiveChoice ? 'text-primary-green' : 'text-neutral-10'}`}
+                                >
+                                  {d.label}
+                                  {d.unvotedCount > 0 && ` (${d.unvotedCount})`}
+                                </span>
+                              </span>
+                              {isActiveChoice && (
+                                <div className="h-2 w-2 rounded-full bg-primary-green shadow-sm" />
+                              )}
+                            </li>
+                          )
+                        })}
+                      </ul>
+                    )}
                   </div>
 
                   <p className="text-xs text-neutral-30">
@@ -320,6 +441,7 @@ function DaoDetailContent({
 
                   <DefaultButton
                     type="button"
+                    classname="w-full"
                     disabled={!canVote}
                     onClick={() =>
                       selectedOption !== undefined &&
@@ -361,14 +483,25 @@ function DaoDetailContent({
           {/* Right: Description */}
           <article className="flex-3/5 space-y-8">
             <div className="space-y-4">
-              {hasHtmlContent ? (
+              {isDescriptionLoading ? (
+                <div className="space-y-3">
+                  <Skeleton className="h-4 w-full" />
+                  <Skeleton className="h-4 w-full" />
+                  <Skeleton className="h-4 w-2/3" />
+                </div>
+              ) : isDescriptionError ? (
+                <p className="text-sm text-red-500">
+                  Couldn&rsquo;t load the proposal description from IPFS. Please
+                  try again later.
+                </p>
+              ) : hasHtmlContent ? (
                 <SanitizedHTML
-                  html={proposal.description}
+                  html={resolvedDescription}
                   className="text-neutral-20 leading-relaxed font-normal [&>a]:text-primary-green [&>a]:underline [&>em]:italic [&>h1]:mb-4 [&>h1]:text-3xl [&>h1]:font-bold [&>h2]:mb-3 [&>h2]:text-2xl [&>h2]:font-bold [&>h3]:mb-2 [&>h3]:text-xl [&>h3]:font-semibold [&>img]:my-4 [&>img]:rounded-lg [&>ol]:mb-4 [&>ol]:ml-6 [&>ol]:list-decimal [&>p]:mb-4 [&>strong]:font-bold [&>ul]:mb-4 [&>ul]:ml-6 [&>ul]:list-disc"
                 />
               ) : (
                 <p className="text-neutral-20 leading-relaxed font-normal">
-                  {proposal.description}
+                  {resolvedDescription}
                 </p>
               )}
             </div>
