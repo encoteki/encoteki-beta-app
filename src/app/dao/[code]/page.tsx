@@ -28,8 +28,15 @@ interface DaoDetailPageProps {
   params: Promise<{ code: string }>
 }
 
-function getVoteButtonLabel(phase: VotePhase, isLoadingPower: boolean): string {
+type VoteAction = 'vote' | 'abstain' | null
+
+function getVoteButtonLabel(
+  phase: VotePhase,
+  lastAction: VoteAction,
+  isLoadingPower: boolean,
+): string {
   if (isLoadingPower) return 'Checking…'
+  if (lastAction === 'abstain' && phase !== 'idle') return 'Vote'
   switch (phase) {
     case 'switching-chain':
       return 'Switching network…'
@@ -41,6 +48,27 @@ function getVoteButtonLabel(phase: VotePhase, isLoadingPower: boolean): string {
       return 'Vote again'
     default:
       return 'Vote'
+  }
+}
+
+function getAbstainButtonLabel(
+  phase: VotePhase,
+  lastAction: VoteAction,
+  isLoadingPower: boolean,
+): string {
+  if (isLoadingPower) return 'Checking…'
+  if (lastAction === 'vote' && phase !== 'idle') return 'Abstain'
+  switch (phase) {
+    case 'switching-chain':
+      return 'Switching network…'
+    case 'signing':
+      return 'Confirm in wallet…'
+    case 'mining':
+      return 'Abstaining…'
+    case 'success':
+      return 'Abstain again'
+    default:
+      return 'Abstain'
   }
 }
 
@@ -189,6 +217,13 @@ function DaoDetailContent({
     voting.isConnected &&
     voting.deployments.length > 0 &&
     selectedOption !== undefined &&
+    voting.powerForSelectedChain > 0 &&
+    voting.isActiveOnSelectedChain &&
+    !voting.isLoadingPower &&
+    !isVoteInFlight
+  const canAbstain =
+    voting.isConnected &&
+    voting.deployments.length > 0 &&
     voting.powerForSelectedChain > 0 &&
     voting.isActiveOnSelectedChain &&
     !voting.isLoadingPower &&
@@ -441,6 +476,20 @@ function DaoDetailContent({
 
                   <DefaultButton
                     type="button"
+                    variant="secondary"
+                    classname="w-full"
+                    disabled={!canAbstain}
+                    onClick={() => voting.abstain()}
+                  >
+                    {getAbstainButtonLabel(
+                      voting.phase,
+                      voting.lastAction,
+                      voting.isLoadingPower,
+                    )}
+                  </DefaultButton>
+
+                  <DefaultButton
+                    type="button"
                     classname="w-full"
                     disabled={!canVote}
                     onClick={() =>
@@ -448,7 +497,11 @@ function DaoDetailContent({
                       voting.vote(selectedOption)
                     }
                   >
-                    {getVoteButtonLabel(voting.phase, voting.isLoadingPower)}
+                    {getVoteButtonLabel(
+                      voting.phase,
+                      voting.lastAction,
+                      voting.isLoadingPower,
+                    )}
                   </DefaultButton>
 
                   {voting.errorMsg && (
@@ -459,7 +512,9 @@ function DaoDetailContent({
 
                   {voting.phase === 'success' && (
                     <p className="text-xs text-primary-green">
-                      Vote submitted.
+                      {voting.lastAction === 'abstain'
+                        ? 'Abstained.'
+                        : 'Vote submitted.'}
                       {voting.explorerUrl && (
                         <>
                           {' '}
