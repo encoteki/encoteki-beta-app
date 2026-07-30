@@ -5,7 +5,6 @@ import Image from 'next/image'
 import { motion, AnimatePresence, useReducedMotion } from 'motion/react'
 import { ArrowLeft, ExternalLink, Copy, Check } from 'lucide-react'
 import { useReadContracts } from 'wagmi'
-import { getPaymentMethods } from '@/constants/contracts/tsb'
 import { type MintItem } from '@/hooks/useNftMints'
 import { NftMetadataSchema, type NftMetadata } from '@/lib/schemas'
 import HiddenNFT from '@/assets/mint/hidden.png'
@@ -38,16 +37,6 @@ const GATEWAY = process.env.NEXT_PUBLIC_GATEWAY_URL
 function resolveUri(uri: string): string {
   if (uri.startsWith('ipfs://')) return uri.replace('ipfs://', GATEWAY)
   return uri
-}
-
-function resolvePaymentSymbol(paymentToken: string, chainId: number): string {
-  const tokens = getPaymentMethods(chainId)
-  const match = tokens.find(
-    (t) => t.address.toLowerCase() === paymentToken.toLowerCase(),
-  )
-  return (
-    match?.symbol ?? `${paymentToken.slice(0, 6)}…${paymentToken.slice(-4)}`
-  )
 }
 
 function formatMintDate(mintDate: string | null): string | null {
@@ -211,11 +200,6 @@ export function NftDetailSheet({
     () => formatMintDate(mintInfo?.mintDate ?? null),
     [mintInfo?.mintDate],
   )
-  const paymentToken = mintInfo?.paymentToken
-  const paymentVia = useMemo(
-    () => (paymentToken ? resolvePaymentSymbol(paymentToken, chainId) : null),
-    [paymentToken, chainId],
-  )
   const link = useMemo(
     () => explorerUrl(chainId, contractAddress, tokenId),
     [chainId, contractAddress, tokenId],
@@ -334,7 +318,6 @@ export function NftDetailSheet({
             <span className="font-semibold tabular-nums">{`#${tokenId.toString()}`}</span>
           </Row>
           {mintDate && <Row label="Minted">{mintDate}</Row>}
-          {paymentVia && <Row label="Paid with">{paymentVia}</Row>}
           <Row label="Contract">
             <button
               onClick={copyContract}

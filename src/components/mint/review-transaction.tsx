@@ -8,8 +8,9 @@ import { formatIDR } from '../../utils/format-balance.util'
 import { MintStatus } from '../../enums/mint.enum'
 import { MintButton } from '../../ui/buttons/mint-btn'
 import { MockMintButton } from '../../ui/buttons/mock-mint-btn'
-import { Address } from 'viem'
+import { Address, formatEther } from 'viem'
 import { useConnection } from 'wagmi'
+import { useLayerZeroFeeQuote } from '@/hooks/useLayerZeroFeeQuote'
 
 const IS_DEV = process.env.NODE_ENV === 'development'
 
@@ -26,6 +27,18 @@ export default function ReviewTransaction() {
   const { address: recipientAddress } = useConnection()
   const chainConfig = selectedChainId ? getChain(selectedChainId) : null
   const headingRef = useRef<HTMLHeadingElement>(null)
+
+  // Satellite mints charge a LayerZero fee on top of the payment token, always
+  // in native currency (see useMintTransaction) — shown here so the price the
+  // user reviews matches what their wallet will actually prompt for.
+  const { bufferedFee: networkFee, isLoaded: isFeeLoaded } =
+    useLayerZeroFeeQuote({
+      isHub: !isCrossChain,
+      targetContract: targetContract as Address | null,
+      chainId: selectedChainId ?? 0,
+      userAddress: recipientAddress,
+      referralCode,
+    })
 
   useEffect(() => {
     headingRef.current?.focus()
@@ -49,6 +62,8 @@ export default function ReviewTransaction() {
         referralCode={referralCode}
         chainConfig={chainConfig}
         recipientAddress={recipientAddress}
+        networkFee={networkFee}
+        isFeeLoaded={isFeeLoaded}
       />
 
       <div className="grid gap-3">
@@ -75,17 +90,29 @@ export default function ReviewTransaction() {
   )
 }
 
+// LayerZero fees are small; a 3-decimal cap (like formatBalance uses for
+// wallet chips) can round them to "0.000" and look free. Show up to 6.
+const formatNetworkFee = (value: bigint): string =>
+  new Intl.NumberFormat('id-ID', {
+    minimumFractionDigits: 0,
+    maximumFractionDigits: 6,
+  }).format(Number(formatEther(value)))
+
 const TransactionCard = ({
   item,
   isCrossChain,
   chainConfig,
   recipientAddress,
+  networkFee,
+  isFeeLoaded,
 }: {
   item: Token | null
   isCrossChain: boolean
   referralCode?: string
   chainConfig: ResolvedChain | null | undefined
   recipientAddress?: Address
+  networkFee: bigint
+  isFeeLoaded: boolean
 }) => {
   return (
     <div className="flex w-full flex-col gap-6">
@@ -122,6 +149,21 @@ const TransactionCard = ({
             </span>
           </div>
         </div>
+
+        {/* Network fee — Satellite mints only; LayerZero fee is always paid
+            in native currency, on top of the payment token above. */}
+        {isCrossChain && (
+          <div className="flex items-center justify-between border-t border-neutral-60/60 pt-3">
+            <span className="text-caption text-neutral-40">
+              Network fee (LayerZero)
+            </span>
+            <span className="text-caption font-medium text-neutral-10 tabular-nums">
+              {isFeeLoaded
+                ? `${formatNetworkFee(networkFee)} ETH`
+                : 'Calculating…'}
+            </span>
+          </div>
+        )}
       </div>
 
       {/* RECEIVE */}

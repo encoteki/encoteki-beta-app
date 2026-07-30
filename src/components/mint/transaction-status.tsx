@@ -7,11 +7,16 @@ import { Checkmark } from '../../ui/svg/checkmark'
 import { Crossmark } from '../../ui/svg/crossmark'
 import { motion, AnimatePresence, useReducedMotion } from 'motion/react'
 import Hidden from '@/assets/mint/hidden.png'
-import { MintStatus } from '../../enums/mint.enum'
+import { MintStatus, OnChainMintStatus } from '../../enums/mint.enum'
 import { useSatelliteRecovery } from '@/hooks/useSatelliteRecovery'
+import { useHubMintDiagnostic } from '@/hooks/useHubMintDiagnostic'
 import { Hex } from 'viem'
 import Image from 'next/image'
-import { getChain, getChainByKey } from '@/constants/contracts/tsb'
+import {
+  getChain,
+  getChainByKey,
+  getExplorerUrl,
+} from '@/constants/contracts/tsb'
 import { humanizeError } from '@/utils/humanize-error.util'
 import BaseIcon from '@/assets/chains/base.jpeg'
 import ArbitrumIcon from '@/assets/chains/arbitrum.svg'
@@ -650,16 +655,19 @@ export default function TransactionStatus({ status }: TransactionStatusProps) {
             </a>
           )}
 
-          {status === MintStatus.FAILED && (
+          {/* Hub mints are atomic — no recovery flow exists (spec §6), so a
+              plain reset is correct. Also the fallback if a cross-chain
+              failure somehow lost its reqId. */}
+          {status === MintStatus.FAILED && (!isCrossChain || !reqId) && (
             <DefaultButton classname="w-full" onClick={() => resetMintCtx()}>
               Try again
             </DefaultButton>
           )}
 
-          {/* Cross-chain recovery options */}
-          {/*{status === MintStatus.FAILED && isCrossChain && reqId && (
+          {/* Cross-chain recovery options — full §8 state machine */}
+          {status === MintStatus.FAILED && isCrossChain && reqId && (
             <CrossChainRecovery reqId={reqId} />
-          )}*/}
+          )}
 
           {/* Return/Close */}
           {status === MintStatus.INFLIGHT ? (
@@ -815,54 +823,134 @@ function BridgeRoute({ sourceChainId }: { sourceChainId: number | null }) {
 
 function CrossChainRecovery({ reqId }: { reqId: Hex }) {
   const {
-    isSuccess,
-    refetchPending,
-    refetchRequest,
+    setReqId,
+    setSourceHash,
+    setExplorerUrl,
+    setDstTxHash,
+    setErrorMessage,
+    setStatus,
+    selectedChainId,
+  } = useMintCtx()
+
+  const {
+    status: onChainStatus,
     mintRequestData,
     mintTimeout,
     isSigning,
     isProcessing,
-    expirePendingMint,
-    retryPendingMint,
+    isSuccess,
     error,
-  } = useSatelliteRecovery()
+    newReqId,
+    txHash,
+    expirePendingMint,
+    claimRefund,
+    retryPendingMint,
+    refetchPending,
+    refetchRequest,
+  } = useSatelliteRecovery(reqId)
+
   const [action, setAction] = useState<'idle' | 'expire' | 'refund' | 'retry'>(
     'idle',
   )
   const [now, setNow] = useState(() => Date.now())
 
-  useEffect(() => {
-    if (isSuccess) {
-      refetchPending()
-      refetchRequest()
-    }
-  }, [isSuccess, refetchPending, refetchRequest])
-
-  // Re-evaluate canExpire every 10 s so the UI updates when the timeout passes
+  // Re-evaluate the timeout countdown every 10 s so the UI updates live
   useEffect(() => {
     const id = setInterval(() => setNow(Date.now()), 10_000)
     return () => clearInterval(id)
   }, [])
 
-  const canExpire = mintRequestData
-    ? now / 1000 - Number(mintRequestData[5]) >= mintTimeout
-    : false
+  // After any action confirms, re-read this request's on-chain state so the
+  // branch below reflects reality rather than stale pre-tx assumptions.
+  useEffect(() => {
+    if (!isSuccess) return
+    refetchPending()
+    refetchRequest()
+  }, [isSuccess, refetchPending, refetchRequest])
+
+  // A successful retry doesn't mint anything by itself — it opens a brand-new
+  // PENDING request (spec §8c). Hand tracking off to the normal Flow 2
+  // pipeline instead of building a second tracker here: point mint context at
+  // the new reqId/tx hash and flip to INFLIGHT — MintButton's "resume after
+  // remount" path (see its initialHash) picks up receipt + LayerZero polling
+  // for this hash with no new on-chain write.
+  useEffect(() => {
+    if (action !== 'retry' || !isSuccess || !newReqId || !txHash) return
+    const baseUrl = selectedChainId
+      ? getExplorerUrl(selectedChainId)
+      : undefined
+    setReqId(newReqId)
+    setSourceHash(txHash)
+    setExplorerUrl(baseUrl ? `${baseUrl}${txHash}` : null)
+    setDstTxHash(null)
+    setErrorMessage(null)
+    setStatus(MintStatus.INFLIGHT)
+  }, [
+    action,
+    isSuccess,
+    newReqId,
+    txHash,
+    selectedChainId,
+    setReqId,
+    setSourceHash,
+    setExplorerUrl,
+    setDstTxHash,
+    setErrorMessage,
+    setStatus,
+  ])
 
   const isRecoveryProcessing = isSigning || isProcessing
 
-  return (
-    <div className="mt-4 flex flex-col items-center gap-4 border-t border-neutral-60 pt-4">
-      <div className="space-y-1 text-center">
-        <p className="text-small font-semibold text-neutral-10">
-          Recovery Options
-        </p>
+  // Transitional message while the retry hand-off effect above is about to
+  // unmount this component (status flips to INFLIGHT) — avoids a flash of
+  // "Refunded" for the old reqId in the instant before that happens.
+  if (action === 'retry' && isSuccess) {
+    return (
+      <div className="mt-4 border-t border-neutral-60 pt-4 text-center text-caption text-neutral-40">
+        Retry submitted — resuming tracking…
+      </div>
+    )
+  }
+
+  if (onChainStatus === undefined) {
+    return (
+      <div className="mt-4 border-t border-neutral-60 pt-4 text-center text-caption text-neutral-40">
+        Checking recovery options…
+      </div>
+    )
+  }
+
+  if (onChainStatus === OnChainMintStatus.REFUNDED) {
+    return (
+      <div className="mt-4 flex flex-col items-center gap-2 border-t border-neutral-60 pt-4 text-center">
+        <p className="text-small font-semibold text-neutral-10">Refunded</p>
         <p className="mx-auto max-w-70 text-caption leading-relaxed text-neutral-40">
-          {canExpire
-            ? 'The timeout has passed. You can expire this mint and claim a refund.'
-            : `You can retry the mint or wait for the timeout (${Math.ceil(mintTimeout / 60)} min) to expire it.`}
+          Your payment for this request has been refunded. Start a new mint
+          whenever you&apos;re ready.
         </p>
       </div>
-      <div className="flex w-full flex-col gap-2 sm:flex-row">
+    )
+  }
+
+  if (onChainStatus === OnChainMintStatus.PENDING) {
+    // MintRequest struct order: [minter, status, timestamp, paymentToken,
+    // mintPrice, referralCode] — timestamp is index 2.
+    const canExpire = mintRequestData
+      ? now / 1000 - Number(mintRequestData[2]) >= mintTimeout
+      : false
+
+    return (
+      <div className="mt-4 flex flex-col items-center gap-4 border-t border-neutral-60 pt-4">
+        <div className="space-y-1 text-center">
+          <p className="text-small font-semibold text-neutral-10">
+            Still in flight
+          </p>
+          <p className="mx-auto max-w-70 text-caption leading-relaxed text-neutral-40">
+            {canExpire
+              ? 'This request has been pending past the timeout. You can cancel it, then retry or claim a refund.'
+              : `This request is still pending on-chain. If it's genuinely stuck, you can cancel it after ${Math.ceil(mintTimeout / 60)} min.`}
+          </p>
+        </div>
         {canExpire && (
           <button
             onClick={() => {
@@ -870,13 +958,36 @@ function CrossChainRecovery({ reqId }: { reqId: Hex }) {
               expirePendingMint(reqId)
             }}
             disabled={isRecoveryProcessing}
-            className="flex min-h-11 flex-1 items-center justify-center rounded-xl border border-neutral-60 bg-white px-4 text-small font-medium text-destructive shadow-sm transition-colors hover:bg-destructive/10 disabled:cursor-not-allowed disabled:opacity-50"
+            className="flex min-h-11 w-full items-center justify-center rounded-xl border border-neutral-60 bg-white px-4 text-small font-medium text-destructive shadow-sm transition-colors hover:bg-destructive/10 disabled:cursor-not-allowed disabled:opacity-50"
           >
             {action === 'expire' && isRecoveryProcessing
-              ? 'Expiring...'
-              : 'Expire & Refund'}
+              ? 'Cancelling...'
+              : 'Cancel this request'}
           </button>
         )}
+        {error && (
+          <p className="text-center text-caption font-medium wrap-break-word text-destructive">
+            {humanizeError(error)}
+          </p>
+        )}
+        <HubQuotaNote reqId={reqId} />
+      </div>
+    )
+  }
+
+  // onChainStatus === FAILED — mutually exclusive per spec §8b/§8c: picking
+  // one disables both (isRecoveryProcessing is shared across both actions).
+  return (
+    <div className="mt-4 flex flex-col items-center gap-4 border-t border-neutral-60 pt-4">
+      <div className="space-y-1 text-center">
+        <p className="text-small font-semibold text-neutral-10">
+          Recovery options
+        </p>
+        <p className="mx-auto max-w-70 text-caption leading-relaxed text-neutral-40">
+          Retry the mint, or claim a refund and start over later.
+        </p>
+      </div>
+      <div className="flex w-full flex-col gap-2 sm:flex-row">
         <button
           onClick={() => {
             setAction('retry')
@@ -889,7 +1000,100 @@ function CrossChainRecovery({ reqId }: { reqId: Hex }) {
             ? 'Retrying...'
             : 'Retry mint'}
         </button>
+        <button
+          onClick={() => {
+            setAction('refund')
+            claimRefund(reqId)
+          }}
+          disabled={isRecoveryProcessing}
+          className="flex min-h-11 flex-1 items-center justify-center rounded-xl border border-neutral-60 bg-white px-4 text-small font-medium text-destructive shadow-sm transition-colors hover:bg-destructive/10 disabled:cursor-not-allowed disabled:opacity-50"
+        >
+          {action === 'refund' && isRecoveryProcessing
+            ? 'Refunding...'
+            : 'Claim refund'}
+        </button>
       </div>
+      {error && (
+        <p className="text-center text-caption font-medium wrap-break-word text-destructive">
+          {humanizeError(error)}
+        </p>
+      )}
+      <HubQuotaNote reqId={reqId} />
+    </div>
+  )
+}
+
+// ─────────── Hub Wallet-Quota Diagnostic (spec §9) ───────────
+//
+// maxMintPerWallet is enforced only on the Hub, and a Satellite-side
+// expire/refund never touches it — so a self-refunded user's mint slot on
+// Base can stay reserved until reclaimStuckMint() is called there. Shown
+// underneath the Satellite-side recovery actions since it's an independent,
+// Hub-side concern that can apply whether the Satellite request is still
+// PENDING (Failure 2c: Hub already ASSIGNED, Satellite never heard back) or
+// already FAILED.
+function HubQuotaNote({ reqId }: { reqId: Hex }) {
+  const { diagnosis, availableAt, now, reclaim, isProcessing, error } =
+    useHubMintDiagnostic(reqId)
+  const [triggered, setTriggered] = useState(false)
+
+  if (diagnosis === 'loading' || diagnosis === 'not-on-hub') return null
+
+  if (diagnosis === 'minted') {
+    return (
+      <p className="mt-3 text-center text-caption text-neutral-40">
+        Base shows this mint actually went through — refresh to see your NFT.
+      </p>
+    )
+  }
+
+  if (diagnosis === 'canceled') {
+    return (
+      <p className="mt-3 text-center text-caption text-neutral-40">
+        Your mint slot on Base has been freed — you&apos;re clear to mint again.
+      </p>
+    )
+  }
+
+  if (diagnosis === 'settling') {
+    const minsLeft = availableAt
+      ? Math.max(0, Math.ceil((availableAt - now / 1000) / 60))
+      : null
+    return (
+      <p className="mt-3 text-center text-caption text-neutral-40">
+        Your mint slot on Base is still settling
+        {minsLeft !== null ? ` (~${minsLeft} min)` : ''} — check back soon.
+      </p>
+    )
+  }
+
+  if (diagnosis === 'needs-admin') {
+    return (
+      <p className="mt-3 text-center text-caption text-neutral-40">
+        Your mint slot on Base needs manual cleanup — contact support with this
+        request ID if you can&apos;t mint again.
+      </p>
+    )
+  }
+
+  // reclaimable
+  return (
+    <div className="mt-3 flex flex-col items-center gap-2 border-t border-neutral-60/60 pt-3">
+      <p className="text-center text-caption leading-relaxed text-neutral-40">
+        Your mint slot on Base is still marked reserved from this request.
+      </p>
+      <button
+        onClick={() => {
+          setTriggered(true)
+          reclaim()
+        }}
+        disabled={isProcessing}
+        className="flex min-h-11 w-full items-center justify-center rounded-xl border border-neutral-60 bg-white px-4 text-small font-medium text-neutral-10 shadow-sm transition-colors hover:bg-khaki-90 disabled:cursor-not-allowed disabled:opacity-50"
+      >
+        {triggered && isProcessing
+          ? 'Freeing mint slot...'
+          : 'Free up my mint slot'}
+      </button>
       {error && (
         <p className="text-center text-caption font-medium wrap-break-word text-destructive">
           {humanizeError(error)}

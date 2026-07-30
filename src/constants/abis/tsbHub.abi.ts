@@ -26,6 +26,19 @@ export const tsbHubABI = [
   },
   {
     type: 'function',
+    name: 'CANCEL_RECONCILE_DELAY',
+    inputs: [],
+    outputs: [
+      {
+        name: '',
+        type: 'uint40',
+        internalType: 'uint40',
+      },
+    ],
+    stateMutability: 'view',
+  },
+  {
+    type: 'function',
     name: 'DEFAULT_ADMIN_ROLE',
     inputs: [],
     outputs: [
@@ -923,6 +936,19 @@ export const tsbHubABI = [
       },
     ],
     stateMutability: 'view',
+  },
+  {
+    type: 'function',
+    name: 'reclaimStuckMint',
+    inputs: [
+      {
+        name: 'tokenId',
+        type: 'uint256',
+        internalType: 'uint256',
+      },
+    ],
+    outputs: [],
+    stateMutability: 'nonpayable',
   },
   {
     type: 'function',

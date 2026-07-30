@@ -10,20 +10,17 @@ import { z } from 'zod'
  * bad field from discarding an otherwise-usable record.
  */
 
-// ── NFT mints (GraphQL: api.encoteki.com/graphql) ───────────────────────────
+// ── NFT tokens (GraphQL: {API_BASE_URL}/graphql, tsb_tokens table) ──────────
 
 const RawMintItemSchema = z.object({
   tokenId: z.union([z.string(), z.number(), z.bigint()]),
-  paymentToken: z.string().nullish(),
-  status: z.union([z.string(), z.number()]).nullish(),
-  statusDesc: z.string().nullish(),
-  mintDate: z.string().nullish(),
+  mintedAt: z.union([z.string(), z.number()]).nullish(),
 })
 
 export const MintsResponseSchema = z.object({
   data: z
     .object({
-      mints: z
+      tsbTokenss: z
         .object({ items: z.array(RawMintItemSchema).nullish() })
         .nullish(),
     })
