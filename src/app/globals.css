@@ -59,7 +59,7 @@ html {
     @apply mx-auto flex w-full max-w-228 flex-col gap-6 tablet:gap-9 desktop:gap-12;
   }
   .proposal-card {
-    @apply flex h-36.25 w-full cursor-pointer flex-col justify-between gap-1 rounded-4xl bg-white p-5 tablet:p-6;
+    @apply flex min-h-36.25 w-full cursor-pointer flex-col justify-between gap-1 rounded-4xl bg-white p-5 tablet:p-6;
   }
 
   .points-container {

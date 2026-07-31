@@ -8,7 +8,7 @@ interface Breadcrumbs {
 
 export default function Breadcrumbs({ items }: { items: Breadcrumbs[] }) {
   return (
-    <div className="flex gap-2">
+    <div className="flex flex-wrap gap-x-2 gap-y-1">
       {items.map((item, index) => {
         return (
           <div key={index} className="flex gap-2 text-base md:text-lg">
