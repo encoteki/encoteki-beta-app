@@ -9,26 +9,10 @@ import { Skeleton } from '@/ui/skeleton'
 import URL_ROUTES from '@/constants/url-route'
 import { getProposals } from '@/lib/proposals-client'
 import { reportError } from '@/lib/telemetry'
+import { formatVotingEndsLabel } from '@/utils/dao-time.util'
 import type { ProposalListItem, ProposalsPagination } from '@/types/dao.types'
 
 const PAGE_SIZE = 10
-
-/**
- * Live countdown to `votingEnds`, recomputed on every render — the API's
- * `timeRemaining` is only a snapshot at response time and goes stale
- * immediately.
- */
-function getTimeLabel(votingEnds: string): string {
-  const diffMs = new Date(votingEnds).getTime() - Date.now()
-
-  if (diffMs <= 0) return 'Voting ended'
-
-  const hours = Math.floor(diffMs / (1000 * 60 * 60))
-  const minutes = Math.floor((diffMs % (1000 * 60 * 60)) / (1000 * 60))
-  const seconds = Math.floor((diffMs % (1000 * 60)) / 1000)
-
-  return `Voting ends in ${String(hours).padStart(2, '0')}:${String(minutes).padStart(2, '0')}:${String(seconds).padStart(2, '0')}`
-}
 
 export function DAOList() {
   const router = useRouter()
@@ -128,7 +112,7 @@ export function DAOList() {
                   <h3 className="font-medium">{proposal.proposalName}</h3>
                   <div className="flex justify-between">
                     <p className="text-neutral-30">
-                      {getTimeLabel(proposal.votingEnds)}
+                      {formatVotingEndsLabel(proposal.votingEnds)}
                     </p>
                   </div>
                 </div>

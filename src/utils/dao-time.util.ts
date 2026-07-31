@@ -30,3 +30,31 @@ export function formatVotingEndsAbsolute(votingEnds: string): string {
     minute: '2-digit',
   })
 }
+
+/**
+ * Date-only voting deadline for compact card lists, e.g. "Jul 16, 2026" —
+ * no time-of-day, no live tick (unlike getTimeRemaining/useCountdown, which
+ * are for the detail page's live countdown).
+ */
+export function formatVotingEndsDate(votingEnds: string): string {
+  const d = new Date(votingEnds)
+  if (isNaN(d.getTime())) return ''
+
+  return d.toLocaleString('en-US', {
+    month: 'short',
+    day: 'numeric',
+    year: 'numeric',
+  })
+}
+
+/**
+ * "Voting ends {date}" / "Voting ended {date}" label for the proposal card
+ * list — static (date-only), so the list doesn't need a per-second ticker.
+ */
+export function formatVotingEndsLabel(votingEnds: string): string {
+  const date = formatVotingEndsDate(votingEnds)
+  if (!date) return ''
+
+  const ended = new Date(votingEnds).getTime() <= Date.now()
+  return ended ? `Voting ended ${date}` : `Voting ends ${date}`
+}
