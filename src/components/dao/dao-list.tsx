@@ -81,10 +81,10 @@ export function DAOList() {
 
         {!loading && error && (
           <div className="flex h-48 flex-col items-center justify-center gap-4">
-            <p className="text-red-500">{error}</p>
+            <p className="text-primary-red">{error}</p>
             <button
               onClick={loadProposals}
-              className="rounded-lg bg-primary-green px-4 py-2 text-white hover:bg-green-700"
+              className="rounded-full bg-primary-green px-4 py-2 text-white transition-colors hover:bg-green-10 focus-visible:ring-2 focus-visible:ring-primary-green focus-visible:ring-offset-2 focus-visible:outline-none"
             >
               Retry
             </button>
@@ -131,7 +131,7 @@ export function DAOList() {
               onClick={() => setPage((p) => p - 1)}
               disabled={pagination.page === 1}
               aria-label="Previous page"
-              className="inline-flex min-h-11 items-center rounded-sm px-2 text-sm font-medium text-neutral-40 transition-colors hover:text-neutral-10 focus-visible:ring-2 focus-visible:ring-primary-green/50 focus-visible:outline-none disabled:cursor-not-allowed disabled:opacity-30"
+              className="inline-flex min-h-11 items-center rounded-sm px-2 text-sm font-medium text-neutral-30 transition-colors hover:text-neutral-10 focus-visible:ring-2 focus-visible:ring-primary-green/50 focus-visible:outline-none disabled:cursor-not-allowed disabled:opacity-30"
             >
               ← Previous
             </button>
@@ -139,7 +139,7 @@ export function DAOList() {
               onClick={() => setPage((p) => p + 1)}
               disabled={pagination.page === pagination.totalPages}
               aria-label="Next page"
-              className="inline-flex min-h-11 items-center rounded-sm px-2 text-sm font-medium text-neutral-40 transition-colors hover:text-neutral-10 focus-visible:ring-2 focus-visible:ring-primary-green/50 focus-visible:outline-none disabled:cursor-not-allowed disabled:opacity-30"
+              className="inline-flex min-h-11 items-center rounded-sm px-2 text-sm font-medium text-neutral-30 transition-colors hover:text-neutral-10 focus-visible:ring-2 focus-visible:ring-primary-green/50 focus-visible:outline-none disabled:cursor-not-allowed disabled:opacity-30"
             >
               Next →
             </button>
