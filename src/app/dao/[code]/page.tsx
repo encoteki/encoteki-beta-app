@@ -124,15 +124,19 @@ export default function DaoDetailPage({ params }: DaoDetailPageProps) {
             <Skeleton className="h-10 w-96" />
             <Skeleton className="h-4 w-64" />
           </header>
-          <div className="flex flex-col gap-8 desktop:flex-row desktop:gap-12">
-            <div className="flex-2/5 space-y-6 rounded-4xl bg-white p-6 tablet:p-8">
+          <div className="flex flex-col gap-8 tablet:flex-row tablet:gap-12">
+            {/* Order matches the loaded content below: description first in
+                DOM/mobile stacking, options+vote panel first from tablet
+                landscape up — keeps the skeleton from jumping into a
+                different order once real content lands. */}
+            <div className="flex-3/5 space-y-8 tablet:order-2">
+              <Skeleton className="h-24 w-full" />
+              <Skeleton className="h-48 w-full" />
+            </div>
+            <div className="flex-2/5 space-y-6 rounded-4xl bg-white p-6 tablet:order-1 tablet:p-8">
               <Skeleton className="h-32 w-full" />
               <Skeleton className="h-12 w-full" />
               <Skeleton className="h-12 w-full" />
-            </div>
-            <div className="flex-3/5 space-y-8">
-              <Skeleton className="h-24 w-full" />
-              <Skeleton className="h-48 w-full" />
             </div>
           </div>
         </div>
@@ -312,11 +316,12 @@ function DaoDetailContent({
         </header>
 
         {/* Content Grid */}
-        <div className="flex flex-col gap-8 desktop:flex-row desktop:gap-12">
-          {/* Description — first in DOM so mobile/tablet readers see proposal
-              context before the vote decision; desktop:order-2 restores it to
-              the right column visually. */}
-          <article className="flex-3/5 space-y-8 rounded-4xl bg-white p-6 tablet:p-8 desktop:order-2">
+        <div className="flex flex-col gap-8 tablet:flex-row tablet:gap-12">
+          {/* Description — first in DOM so mobile readers see proposal
+              context before the vote decision; tablet:order-2 restores it to
+              the right column visually from tablet landscape up, where
+              there's room for both columns side by side. */}
+          <article className="flex-3/5 space-y-8 rounded-4xl bg-transparent p-6 tablet:order-2 tablet:p-8">
             <div className="space-y-4">
               {isDescriptionLoading ? (
                 <div className="space-y-3">
@@ -332,10 +337,10 @@ function DaoDetailContent({
               ) : hasHtmlContent ? (
                 <SanitizedHTML
                   html={resolvedDescription}
-                  className="leading-relaxed font-normal text-neutral-30 [&>a]:text-primary-green [&>a]:underline [&>em]:italic [&>h1]:mb-4 [&>h1]:text-3xl [&>h1]:font-bold [&>h2]:mb-3 [&>h2]:text-2xl [&>h2]:font-bold [&>h3]:mb-2 [&>h3]:text-xl [&>h3]:font-semibold [&>img]:my-4 [&>img]:rounded-lg [&>ol]:mb-4 [&>ol]:ml-6 [&>ol]:list-decimal [&>p]:mb-4 [&>strong]:font-bold [&>ul]:mb-4 [&>ul]:ml-6 [&>ul]:list-disc"
+                  className="leading-relaxed font-normal text-black [&_a]:text-blue-600 [&_a]:underline [&>em]:italic [&>h1]:mb-4 [&>h1]:text-3xl [&>h1]:font-bold [&>h2]:mb-3 [&>h2]:text-2xl [&>h2]:font-bold [&>h3]:mb-2 [&>h3]:text-xl [&>h3]:font-semibold [&>img]:my-4 [&>img]:rounded-lg [&>ol]:mb-4 [&>ol]:ml-6 [&>ol]:list-decimal [&>p]:mb-4 [&>p]:text-justify [&>strong]:font-bold [&>ul]:mb-4 [&>ul]:ml-6 [&>ul]:list-disc"
                 />
               ) : (
-                <p className="leading-relaxed font-normal text-neutral-30">
+                <p className="text-justify leading-relaxed font-normal text-black">
                   {resolvedDescription}
                 </p>
               )}
@@ -343,7 +348,7 @@ function DaoDetailContent({
           </article>
 
           {/* Left: Options + cast-a-vote panel */}
-          <section className="flex-2/5 space-y-6 rounded-4xl bg-white p-6 tablet:p-8 desktop:order-1">
+          <section className="flex-2/5 space-y-6 rounded-4xl bg-white p-6 tablet:order-1 tablet:p-8">
             <div className="space-y-6">
               <h2 className="font-medium">Options:</h2>
               <div

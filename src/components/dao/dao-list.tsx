@@ -84,7 +84,7 @@ export function DAOList() {
             <p className="text-primary-red">{error}</p>
             <button
               onClick={loadProposals}
-              className="rounded-full bg-primary-green px-4 py-2 text-white transition-colors hover:bg-green-10 focus-visible:ring-2 focus-visible:ring-primary-green focus-visible:ring-offset-2 focus-visible:outline-none"
+              className="inline-flex min-h-11 items-center justify-center rounded-full bg-primary-green px-4 text-white transition-colors hover:bg-green-10 focus-visible:ring-2 focus-visible:ring-primary-green focus-visible:ring-offset-2 focus-visible:outline-none"
             >
               Retry
             </button>
