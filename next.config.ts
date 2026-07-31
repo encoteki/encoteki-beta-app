@@ -25,6 +25,12 @@ const apiOrigin = (() => {
   }
 })()
 
+// Project's own IPFS gateway, if configured — mirrors the fallback list in
+// src/lib/ipfs-client.ts so the allowlist tracks it instead of drifting.
+const customGatewayOrigin = process.env.NEXT_PUBLIC_GATEWAY_URL
+  ? `https://${process.env.NEXT_PUBLIC_GATEWAY_URL}`
+  : ''
+
 // Same-origin dev proxy: in local dev the browser talks to a different site
 // than the API (localhost vs *.encoteki.com), so the SameSite=Lax session
 // cookie the backend sets can't be stored/sent cross-site. Rewriting
@@ -55,6 +61,14 @@ const connectSrc = [
   'https://arb1.arbitrum.io',
   'https://rpc.api.lisk.com',
   'https://pacific-rpc.manta.network',
+  // IPFS gateways used by src/lib/ipfs-client.ts to fetch DAO proposal
+  // descriptions and NFT metadata JSON (fallback chain — img-src already
+  // allows any https: host, but fetch() is scoped to connect-src).
+  customGatewayOrigin,
+  'https://ipfs.io',
+  'https://cloudflare-ipfs.com',
+  'https://dweb.link',
+  'https://gateway.pinata.cloud',
 ]
   .filter(Boolean)
   .join(' ')
