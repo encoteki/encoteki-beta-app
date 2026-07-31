@@ -3,27 +3,49 @@
 Web3 dApp for the Encoteki ecosystem: wallet-based sign-in (SIWE), referral-gated
 access, cross-chain NFT minting (Tree Stewards), a points leaderboard, and DAO
 governance voting. Built on Next.js 16 (App Router) with on-chain reads/writes via
-wagmi/viem and off-chain data via Supabase.
+wagmi/viem.
+
+## Architecture
+
+This repo is the **frontend only**. Auth (SIWE nonce/verify, session issuance),
+user registration, referral codes, the leaderboard, and DAO proposal data are all
+served by a separate backend API (`NEXT_PUBLIC_API_URL`) — this app never talks to
+a database directly. What actually lives here:
+
+- **Wallet UX & SIWE signing** — `src/ui/buttons/sign-in-btn.tsx` builds and signs
+  the SIWE message; `src/lib/auth-client.ts` sends it to the backend and holds the
+  session cookie via `credentials: 'include'`.
+- **Route gating** — `src/proxy.ts` (Next.js middleware) checks the backend-issued
+  session cookie on every request and redirects unauthenticated/unregistered
+  visitors to `/login` before a protected page ever renders.
+- **On-chain transactions** — minting (`src/hooks/useMintTransaction.ts`) and DAO
+  voting/abstaining (`src/hooks/useProposalVoting.ts`), built and signed client-side
+  via wagmi/viem.
+- **IPFS reads** — `src/lib/ipfs-client.ts` fetches DAO proposal descriptions and
+  NFT metadata with multi-gateway fallback.
+
+If a name in this doc suggests storage, auth logic, or session state beyond what's
+listed above, that's a sign this doc has drifted — check the actual code first.
 
 ## Tech stack
 
-| Area           | Choice                                                          |
-| -------------- | --------------------------------------------------------------- |
-| Framework      | Next.js 16 (App Router, Turbopack) · React 19                   |
-| Language       | TypeScript (`strict: true`)                                     |
-| Wallet / chain | wagmi 3 · viem 2 · ethers 6 · SIWE · Xellar Kit · WalletConnect |
-| Session        | iron-session (HttpOnly cookie, SIWE-bound)                      |
-| Data           | Supabase (SSR + service-role) · TanStack Query · SWR            |
-| Validation     | Zod (parsed at every external boundary)                         |
-| Styling        | Tailwind CSS v4 · `motion` (Framer Motion)                      |
-| Observability  | Sentry (`@sentry/nextjs`) + Web Vitals RUM                      |
-| Tooling        | ESLint 9 (flat config) · Prettier · yarn 4                      |
+| Area           | Choice                                                                 |
+| -------------- | ---------------------------------------------------------------------- |
+| Framework      | Next.js 16 (App Router, Turbopack) · React 19                          |
+| Language       | TypeScript (`strict: true`)                                            |
+| Wallet / chain | wagmi 3 · viem 2 · ethers 6 · SIWE · Xellar Kit · WalletConnect        |
+| Session        | Backend-issued HttpOnly cookie (SIWE-bound), checked in `src/proxy.ts` |
+| Data           | TanStack Query · SWR                                                   |
+| Validation     | Zod (parsed at every external boundary)                                |
+| Styling        | Tailwind CSS v4 · `motion` (Framer Motion)                             |
+| Observability  | Sentry (`@sentry/nextjs`) + Web Vitals RUM                             |
+| Tooling        | ESLint 9 (flat config) · Prettier · yarn 4                             |
 
 Supported chains: Base, Arbitrum, Lisk, Manta Pacific.
 
 ## Prerequisites
 
-- **Node.js ≥ 20.9** — the repo pins **Node 22** (`.nvmrc`). With nvm: `nvm use`.
+- **Node.js ≥ 20.9** — the repo pins **Node 24** (`.nvmrc`, `engines.node`). With nvm: `nvm use`.
 - **Yarn 4** via Corepack (do **not** `npm install` — this is a Yarn-Berry repo):
   ```bash
   corepack enable
@@ -33,7 +55,7 @@ Supported chains: Base, Arbitrum, Lisk, Manta Pacific.
 
 ```bash
 # 1. Use the pinned Node version
-nvm use                 # reads .nvmrc → Node 22
+nvm use                 # reads .nvmrc → Node 24
 
 # 2. Enable the pinned package manager
 corepack enable
@@ -54,20 +76,21 @@ Open [http://localhost:3000](http://localhost:3000).
 ## Environment variables
 
 `.env.example` is the source of truth — copy it to `.env` and fill in the values.
-Key groups:
+Every var there is commented with what it's for and whether it's optional. Groups:
 
+- **App:** `NEXT_PUBLIC_APP_ENV`
 - **Wallet:** `NEXT_PUBLIC_WALLET_CONNECT_PROJECT_ID`, `NEXT_PUBLIC_XELLAR_APP_ID`
-- **Supabase:** `NEXT_PUBLIC_SUPABASE_URL`, `NEXT_PUBLIC_SUPABASE_ANON_KEY`, `SUPABASE_SERVICE_ROLE_KEY`
-- **Contracts / tokens:** `NEXT_PUBLIC_TSB_*`, `NEXT_PUBLIC_*_USDC_ADDRESS`
-- **SIWE session:** `IRON_SESSION_PASSWORD` (≥ 32 chars), `NEXT_PUBLIC_APP_URL`
-- **APIs:** `ENCOTEKI_API_KEY`, `NEXT_PUBLIC_GATEWAY_URL` (IPFS)
+- **Contracts / tokens:** `NEXT_PUBLIC_TSB_*`, per-chain token addresses, optional `NEXT_PUBLIC_MINT_PRICE_*` overrides
+- **SIWE:** `NEXT_PUBLIC_APP_URL` (domain/URI binding for the signed message — must match the backend's `SIWE_DOMAIN`)
+- **Encoteki API:** `NEXT_PUBLIC_API_URL` (optional — defaults to the production backend)
+- **LayerZero:** `NEXT_PUBLIC_LZ_API_URL` (optional — cross-chain mint delivery status polling)
+- **IPFS:** `NEXT_PUBLIC_GATEWAY_URL` (optional — proposal descriptions / NFT metadata)
 - **Observability:** `NEXT_PUBLIC_SENTRY_DSN` / `SENTRY_DSN` (leave unset to disable), `SENTRY_ORG`/`SENTRY_PROJECT`/`SENTRY_AUTH_TOKEN` (source-map upload)
 - **Security:** `CSP_ENFORCE` — see below.
 
 > ⚠️ **Secrets must never carry the `NEXT_PUBLIC_` prefix** — that prefix ships the
-> value to the browser. `XELLAR_APP_SECRET`, `SUPABASE_SERVICE_ROLE_KEY`,
-> `ENCOTEKI_API_KEY`, and `IRON_SESSION_PASSWORD` are server-only and are used
-> only from Server Actions / Route Handlers.
+> value to the browser. `SENTRY_AUTH_TOKEN` is server-only and is used only
+> during the production build (source-map upload).
 
 ### Content-Security-Policy toggle
 
@@ -94,29 +117,23 @@ full policy. See `next.config.ts` for the policy definition.
 
 ```
 src/
-  actions/        Server Actions (auth/SIWE, referral) — 'use server'
   app/            App Router routes, layouts, error/loading boundaries
-    api/          Route Handlers (BFF: leaderboard proxy, csp-report sink)
+    api/          Route Handlers — csp-report sink (the only one)
     login/ mint/ dao/ leaderboard/
-  components/     Feature + shared UI components
+  components/     Feature UI: common, dao, leaderboard, mint, wallet
   contexts/       React context providers (app, dao, mint)
   hooks/          Data + chain hooks (balances, mints, voting, session guard)
-  lib/            session, supabase clients, schemas (Zod), telemetry
+  lib/            Backend API clients (auth, leaderboard, proposals, referral),
+                  IPFS client, Zod schemas, telemetry
   providers/      App + Web3 (wagmi/Xellar/TanStack Query) providers
-  services/       Supabase data access (DAO)
   constants/      ABIs, contract addresses, route constants
   ui/             Primitives (buttons, navs, badges, svg)
+  enums/ types/ utils/ assets/
+  proxy.ts        Auth/referral route gate (Next.js middleware — see Architecture)
 ```
 
 Routes: `/login` (wallet connect + referral gate) → `/mint` → `/dao`, `/leaderboard`.
 Access is gated in `src/proxy.ts` (SIWE session + referral check).
-
-## Further docs
-
-- [`PRODUCT.md`](./PRODUCT.md) — product scope and flows
-- [`DESIGN.md`](./DESIGN.md) — design system / visual language
-- [`TSB-FLOW-DIAGRAMS.md`](./TSB-FLOW-DIAGRAMS.md) — Tree Stewards mint/cross-chain flows
-- [`audit.md`](./audit.md) — latest frontend engineering audit
 
 ## CI
 

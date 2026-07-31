@@ -9,26 +9,10 @@ import { Skeleton } from '@/ui/skeleton'
 import URL_ROUTES from '@/constants/url-route'
 import { getProposals } from '@/lib/proposals-client'
 import { reportError } from '@/lib/telemetry'
+import { formatVotingEndsLabel } from '@/utils/dao-time.util'
 import type { ProposalListItem, ProposalsPagination } from '@/types/dao.types'
 
 const PAGE_SIZE = 10
-
-/**
- * Live countdown to `votingEnds`, recomputed on every render — the API's
- * `timeRemaining` is only a snapshot at response time and goes stale
- * immediately.
- */
-function getTimeLabel(votingEnds: string): string {
-  const diffMs = new Date(votingEnds).getTime() - Date.now()
-
-  if (diffMs <= 0) return 'Voting ended'
-
-  const hours = Math.floor(diffMs / (1000 * 60 * 60))
-  const minutes = Math.floor((diffMs % (1000 * 60 * 60)) / (1000 * 60))
-  const seconds = Math.floor((diffMs % (1000 * 60)) / 1000)
-
-  return `Voting ends in ${String(hours).padStart(2, '0')}:${String(minutes).padStart(2, '0')}:${String(seconds).padStart(2, '0')}`
-}
 
 export function DAOList() {
   const router = useRouter()
@@ -97,10 +81,10 @@ export function DAOList() {
 
         {!loading && error && (
           <div className="flex h-48 flex-col items-center justify-center gap-4">
-            <p className="text-red-500">{error}</p>
+            <p className="text-primary-red">{error}</p>
             <button
               onClick={loadProposals}
-              className="rounded-lg bg-primary-green px-4 py-2 text-white hover:bg-green-700"
+              className="rounded-full bg-primary-green px-4 py-2 text-white transition-colors hover:bg-green-10 focus-visible:ring-2 focus-visible:ring-primary-green focus-visible:ring-offset-2 focus-visible:outline-none"
             >
               Retry
             </button>
@@ -128,7 +112,7 @@ export function DAOList() {
                   <h3 className="font-medium">{proposal.proposalName}</h3>
                   <div className="flex justify-between">
                     <p className="text-neutral-30">
-                      {getTimeLabel(proposal.votingEnds)}
+                      {formatVotingEndsLabel(proposal.votingEnds)}
                     </p>
                   </div>
                 </div>
@@ -147,7 +131,7 @@ export function DAOList() {
               onClick={() => setPage((p) => p - 1)}
               disabled={pagination.page === 1}
               aria-label="Previous page"
-              className="inline-flex min-h-11 items-center rounded-sm px-2 text-sm font-medium text-neutral-40 transition-colors hover:text-neutral-10 focus-visible:ring-2 focus-visible:ring-primary-green/50 focus-visible:outline-none disabled:cursor-not-allowed disabled:opacity-30"
+              className="inline-flex min-h-11 items-center rounded-sm px-2 text-sm font-medium text-neutral-30 transition-colors hover:text-neutral-10 focus-visible:ring-2 focus-visible:ring-primary-green/50 focus-visible:outline-none disabled:cursor-not-allowed disabled:opacity-30"
             >
               ← Previous
             </button>
@@ -155,7 +139,7 @@ export function DAOList() {
               onClick={() => setPage((p) => p + 1)}
               disabled={pagination.page === pagination.totalPages}
               aria-label="Next page"
-              className="inline-flex min-h-11 items-center rounded-sm px-2 text-sm font-medium text-neutral-40 transition-colors hover:text-neutral-10 focus-visible:ring-2 focus-visible:ring-primary-green/50 focus-visible:outline-none disabled:cursor-not-allowed disabled:opacity-30"
+              className="inline-flex min-h-11 items-center rounded-sm px-2 text-sm font-medium text-neutral-30 transition-colors hover:text-neutral-10 focus-visible:ring-2 focus-visible:ring-primary-green/50 focus-visible:outline-none disabled:cursor-not-allowed disabled:opacity-30"
             >
               Next →
             </button>

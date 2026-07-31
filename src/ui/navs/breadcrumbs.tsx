@@ -18,7 +18,7 @@ export default function Breadcrumbs({ items }: { items: Breadcrumbs[] }) {
               <Link href={item.link}>
                 <span
                   className={
-                    'text-neutral-40 transition-colors duration-300 hover:text-neutral-10'
+                    'text-neutral-30 transition-colors duration-300 hover:text-neutral-10'
                   }
                 >
                   {item.page}
@@ -26,7 +26,7 @@ export default function Breadcrumbs({ items }: { items: Breadcrumbs[] }) {
               </Link>
             )}
 
-            {index != items.length - 1 && <p className="text-neutral-40">/</p>}
+            {index != items.length - 1 && <p className="text-neutral-30">/</p>}
           </div>
         )
       })}

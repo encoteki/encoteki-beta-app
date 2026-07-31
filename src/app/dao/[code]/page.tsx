@@ -4,7 +4,7 @@ import Badge from '@/ui/badge'
 import Breadcrumbs from '@/ui/navs/breadcrumbs'
 import DefaultButton from '@/ui/buttons/default-btn'
 import { SignInButton } from '@/ui/buttons/sign-in-btn'
-import { use, useEffect, useState, useMemo } from 'react'
+import { use, useEffect, useRef, useState, useMemo } from 'react'
 import { useRouter } from 'next/navigation'
 import { ChevronDown } from 'lucide-react'
 import Image from 'next/image'
@@ -146,7 +146,7 @@ export default function DaoDetailPage({ params }: DaoDetailPageProps) {
       <main id="main-content" tabIndex={-1} className="dao-container">
         <div className="dao-section">
           <div className="flex h-96 flex-col items-center justify-center gap-4">
-            <h2 className="font-medium text-red-500">{error}</h2>
+            <h2 className="font-medium text-primary-red">{error}</h2>
             <DefaultButton
               variant="secondary"
               onClick={() => (window.location.href = URL_ROUTES.DAO)}
@@ -207,6 +207,9 @@ function DaoDetailContent({
     undefined,
   )
   const [chainDropdownOpen, setChainDropdownOpen] = useState(false)
+  const chainDropdownRef = useRef<HTMLDivElement>(null)
+  const chainTriggerRef = useRef<HTMLButtonElement>(null)
+  const optionRefs = useRef<Array<HTMLButtonElement | null>>([])
   const { referralCode } = useAppCtx()
   const voting = useProposalVoting({ proposal, refCode: referralCode })
   const isVoteInFlight =
@@ -242,6 +245,51 @@ function DaoDetailContent({
     [code, proposal.proposalName],
   )
 
+  // Escape and outside-click both close the chain dropdown without changing
+  // the current selection — the WAI-ARIA listbox pattern's expected exits.
+  useEffect(() => {
+    if (!chainDropdownOpen) return
+
+    const handlePointerDown = (e: PointerEvent) => {
+      if (!chainDropdownRef.current?.contains(e.target as Node)) {
+        setChainDropdownOpen(false)
+      }
+    }
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') {
+        setChainDropdownOpen(false)
+        chainTriggerRef.current?.focus()
+      }
+    }
+
+    document.addEventListener('pointerdown', handlePointerDown)
+    document.addEventListener('keydown', handleKeyDown)
+    return () => {
+      document.removeEventListener('pointerdown', handlePointerDown)
+      document.removeEventListener('keydown', handleKeyDown)
+    }
+  }, [chainDropdownOpen])
+
+  // Roving-tabindex arrow navigation for the options radiogroup — matches
+  // the interaction `role="radiogroup"`/`role="radio"` implies (native radio
+  // buttons move selection with arrow keys, not just Tab+Enter).
+  const handleOptionKeyDown = (
+    e: React.KeyboardEvent<HTMLButtonElement>,
+    index: number,
+  ) => {
+    if (!['ArrowDown', 'ArrowRight', 'ArrowUp', 'ArrowLeft'].includes(e.key))
+      return
+    e.preventDefault()
+
+    const count = proposal.options.length
+    const delta = e.key === 'ArrowDown' || e.key === 'ArrowRight' ? 1 : -1
+    const nextIndex = (index + delta + count) % count
+    const nextOption = proposal.options[nextIndex]
+
+    setSelectedOption(nextOption.index)
+    optionRefs.current[nextIndex]?.focus()
+  }
+
   return (
     <main id="main-content" tabIndex={-1} className="dao-container">
       <div className="dao-section">
@@ -253,7 +301,7 @@ function DaoDetailContent({
                 single badge until the backend sends more values (see
                 BACKLOG.md). */}
             <Badge type={ProposalType.PROPOSAL} />
-            <h1 className="text-48">{proposal.proposalName}</h1>
+            <h1 className="text-h1">{proposal.proposalName}</h1>
             <div className="flex flex-col gap-1 text-neutral-30 tablet:flex-row tablet:items-center tablet:justify-between">
               <p>{timeRemaining}</p>
               <p className="text-sm">
@@ -265,8 +313,37 @@ function DaoDetailContent({
 
         {/* Content Grid */}
         <div className="flex flex-col gap-8 desktop:flex-row desktop:gap-12">
+          {/* Description — first in DOM so mobile/tablet readers see proposal
+              context before the vote decision; desktop:order-2 restores it to
+              the right column visually. */}
+          <article className="flex-3/5 space-y-8 rounded-4xl bg-white p-6 tablet:p-8 desktop:order-2">
+            <div className="space-y-4">
+              {isDescriptionLoading ? (
+                <div className="space-y-3">
+                  <Skeleton className="h-4 w-full" />
+                  <Skeleton className="h-4 w-full" />
+                  <Skeleton className="h-4 w-2/3" />
+                </div>
+              ) : isDescriptionError ? (
+                <p className="text-sm text-primary-red">
+                  Couldn&rsquo;t load the proposal description from IPFS. Please
+                  try again later.
+                </p>
+              ) : hasHtmlContent ? (
+                <SanitizedHTML
+                  html={resolvedDescription}
+                  className="leading-relaxed font-normal text-neutral-30 [&>a]:text-primary-green [&>a]:underline [&>em]:italic [&>h1]:mb-4 [&>h1]:text-3xl [&>h1]:font-bold [&>h2]:mb-3 [&>h2]:text-2xl [&>h2]:font-bold [&>h3]:mb-2 [&>h3]:text-xl [&>h3]:font-semibold [&>img]:my-4 [&>img]:rounded-lg [&>ol]:mb-4 [&>ol]:ml-6 [&>ol]:list-decimal [&>p]:mb-4 [&>strong]:font-bold [&>ul]:mb-4 [&>ul]:ml-6 [&>ul]:list-disc"
+                />
+              ) : (
+                <p className="leading-relaxed font-normal text-neutral-30">
+                  {resolvedDescription}
+                </p>
+              )}
+            </div>
+          </article>
+
           {/* Left: Options + cast-a-vote panel */}
-          <section className="flex-2/5 space-y-6 rounded-4xl bg-white p-6 tablet:p-8">
+          <section className="flex-2/5 space-y-6 rounded-4xl bg-white p-6 tablet:p-8 desktop:order-1">
             <div className="space-y-6">
               <h2 className="font-medium">Options:</h2>
               <div
@@ -274,17 +351,24 @@ function DaoDetailContent({
                 aria-label="Vote options"
                 className="space-y-3"
               >
-                {proposal.options.map((opt) => {
+                {proposal.options.map((opt, idx) => {
                   const isSelected = selectedOption === opt.index
+                  const isTabbable =
+                    selectedOption === undefined ? idx === 0 : isSelected
                   return (
                     <button
                       key={opt.index}
+                      ref={(el) => {
+                        optionRefs.current[idx] = el
+                      }}
                       type="button"
                       role="radio"
                       aria-checked={isSelected}
+                      tabIndex={isTabbable ? 0 : -1}
                       disabled={isVoteInFlight}
                       onClick={() => setSelectedOption(opt.index)}
-                      className={`flex w-full items-center justify-between rounded-xl border p-4 text-left transition-colors disabled:cursor-not-allowed disabled:opacity-60 ${
+                      onKeyDown={(e) => handleOptionKeyDown(e, idx)}
+                      className={`flex w-full items-center justify-between rounded-xl border p-4 text-left transition-colors focus-visible:ring-2 focus-visible:ring-primary-green focus-visible:ring-offset-2 focus-visible:outline-none disabled:cursor-not-allowed disabled:opacity-60 ${
                         isSelected
                           ? 'border-primary-green bg-green-90'
                           : 'border-neutral-60 bg-white hover:border-primary-green/40 hover:bg-khaki-90'
@@ -329,7 +413,7 @@ function DaoDetailContent({
             </div>
 
             {/* Cast-a-vote panel */}
-            <div className="border-neutral-80 space-y-4 border-t pt-6">
+            <div className="space-y-4 border-t border-khaki-70 pt-6">
               {!voting.isConnected ? (
                 <div className="space-y-2">
                   <p className="text-sm text-neutral-30">
@@ -344,15 +428,16 @@ function DaoDetailContent({
                 </p>
               ) : (
                 <>
-                  <div className="relative">
+                  <div className="relative" ref={chainDropdownRef}>
                     <button
+                      ref={chainTriggerRef}
                       type="button"
                       aria-haspopup="listbox"
                       aria-expanded={chainDropdownOpen}
                       aria-controls="vote-chain-dropdown"
                       disabled={isVoteInFlight}
                       onClick={() => setChainDropdownOpen((open) => !open)}
-                      className="flex w-full items-center justify-between rounded-xl border border-neutral-60 bg-white px-4 py-3 text-left shadow-sm transition-colors hover:bg-khaki-90 disabled:cursor-not-allowed disabled:opacity-60"
+                      className="flex w-full items-center justify-between rounded-xl border border-neutral-60 bg-white px-4 py-3 text-left shadow-sm transition-colors hover:bg-khaki-90 focus-visible:ring-2 focus-visible:ring-primary-green focus-visible:ring-offset-2 focus-visible:outline-none disabled:cursor-not-allowed disabled:opacity-60"
                     >
                       {(() => {
                         const active = voting.deployments.find(
@@ -471,7 +556,9 @@ function DaoDetailContent({
                         : voting.selectedChainId != null &&
                             !voting.isActiveOnSelectedChain
                           ? 'Voting is closed on this chain.'
-                          : `${voting.powerForSelectedChain} vote${voting.powerForSelectedChain === 1 ? '' : 's'} available on this chain.`}
+                          : selectedOption === undefined
+                            ? 'Pick an option above to vote, or abstain.'
+                            : `${voting.powerForSelectedChain} vote${voting.powerForSelectedChain === 1 ? '' : 's'} available on this chain.`}
                   </p>
 
                   <DefaultButton
@@ -505,13 +592,17 @@ function DaoDetailContent({
                   </DefaultButton>
 
                   {voting.errorMsg && (
-                    <p role="alert" className="text-xs text-red-500">
+                    <p role="alert" className="text-xs text-primary-red">
                       {voting.errorMsg}
                     </p>
                   )}
 
                   {voting.phase === 'success' && (
-                    <p className="text-xs text-primary-green">
+                    <p
+                      role="status"
+                      aria-live="polite"
+                      className="text-xs text-primary-green"
+                    >
                       {voting.lastAction === 'abstain'
                         ? 'Abstained.'
                         : 'Vote submitted.'}
@@ -534,33 +625,6 @@ function DaoDetailContent({
               )}
             </div>
           </section>
-
-          {/* Right: Description */}
-          <article className="flex-3/5 space-y-8">
-            <div className="space-y-4">
-              {isDescriptionLoading ? (
-                <div className="space-y-3">
-                  <Skeleton className="h-4 w-full" />
-                  <Skeleton className="h-4 w-full" />
-                  <Skeleton className="h-4 w-2/3" />
-                </div>
-              ) : isDescriptionError ? (
-                <p className="text-sm text-red-500">
-                  Couldn&rsquo;t load the proposal description from IPFS. Please
-                  try again later.
-                </p>
-              ) : hasHtmlContent ? (
-                <SanitizedHTML
-                  html={resolvedDescription}
-                  className="text-neutral-20 leading-relaxed font-normal [&>a]:text-primary-green [&>a]:underline [&>em]:italic [&>h1]:mb-4 [&>h1]:text-3xl [&>h1]:font-bold [&>h2]:mb-3 [&>h2]:text-2xl [&>h2]:font-bold [&>h3]:mb-2 [&>h3]:text-xl [&>h3]:font-semibold [&>img]:my-4 [&>img]:rounded-lg [&>ol]:mb-4 [&>ol]:ml-6 [&>ol]:list-decimal [&>p]:mb-4 [&>strong]:font-bold [&>ul]:mb-4 [&>ul]:ml-6 [&>ul]:list-disc"
-                />
-              ) : (
-                <p className="text-neutral-20 leading-relaxed font-normal">
-                  {resolvedDescription}
-                </p>
-              )}
-            </div>
-          </article>
         </div>
       </div>
     </main>
