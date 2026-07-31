@@ -3,21 +3,21 @@
 Web3 dApp for the Encoteki ecosystem: wallet-based sign-in (SIWE), referral-gated
 access, cross-chain NFT minting (Tree Stewards), a points leaderboard, and DAO
 governance voting. Built on Next.js 16 (App Router) with on-chain reads/writes via
-wagmi/viem and off-chain data via Supabase.
+wagmi/viem.
 
 ## Tech stack
 
-| Area           | Choice                                                          |
-| -------------- | --------------------------------------------------------------- |
-| Framework      | Next.js 16 (App Router, Turbopack) · React 19                   |
-| Language       | TypeScript (`strict: true`)                                     |
-| Wallet / chain | wagmi 3 · viem 2 · ethers 6 · SIWE · Xellar Kit · WalletConnect |
-| Session        | iron-session (HttpOnly cookie, SIWE-bound)                      |
-| Data           | Supabase (SSR + service-role) · TanStack Query · SWR            |
-| Validation     | Zod (parsed at every external boundary)                         |
-| Styling        | Tailwind CSS v4 · `motion` (Framer Motion)                      |
-| Observability  | Sentry (`@sentry/nextjs`) + Web Vitals RUM                      |
-| Tooling        | ESLint 9 (flat config) · Prettier · yarn 4                      |
+| Area           | Choice                                                                 |
+| -------------- | ---------------------------------------------------------------------- |
+| Framework      | Next.js 16 (App Router, Turbopack) · React 19                          |
+| Language       | TypeScript (`strict: true`)                                            |
+| Wallet / chain | wagmi 3 · viem 2 · ethers 6 · SIWE · Xellar Kit · WalletConnect        |
+| Session        | Backend-issued HttpOnly cookie (SIWE-bound), checked in `src/proxy.ts` |
+| Data           | TanStack Query · SWR                                                   |
+| Validation     | Zod (parsed at every external boundary)                                |
+| Styling        | Tailwind CSS v4 · `motion` (Framer Motion)                             |
+| Observability  | Sentry (`@sentry/nextjs`) + Web Vitals RUM                             |
+| Tooling        | ESLint 9 (flat config) · Prettier · yarn 4                             |
 
 Supported chains: Base, Arbitrum, Lisk, Manta Pacific.
 
@@ -57,17 +57,15 @@ Open [http://localhost:3000](http://localhost:3000).
 Key groups:
 
 - **Wallet:** `NEXT_PUBLIC_WALLET_CONNECT_PROJECT_ID`, `NEXT_PUBLIC_XELLAR_APP_ID`
-- **Supabase:** `NEXT_PUBLIC_SUPABASE_URL`, `NEXT_PUBLIC_SUPABASE_ANON_KEY`, `SUPABASE_SERVICE_ROLE_KEY`
 - **Contracts / tokens:** `NEXT_PUBLIC_TSB_*`, `NEXT_PUBLIC_*_USDC_ADDRESS`
-- **SIWE session:** `IRON_SESSION_PASSWORD` (≥ 32 chars), `NEXT_PUBLIC_APP_URL`
+- **SIWE:** `NEXT_PUBLIC_APP_URL` (domain/URI binding for the signed message)
 - **APIs:** `ENCOTEKI_API_KEY`, `NEXT_PUBLIC_GATEWAY_URL` (IPFS)
 - **Observability:** `NEXT_PUBLIC_SENTRY_DSN` / `SENTRY_DSN` (leave unset to disable), `SENTRY_ORG`/`SENTRY_PROJECT`/`SENTRY_AUTH_TOKEN` (source-map upload)
 - **Security:** `CSP_ENFORCE` — see below.
 
 > ⚠️ **Secrets must never carry the `NEXT_PUBLIC_` prefix** — that prefix ships the
-> value to the browser. `XELLAR_APP_SECRET`, `SUPABASE_SERVICE_ROLE_KEY`,
-> `ENCOTEKI_API_KEY`, and `IRON_SESSION_PASSWORD` are server-only and are used
-> only from Server Actions / Route Handlers.
+> value to the browser. `XELLAR_APP_SECRET` and `ENCOTEKI_API_KEY` are
+> server-only and are used only from Server Actions / Route Handlers.
 
 ### Content-Security-Policy toggle
 
@@ -101,9 +99,8 @@ src/
   components/     Feature + shared UI components
   contexts/       React context providers (app, dao, mint)
   hooks/          Data + chain hooks (balances, mints, voting, session guard)
-  lib/            session, supabase clients, schemas (Zod), telemetry
+  lib/            session, schemas (Zod), telemetry
   providers/      App + Web3 (wagmi/Xellar/TanStack Query) providers
-  services/       Supabase data access (DAO)
   constants/      ABIs, contract addresses, route constants
   ui/             Primitives (buttons, navs, badges, svg)
 ```

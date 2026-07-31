@@ -2,17 +2,6 @@ import type { NextConfig } from 'next'
 import { withSentryConfig } from '@sentry/nextjs'
 
 // ─── Security headers ───────────────────────────────────────────────────────
-// Derive the Supabase origin (+ its wss:// realtime counterpart) so the CSP
-// connect-src allowlist tracks the configured project instead of being hardcoded.
-const supabaseOrigin = (() => {
-  try {
-    return new URL(process.env.NEXT_PUBLIC_SUPABASE_URL ?? '').origin
-  } catch {
-    return ''
-  }
-})()
-const supabaseWs = supabaseOrigin.replace(/^https:/, 'wss:')
-
 // Derive the Encoteki API origin from NEXT_PUBLIC_API_URL so the allowlist
 // tracks whichever backend is configured (prod/beta/api-new) instead of being
 // pinned to one host. Falls back to the default in src/constants/api.ts.
@@ -43,8 +32,6 @@ const isDev = process.env.NODE_ENV === 'development'
 // before promoting the report-only policy below to enforced.
 const connectSrc = [
   "'self'",
-  supabaseOrigin,
-  supabaseWs,
   apiOrigin,
   // GraphQL NFT-mints endpoint is pinned to prod regardless of API base URL
   // (see src/hooks/useNftMints.ts).
