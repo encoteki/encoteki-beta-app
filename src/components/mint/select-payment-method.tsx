@@ -22,28 +22,7 @@ import { reportUnexpected } from '@/lib/telemetry'
 import { ChevronDown } from 'lucide-react'
 import Image from 'next/image'
 import { motion, AnimatePresence } from 'motion/react'
-
-// Chain icons
-import BaseIcon from '@/assets/chains/base.jpeg'
-import ArbitrumIcon from '@/assets/chains/arbitrum.svg'
-import LiskIcon from '@/assets/chains/lisk.webp'
-import MantaIcon from '@/assets/chains/manta.png'
-
-// Helper to get chain icon
-const getChainIcon = (chainKey: string) => {
-  switch (chainKey) {
-    case 'BASE':
-      return BaseIcon
-    case 'ARBITRUM':
-      return ArbitrumIcon
-    case 'LISK':
-      return LiskIcon
-    case 'MANTA':
-      return MantaIcon
-    default:
-      return null
-  }
-}
+import { getChainIcon } from '@/utils/chain-icon.util'
 
 export default function SelectPaymentMethod() {
   const [activeIdx, setActiveIdx] = useState<number>(0)

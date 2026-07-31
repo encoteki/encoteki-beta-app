@@ -243,6 +243,7 @@ export function useProposalVoting({
     'switching-chain' | 'error' | null
   >(null)
   const [manualError, setManualError] = useState<string | null>(null)
+  const [lastAction, setLastAction] = useState<'vote' | 'abstain' | null>(null)
 
   const phase: VotePhase = useMemo(() => {
     if (imperativePhase === 'switching-chain') return 'switching-chain'
@@ -268,8 +269,11 @@ export function useProposalVoting({
     return null
   }, [manualError, writeError, receipt.error])
 
-  const vote = useCallback(
-    async (optionIndex: number) => {
+  // Shared by `vote` and `abstain` — same eligibility/chain-switch/tx flow,
+  // differing only in which contract function gets called. `optionIndex`
+  // undefined means abstain.
+  const submit = useCallback(
+    async (optionIndex: number | undefined) => {
       if (!address || effectiveChainId == null) return
       const contractAddress = deploymentByChainId.get(effectiveChainId)
       const tokenId = unvotedByChain.get(effectiveChainId)?.[0]
@@ -277,6 +281,7 @@ export function useProposalVoting({
 
       setManualError(null)
       setImperativePhase(null)
+      setLastAction(optionIndex !== undefined ? 'vote' : 'abstain')
       resetWrite()
 
       if (walletChainId !== effectiveChainId) {
@@ -296,16 +301,26 @@ export function useProposalVoting({
       }
 
       try {
-        await writeContractAsync({
-          chainId: effectiveChainId,
-          address: contractAddress,
-          abi: proposalImplABI,
-          functionName: 'vote',
-          args: [tokenId, BigInt(optionIndex), refCodeHex],
-        })
+        if (optionIndex !== undefined) {
+          await writeContractAsync({
+            chainId: effectiveChainId,
+            address: contractAddress,
+            abi: proposalImplABI,
+            functionName: 'vote',
+            args: [tokenId, BigInt(optionIndex), refCodeHex],
+          })
+        } else {
+          await writeContractAsync({
+            chainId: effectiveChainId,
+            address: contractAddress,
+            abi: proposalImplABI,
+            functionName: 'abstain',
+            args: [tokenId, refCodeHex],
+          })
+        }
       } catch (err) {
         reportUnexpected(err, {
-          flow: 'dao-vote',
+          flow: optionIndex !== undefined ? 'dao-vote' : 'dao-abstain',
           proposalId: proposal.proposalId,
           chainId: effectiveChainId,
           optionIndex,
@@ -328,6 +343,12 @@ export function useProposalVoting({
     ],
   )
 
+  const vote = useCallback(
+    (optionIndex: number) => submit(optionIndex),
+    [submit],
+  )
+  const abstain = useCallback(() => submit(undefined), [submit])
+
   // Re-read hasVoted as soon as a vote confirms, so the spent token drops out
   // of unvotedByChain and displayed voting power decreases immediately.
   useEffect(() => {
@@ -337,6 +358,7 @@ export function useProposalVoting({
   const reset = useCallback(() => {
     setManualError(null)
     setImperativePhase(null)
+    setLastAction(null)
     resetWrite()
   }, [resetWrite])
 
@@ -358,8 +380,10 @@ export function useProposalVoting({
     powerForSelectedChain: selectedChainInfo?.unvotedCount ?? 0,
     isActiveOnSelectedChain: selectedChainInfo?.isActive ?? false,
     phase,
+    lastAction,
     errorMsg,
     vote,
+    abstain,
     reset,
     txHash: hash ?? null,
     explorerUrl,
