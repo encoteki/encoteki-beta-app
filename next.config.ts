@@ -48,6 +48,13 @@ const connectSrc = [
   'https://arb1.arbitrum.io',
   'https://rpc.api.lisk.com',
   'https://pacific-rpc.manta.network',
+  // RPCs for the Ethereum/Robinhood/Monad transports (src/providers/web3.providers.tsx).
+  // Without these entries the enforced CSP silently blocks every RPC call on
+  // these 3 chains — quoteLayerZeroFee (and everything else) hangs forever
+  // with no visible error, since the fetch never even leaves the browser.
+  'https://ethereum-rpc.publicnode.com',
+  'https://robinhood-rpc.publicnode.com',
+  'https://rpc.monad.xyz',
   // IPFS gateways used by src/lib/ipfs-client.ts to fetch DAO proposal
   // descriptions and NFT metadata JSON (fallback chain — img-src already
   // allows any https: host, but fetch() is scoped to connect-src).

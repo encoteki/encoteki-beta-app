@@ -55,11 +55,11 @@ const config = defaultConfig({
     [manta.id]: http(),
     // viem's default mainnet RPC (eth.merkle.io) rate-limits aggressively —
     // confirmed to 429/temp-ban after a handful of requests, unlike the
-    // official public RPCs used by the other chains. publicnode held up
-    // fine under the same burst test.
+    // official public RPCs used by the other chains. Pinned to publicnode
+    // for all 3 new chains, verified reliable under burst testing.
     [mainnet.id]: http('https://ethereum-rpc.publicnode.com'),
-    [robinhood.id]: http(),
-    [monad.id]: http(),
+    [robinhood.id]: http('https://robinhood-rpc.publicnode.com'),
+    [monad.id]: http('https://rpc.monad.xyz'),
   },
 }) as Config
 
