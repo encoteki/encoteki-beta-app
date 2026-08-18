@@ -69,6 +69,15 @@ function explorerUrl(
       return `https://blockscout.lisk.com/token/${contract}/instance/${id}`
     case 169:
       return `https://pacific-explorer.manta.network/token/${contract}/instance/${id}`
+    case 1:
+      return `https://etherscan.io/nft/${contract}/${id}`
+    case 4663:
+      return `https://robinhoodchain.blockscout.com/token/${contract}/instance/${id}`
+    case 143:
+      // MonadVision's NFT-instance URL scheme isn't confirmed — link to the
+      // contract page (a convention nearly every EVM explorer supports)
+      // rather than guess a deep-link path that might 404.
+      return `https://monadvision.com/address/${contract}`
     default:
       return ''
   }

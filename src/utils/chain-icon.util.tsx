@@ -4,8 +4,8 @@ import ArbitrumIcon from '@/assets/chains/arbitrum.svg'
 import LiskIcon from '@/assets/chains/lisk.webp'
 import MantaIcon from '@/assets/chains/manta.png'
 import EthereumIcon from '@/assets/chains/ethereum.svg'
-import RobinhoodIcon from '@/assets/chains/robinhood.svg'
-import MonadIcon from '@/assets/chains/monad.svg'
+import RobinhoodIcon from '@/assets/chains/rh.png'
+import MonadIcon from '@/assets/chains/monad.jpeg'
 
 const CHAIN_ICONS: Record<string, StaticImageData> = {
   BASE: BaseIcon,

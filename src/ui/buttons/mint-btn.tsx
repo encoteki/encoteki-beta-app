@@ -107,6 +107,7 @@ export const MintButton = ({
   }, [execute])
 
   const getButtonLabel = () => {
+    if (mint.prepareError) return 'Unavailable — try again later'
     if (!mint.isReady) return 'Preparing...'
     if (mint.phase === 'switching-chain') return 'Switching network...'
     if (mint.phase === 'signing-approve' || mint.phase === 'signing')
@@ -133,17 +134,24 @@ export const MintButton = ({
     mint.phase === 'success'
 
   return (
-    <DefaultButton
-      onClick={
-        mint.phase === 'error'
-          ? () => {
-              mint.reset()
-            }
-          : onClickConfirm
-      }
-      disabled={isDisabled}
-    >
-      {getButtonLabel()}
-    </DefaultButton>
+    <div className="flex flex-col gap-2">
+      <DefaultButton
+        onClick={
+          mint.phase === 'error'
+            ? () => {
+                mint.reset()
+              }
+            : onClickConfirm
+        }
+        disabled={isDisabled}
+      >
+        {getButtonLabel()}
+      </DefaultButton>
+      {mint.prepareError && (
+        <p role="alert" className="text-center text-caption text-destructive">
+          {mint.prepareError}
+        </p>
+      )}
+    </div>
   )
 }

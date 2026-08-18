@@ -96,14 +96,17 @@ export function useMintTransaction({
   }, [price, isNative, tokenDecimals])
 
   // ───────────── LayerZero Fee Quote (Satellite only) ─────────────
-  const { bufferedFee: bufferedLzFee, isLoaded: isLzFeeLoaded } =
-    useLayerZeroFeeQuote({
-      isHub,
-      targetContract,
-      chainId,
-      userAddress,
-      referralCode,
-    })
+  const {
+    bufferedFee: bufferedLzFee,
+    isLoaded: isLzFeeLoaded,
+    isError: isLzFeeError,
+  } = useLayerZeroFeeQuote({
+    isHub,
+    targetContract,
+    chainId,
+    userAddress,
+    referralCode,
+  })
 
   // ───────────── Compute msg.value ─────────────
   // Hub: native pays exactly the price (no LZ round-trip); ERC20 pays 0.
@@ -420,12 +423,21 @@ export function useMintTransaction({
     (isNative || tokenDecimals !== undefined) &&
     isLzFeeLoaded
 
+  // Distinct from errorMsg (a failed tx attempt) — this fires before the user
+  // can even click confirm, e.g. the satellite contract isn't deployed or its
+  // GMC_EID isn't configured yet on this chain. Without it the button would
+  // show "Preparing..." forever with zero feedback.
+  const prepareError = isLzFeeError
+    ? "Couldn't estimate the network fee for this chain. The mint contract may not be ready yet — please try again shortly."
+    : null
+
   return {
     execute,
     reset,
     phase,
     errorMsg,
     isReady,
+    prepareError,
 
     // Hashes
     sourceHash: effectiveMintHash || null,

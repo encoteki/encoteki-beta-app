@@ -28,7 +28,11 @@ export function useLayerZeroFeeQuote({
   userAddress,
   referralCode,
 }: UseLayerZeroFeeQuoteProps) {
-  const { data: rawFee } = useReadContract({
+  const {
+    data: rawFee,
+    error: quoteError,
+    isError: isQuoteError,
+  } = useReadContract({
     chainId,
     address: !isHub ? (targetContract ?? undefined) : undefined,
     abi: tsbSatelliteABI,
@@ -51,5 +55,10 @@ export function useLayerZeroFeeQuote({
     bufferedFee,
     // Hub never has a fee to wait on; Satellite is "loaded" once the quote lands.
     isLoaded: isHub || rawFee !== undefined,
+    // Distinct from "still loading" — a reverting/failing quote (e.g. the
+    // satellite contract isn't deployed or its GMC_EID isn't configured yet
+    // on this chain) must not look identical to "still calculating" forever.
+    isError: isQuoteError,
+    error: quoteError,
   }
 }

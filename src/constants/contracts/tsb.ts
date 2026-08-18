@@ -10,7 +10,7 @@ import USDTIcon from '@/assets/icons/tokens/tether.svg'
 import ARBIcon from '@/assets/icons/tokens/arb.svg'
 import MANTAIcon from '@/assets/icons/tokens/manta.png'
 import MONIcon from '@/assets/icons/tokens/mon.svg'
-import USDGIcon from '@/assets/icons/tokens/usdg.svg'
+import USDGIcon from '@/assets/icons/tokens/usdg.png'
 
 // ============================================
 // ENVIRONMENT
