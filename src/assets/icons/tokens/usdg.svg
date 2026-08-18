@@ -1,0 +1,5 @@
+<!-- PLACEHOLDER — not the official USDG (Global Dollar) mark, swap when real asset arrives -->
+<svg viewBox="0 0 32 32" xmlns="http://www.w3.org/2000/svg">
+  <circle cx="16" cy="16" r="16" fill="#1A1A1A"/>
+  <text x="16" y="21" text-anchor="middle" font-family="Arial, sans-serif" font-weight="700" font-size="16" fill="#FFFFFF">$</text>
+</svg>

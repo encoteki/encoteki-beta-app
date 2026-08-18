@@ -10,11 +10,28 @@ import {
 } from 'wagmi'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { XellarKitProvider, defaultConfig, darkTheme } from '@xellar/kit'
-import { base, arbitrum, lisk, manta } from 'viem/chains'
+import { defineChain } from 'viem'
+import { base, arbitrum, lisk, manta, mainnet, monad } from 'viem/chains'
 
 const walletConnectProjectId =
   process.env.NEXT_PUBLIC_WALLET_CONNECT_PROJECT_ID || ''
 const xellarAppId = process.env.NEXT_PUBLIC_XELLAR_APP_ID || ''
+
+// Robinhood Chain isn't exported by viem/chains yet — defined manually.
+const robinhood = defineChain({
+  id: 4663,
+  name: 'Robinhood',
+  nativeCurrency: { name: 'Ether', symbol: 'ETH', decimals: 18 },
+  rpcUrls: {
+    default: { http: ['https://rpc.mainnet.chain.robinhood.com'] },
+  },
+  blockExplorers: {
+    default: {
+      name: 'Robinhood Chain Explorer',
+      url: 'https://robinhoodchain.blockscout.com',
+    },
+  },
+})
 
 // Memoize config to prevent recreation on every render
 const config = defaultConfig({
@@ -26,7 +43,7 @@ const config = defaultConfig({
   walletConnectProjectId,
   xellarAppId,
   xellarEnv: 'production',
-  chains: [base, arbitrum, lisk, manta],
+  chains: [base, arbitrum, lisk, manta, mainnet, robinhood, monad],
   // Explicit HTTP transports so cross-chain reads (wallet sidebar balances)
   // work regardless of which chain the wallet is currently connected to.
   // Without these, wagmi falls back to the wallet connector's transport only,
@@ -36,6 +53,9 @@ const config = defaultConfig({
     [arbitrum.id]: http(),
     [lisk.id]: http(),
     [manta.id]: http(),
+    [mainnet.id]: http(),
+    [robinhood.id]: http(),
+    [monad.id]: http(),
   },
 }) as Config
 
