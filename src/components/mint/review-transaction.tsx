@@ -190,6 +190,7 @@ const TransactionCard = ({
                 alt="TSB Beta — revealed after mint"
                 fill
                 sizes="48px"
+                unoptimized
                 className="object-cover"
               />
             </figure>

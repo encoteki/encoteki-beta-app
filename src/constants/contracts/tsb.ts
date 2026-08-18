@@ -9,7 +9,7 @@ import USDCIcon from '@/assets/icons/tokens/usdc.svg'
 import USDTIcon from '@/assets/icons/tokens/tether.svg'
 import ARBIcon from '@/assets/icons/tokens/arb.svg'
 import MANTAIcon from '@/assets/icons/tokens/manta.png'
-import MONIcon from '@/assets/icons/tokens/mon.svg'
+import MONIcon from '@/assets/chains/monad.jpeg'
 import USDGIcon from '@/assets/icons/tokens/usdg.png'
 
 // ============================================

@@ -77,6 +77,7 @@ export default function Header() {
               alt="Encoteki Home"
               className="h-9 w-auto transition-transform duration-300 ease-out group-hover:scale-105 group-active:scale-95 tablet:h-12"
               priority
+              unoptimized
             />
           </Link>
         </div>
