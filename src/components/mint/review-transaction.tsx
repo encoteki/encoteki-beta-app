@@ -130,13 +130,16 @@ const TransactionCard = ({
         <div className="flex items-center justify-between">
           <div className="flex min-w-0 items-center gap-3 sm:gap-4">
             <figure className="relative h-10 w-10 shrink-0 overflow-hidden rounded-full ring-1 ring-neutral-60 sm:h-12 sm:w-12">
-              <Image
-                src={item?.logo || ''}
-                alt={item?.symbol || ''}
-                fill
-                sizes="48px"
-                className="object-cover"
-              />
+              {item?.logo && (
+                <Image
+                  src={item.logo}
+                  alt={item.symbol}
+                  fill
+                  sizes="48px"
+                  unoptimized
+                  className="object-cover"
+                />
+              )}
             </figure>
             <div className="flex min-w-0 flex-col text-left">
               <span className="truncate text-small font-medium text-neutral-10 sm:text-body">

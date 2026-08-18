@@ -51,6 +51,7 @@ export const PaymentCard = memo(function PaymentCard({
             alt={item.name}
             width={40}
             height={40}
+            unoptimized
             className="object-cover"
           />
         </figure>

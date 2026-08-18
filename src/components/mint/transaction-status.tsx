@@ -759,6 +759,7 @@ function BridgeRoute({ sourceChainId }: { sourceChainId: number | null }) {
                 alt={sourceChain?.label ?? 'Source chain'}
                 width={40}
                 height={40}
+                unoptimized
                 className="object-cover"
               />
             ) : (
@@ -805,6 +806,7 @@ function BridgeRoute({ sourceChainId }: { sourceChainId: number | null }) {
                 alt={hubChain.label}
                 width={40}
                 height={40}
+                unoptimized
                 className="object-cover"
               />
             )}

@@ -460,6 +460,7 @@ function DaoDetailContent({
                                   alt={active?.label ?? ''}
                                   width={24}
                                   height={24}
+                                  unoptimized
                                   className="object-cover"
                                 />
                               </figure>
@@ -532,6 +533,7 @@ function DaoDetailContent({
                                       alt={d.label}
                                       width={24}
                                       height={24}
+                                      unoptimized
                                       className="object-cover"
                                     />
                                   </figure>

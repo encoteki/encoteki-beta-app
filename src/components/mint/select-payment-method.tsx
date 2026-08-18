@@ -278,6 +278,7 @@ export default function SelectPaymentMethod() {
                   alt={activeConfig.label}
                   width={28}
                   height={28}
+                  unoptimized
                   className="object-cover"
                 />
               </figure>
@@ -332,6 +333,7 @@ export default function SelectPaymentMethod() {
                             alt={chain.label}
                             width={24}
                             height={24}
+                            unoptimized
                             className="object-cover"
                           />
                         </figure>
