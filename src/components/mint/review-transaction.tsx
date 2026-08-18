@@ -31,14 +31,17 @@ export default function ReviewTransaction() {
   // Satellite mints charge a LayerZero fee on top of the payment token, always
   // in native currency (see useMintTransaction) — shown here so the price the
   // user reviews matches what their wallet will actually prompt for.
-  const { bufferedFee: networkFee, isLoaded: isFeeLoaded } =
-    useLayerZeroFeeQuote({
-      isHub: !isCrossChain,
-      targetContract: targetContract as Address | null,
-      chainId: selectedChainId ?? 0,
-      userAddress: recipientAddress,
-      referralCode,
-    })
+  const {
+    bufferedFee: networkFee,
+    isLoaded: isFeeLoaded,
+    isError: isFeeError,
+  } = useLayerZeroFeeQuote({
+    isHub: !isCrossChain,
+    targetContract: targetContract as Address | null,
+    chainId: selectedChainId ?? 0,
+    userAddress: recipientAddress,
+    referralCode,
+  })
 
   useEffect(() => {
     headingRef.current?.focus()
@@ -64,6 +67,7 @@ export default function ReviewTransaction() {
         recipientAddress={recipientAddress}
         networkFee={networkFee}
         isFeeLoaded={isFeeLoaded}
+        isFeeError={isFeeError}
       />
 
       <div className="grid gap-3">
@@ -105,6 +109,7 @@ const TransactionCard = ({
   recipientAddress,
   networkFee,
   isFeeLoaded,
+  isFeeError,
 }: {
   item: Token | null
   isCrossChain: boolean
@@ -113,6 +118,7 @@ const TransactionCard = ({
   recipientAddress?: Address
   networkFee: bigint
   isFeeLoaded: boolean
+  isFeeError: boolean
 }) => {
   return (
     <div className="flex w-full flex-col gap-6">
@@ -160,7 +166,9 @@ const TransactionCard = ({
             <span className="text-caption font-medium text-neutral-10 tabular-nums">
               {isFeeLoaded
                 ? `${formatNetworkFee(networkFee)} ETH`
-                : 'Calculating…'}
+                : isFeeError
+                  ? 'Unavailable'
+                  : 'Calculating…'}
             </span>
           </div>
         )}

@@ -9,7 +9,7 @@ import {
   useReducedMotion,
   useAnimation,
 } from 'motion/react'
-import { X, Copy, Check, RefreshCw } from 'lucide-react'
+import { X, Copy, Check, RefreshCw, ChevronDown } from 'lucide-react'
 import { useDisconnect, useConnection, useChainId } from 'wagmi'
 
 import { useUser } from '@/hooks/useUser'
@@ -26,6 +26,9 @@ import BaseIcon from '@/assets/chains/base.jpeg'
 import ArbitrumIcon from '@/assets/chains/arbitrum.svg'
 import LiskIcon from '@/assets/chains/lisk.webp'
 import MantaIcon from '@/assets/chains/manta.png'
+import EthereumIcon from '@/assets/chains/ethereum.svg'
+import RobinhoodIcon from '@/assets/chains/rh.png'
+import MonadIcon from '@/assets/chains/monad.jpeg'
 import HiddenNFT from '@/assets/mint/hidden.png'
 
 // ── Constants ──────────────────────────────────────────────────────────────
@@ -59,12 +62,30 @@ const CHAIN_TABS = [
     chainId: 169,
     icon: MantaIcon as StaticImageData,
   },
+  {
+    key: 'ETHEREUM',
+    label: 'Ethereum',
+    fullLabel: 'Ethereum',
+    chainId: 1,
+    icon: EthereumIcon as StaticImageData,
+  },
+  {
+    key: 'ROBINHOOD',
+    label: 'Robinhood',
+    fullLabel: 'Robinhood',
+    chainId: 4663,
+    icon: RobinhoodIcon as StaticImageData,
+  },
+  {
+    key: 'MONAD',
+    label: 'Monad',
+    fullLabel: 'Monad',
+    chainId: 143,
+    icon: MonadIcon as StaticImageData,
+  },
 ]
 
 const SIGN_OUT_CONFIRM_MS = 3000
-
-// Shared spring for the chain tab indicator — matches DESIGN.md nav spec
-const TAB_SPRING = { type: 'spring' as const, stiffness: 500, damping: 35 }
 
 // ── Helpers ────────────────────────────────────────────────────────────────
 
@@ -125,6 +146,7 @@ export function WalletSidebar({ isOpen, onClose }: WalletSidebarProps) {
     ),
   )
   const [chainSwitchDir, setChainSwitchDir] = useState(0)
+  const [chainDropdownOpen, setChainDropdownOpen] = useState(false)
 
   const [copied, setCopied] = useState(false)
   const [isSigningOut, setIsSigningOut] = useState(false)
@@ -139,9 +161,10 @@ export function WalletSidebar({ isOpen, onClose }: WalletSidebarProps) {
   // then closes the whole panel — and focus is restored to the trigger on close.
   const panelRef = useRef<HTMLElement>(null)
   const handleEscape = useCallback(() => {
-    if (selectedTokenId !== null) setSelectedTokenId(null)
+    if (chainDropdownOpen) setChainDropdownOpen(false)
+    else if (selectedTokenId !== null) setSelectedTokenId(null)
     else onClose()
-  }, [selectedTokenId, onClose])
+  }, [chainDropdownOpen, selectedTokenId, onClose])
   useFocusTrap(panelRef, isOpen, { onEscape: handleEscape })
 
   const { address } = useConnection()
@@ -159,11 +182,14 @@ export function WalletSidebar({ isOpen, onClose }: WalletSidebarProps) {
     ? (address as `0x${string}` | undefined)
     : undefined
 
-  // Balance hooks for all 4 chains — enabled only once the panel has opened.
+  // Balance hooks for all 7 chains — enabled only once the panel has opened.
   const baseBalances = useChainBalances(dataAddress, 8453)
   const arbitrumBalances = useChainBalances(dataAddress, 42161)
   const liskBalances = useChainBalances(dataAddress, 1135)
   const mantaBalances = useChainBalances(dataAddress, 169)
+  const ethereumBalances = useChainBalances(dataAddress, 1)
+  const robinhoodBalances = useChainBalances(dataAddress, 4663)
+  const monadBalances = useChainBalances(dataAddress, 143)
 
   const balancesMap = useMemo(
     () =>
@@ -172,15 +198,29 @@ export function WalletSidebar({ isOpen, onClose }: WalletSidebarProps) {
         42161: arbitrumBalances,
         1135: liskBalances,
         169: mantaBalances,
+        1: ethereumBalances,
+        4663: robinhoodBalances,
+        143: monadBalances,
       }) as Record<number, typeof baseBalances>,
-    [baseBalances, arbitrumBalances, liskBalances, mantaBalances],
+    [
+      baseBalances,
+      arbitrumBalances,
+      liskBalances,
+      mantaBalances,
+      ethereumBalances,
+      robinhoodBalances,
+      monadBalances,
+    ],
   )
 
-  // NFT mints for all 4 chains via GraphQL — enabled only once the panel opened.
+  // NFT mints for all 7 chains via GraphQL — enabled only once the panel opened.
   const baseMints = useNftMints(dataAddress, 8453)
   const arbitrumMints = useNftMints(dataAddress, 42161)
   const liskMints = useNftMints(dataAddress, 1135)
   const mantaMints = useNftMints(dataAddress, 169)
+  const ethereumMints = useNftMints(dataAddress, 1)
+  const robinhoodMints = useNftMints(dataAddress, 4663)
+  const monadMints = useNftMints(dataAddress, 143)
 
   const mintsMap = useMemo(
     () =>
@@ -189,8 +229,19 @@ export function WalletSidebar({ isOpen, onClose }: WalletSidebarProps) {
         42161: arbitrumMints,
         1135: liskMints,
         169: mantaMints,
+        1: ethereumMints,
+        4663: robinhoodMints,
+        143: monadMints,
       }) as Record<number, typeof baseMints>,
-    [baseMints, arbitrumMints, liskMints, mantaMints],
+    [
+      baseMints,
+      arbitrumMints,
+      liskMints,
+      mantaMints,
+      ethereumMints,
+      robinhoodMints,
+      monadMints,
+    ],
   )
 
   const { nftCountByChain, nftCount, totalNftCount, isNftLoading } =
@@ -315,7 +366,13 @@ export function WalletSidebar({ isOpen, onClose }: WalletSidebarProps) {
     prevChainIdxRef.current = newIdx
     setActiveChainId(chainId)
     setSelectedTokenId(null) // return to main view on chain change
+    setChainDropdownOpen(false)
   }, [])
+
+  const activeTab = useMemo(
+    () => CHAIN_TABS.find((t) => t.chainId === activeChainId) ?? CHAIN_TABS[0],
+    [activeChainId],
+  )
 
   const { tokens, isLoading, isError, refetch } = useMemo(
     () =>
@@ -333,10 +390,7 @@ export function WalletSidebar({ isOpen, onClose }: WalletSidebarProps) {
     [address],
   )
 
-  const activeChainFull = useMemo(
-    () => CHAIN_TABS.find((t) => t.chainId === activeChainId)?.fullLabel ?? '',
-    [activeChainId],
-  )
+  const activeChainFull = activeTab.fullLabel
 
   const tokenListVariants = useMemo(
     () => ({
@@ -503,47 +557,95 @@ export function WalletSidebar({ isOpen, onClose }: WalletSidebarProps) {
                   Balances
                 </p>
 
-                {/* Chain tab strip — layoutId spring indicator slides between tabs */}
-                <div className="mb-4 flex gap-1 rounded-full bg-khaki-90 p-1">
-                  {CHAIN_TABS.map((tab) => {
-                    const isActive = tab.chainId === activeChainId
-                    return (
-                      <button
-                        key={tab.chainId}
-                        onClick={() => handleChainSwitch(tab.chainId)}
-                        aria-pressed={isActive}
-                        aria-label={`${tab.fullLabel} balances`}
-                        className={`relative flex flex-1 items-center justify-center gap-1 overflow-hidden rounded-full py-3 text-caption font-medium transition-colors duration-200 focus-visible:ring-2 focus-visible:ring-primary-green focus-visible:ring-offset-1 focus-visible:ring-offset-khaki-90 focus-visible:outline-none ${
-                          isActive
-                            ? 'text-primary-green'
-                            : 'text-neutral-40 hover:text-neutral-10'
-                        }`}
+                {/* Chain dropdown — too many chains now for a tab strip */}
+                <div className="relative mb-4">
+                  <button
+                    type="button"
+                    aria-haspopup="listbox"
+                    aria-expanded={chainDropdownOpen}
+                    aria-controls="wallet-chain-dropdown"
+                    onClick={() => setChainDropdownOpen((v) => !v)}
+                    className="flex w-full items-center justify-between rounded-full border border-khaki-70 bg-white px-3 py-2.5 transition-colors hover:bg-khaki-90 focus-visible:ring-2 focus-visible:ring-primary-green focus-visible:outline-none"
+                  >
+                    <div className="flex items-center gap-2">
+                      <figure className="h-5 w-5 shrink-0 overflow-hidden rounded-full">
+                        <Image
+                          src={activeTab.icon}
+                          alt=""
+                          width={20}
+                          height={20}
+                          className="h-full w-full object-cover"
+                        />
+                      </figure>
+                      <span className="text-caption font-medium text-neutral-10">
+                        {activeTab.fullLabel}
+                      </span>
+                    </div>
+                    <ChevronDown
+                      size={14}
+                      className={`shrink-0 text-neutral-40 transition-transform duration-200 ${chainDropdownOpen ? 'rotate-180' : ''}`}
+                    />
+                  </button>
+
+                  <AnimatePresence>
+                    {chainDropdownOpen && (
+                      <motion.ul
+                        id="wallet-chain-dropdown"
+                        role="listbox"
+                        aria-label="Select chain"
+                        initial={{ opacity: 0, y: -8, filter: 'blur(4px)' }}
+                        animate={{ opacity: 1, y: 0, filter: 'blur(0px)' }}
+                        exit={{ opacity: 0, y: -8, filter: 'blur(4px)' }}
+                        transition={{
+                          duration: 0.2,
+                          ease: [0.16, 1, 0.3, 1] as const,
+                        }}
+                        className="absolute z-20 mt-2 max-h-64 w-full overflow-y-auto rounded-xl border border-khaki-70 bg-white shadow-lg"
                       >
-                        {/* Shared pill indicator — slides between tabs via layoutId */}
-                        {isActive && (
-                          <motion.span
-                            layoutId="wallet-chain-tab-indicator"
-                            className="absolute inset-0 rounded-full bg-white"
-                            style={{
-                              boxShadow:
-                                '0 2px 8px rgba(36,98,52,0.12), 0 1px 2px rgba(0,0,0,0.06)',
-                            }}
-                            transition={TAB_SPRING}
-                          />
-                        )}
-                        <figure className="relative z-10 h-5 w-5 shrink-0 overflow-hidden rounded-full">
-                          <Image
-                            src={tab.icon}
-                            alt=""
-                            width={16}
-                            height={16}
-                            className="h-full w-full object-cover"
-                          />
-                        </figure>
-                        <span className="relative z-10">{tab.label}</span>
-                      </button>
-                    )
-                  })}
+                        {CHAIN_TABS.map((tab) => {
+                          const isActive = tab.chainId === activeChainId
+                          return (
+                            <li
+                              key={tab.chainId}
+                              role="option"
+                              aria-selected={isActive}
+                              tabIndex={0}
+                              onClick={() => handleChainSwitch(tab.chainId)}
+                              onKeyDown={(e) => {
+                                if (e.key === 'Enter' || e.key === ' ') {
+                                  e.preventDefault()
+                                  handleChainSwitch(tab.chainId)
+                                }
+                              }}
+                              className={`flex cursor-pointer items-center justify-between px-4 py-3 text-left transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-primary-green/40 focus-visible:ring-inset ${
+                                isActive ? 'bg-khaki-80' : 'hover:bg-khaki-90'
+                              }`}
+                            >
+                              <div className="flex items-center gap-3">
+                                <figure className="flex h-6 w-6 shrink-0 items-center justify-center overflow-hidden rounded-full">
+                                  <Image
+                                    src={tab.icon}
+                                    alt=""
+                                    width={24}
+                                    height={24}
+                                    className="h-full w-full object-cover"
+                                  />
+                                </figure>
+                                <span
+                                  className={`text-small font-medium ${isActive ? 'font-semibold text-primary-green' : 'text-neutral-10'}`}
+                                >
+                                  {tab.fullLabel}
+                                </span>
+                              </div>
+                              {isActive && (
+                                <div className="h-2 w-2 rounded-full bg-primary-green shadow-sm" />
+                              )}
+                            </li>
+                          )
+                        })}
+                      </motion.ul>
+                    )}
+                  </AnimatePresence>
                 </div>
 
                 {/* Token list — directional slide on chain switch */}
