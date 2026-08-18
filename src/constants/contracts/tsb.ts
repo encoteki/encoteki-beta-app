@@ -9,6 +9,8 @@ import USDCIcon from '@/assets/icons/tokens/usdc.svg'
 import USDTIcon from '@/assets/icons/tokens/tether.svg'
 import ARBIcon from '@/assets/icons/tokens/arb.svg'
 import MANTAIcon from '@/assets/icons/tokens/manta.png'
+import MONIcon from '@/assets/icons/tokens/mon.svg'
+import USDGIcon from '@/assets/icons/tokens/usdg.svg'
 
 // ============================================
 // ENVIRONMENT
@@ -29,6 +31,8 @@ export type TokenSymbol =
   | 'LSK'
   | 'ARB'
   | 'MANTA'
+  | 'MON'
+  | 'USDG'
 
 // Static data (Name, Logo, Decimals)
 export interface TokenMetadata {
@@ -71,6 +75,14 @@ export const MINT_PRICES: Record<TokenSymbol, number> = {
   IDRX: process.env.NEXT_PUBLIC_MINT_PRICE_IDRX
     ? parseFloat(process.env.NEXT_PUBLIC_MINT_PRICE_IDRX)
     : 300000,
+  MON: process.env.NEXT_PUBLIC_MINT_PRICE_MON
+    ? parseFloat(process.env.NEXT_PUBLIC_MINT_PRICE_MON)
+    : 15,
+  // Same USD price as USDC/USDT — keep NEXT_PUBLIC_MINT_PRICE_USDG in sync
+  // with those if the operator changes the mint price.
+  USDG: process.env.NEXT_PUBLIC_MINT_PRICE_USDG
+    ? parseFloat(process.env.NEXT_PUBLIC_MINT_PRICE_USDG)
+    : 0.2,
 }
 
 // ============================================
@@ -125,6 +137,23 @@ const TOKEN_META: Record<TokenSymbol, TokenMetadata> = {
     name: 'Manta Token',
     decimals: 18,
     logo: MANTAIcon,
+    isNative: false,
+  },
+  MON: {
+    symbol: 'MON',
+    name: 'Monad',
+    decimals: 18,
+    logo: MONIcon,
+    isNative: true,
+  },
+  // Decimals assumed to match USDC/USDT (6) — not independently confirmed,
+  // only affects wallet balance display formatting, not mint tx amounts
+  // (those read decimals live from the ERC-20 contract).
+  USDG: {
+    symbol: 'USDG',
+    name: 'Global Dollar',
+    decimals: 6,
+    logo: USDGIcon,
     isNative: false,
   },
 }
@@ -222,6 +251,43 @@ const CHAINS: ChainDef[] = [
       MANTA: process.env.NEXT_PUBLIC_MANTA_NATIVE_ADDRESS as Address,
       USDT: process.env.NEXT_PUBLIC_MANTA_USDT_ADDRESS as Address,
       USDC: process.env.NEXT_PUBLIC_MANTA_USDC_ADDRESS as Address,
+    },
+  },
+  {
+    key: 'ETHEREUM',
+    label: 'Ethereum',
+    type: 'satellite',
+    enabled: !!process.env.NEXT_PUBLIC_TSB_ETHEREUM_CONTRACT,
+    chainId: 1,
+    contract: process.env.NEXT_PUBLIC_TSB_ETHEREUM_CONTRACT as Address,
+    explorer: 'https://etherscan.io/tx/',
+    tokenAddresses: {
+      ETH: ZERO_ADDRESS,
+    },
+  },
+  {
+    key: 'ROBINHOOD',
+    label: 'Robinhood',
+    type: 'satellite',
+    enabled: !!process.env.NEXT_PUBLIC_TSB_ROBINHOOD_CONTRACT,
+    chainId: 4663,
+    contract: process.env.NEXT_PUBLIC_TSB_ROBINHOOD_CONTRACT as Address,
+    explorer: 'https://robinhoodchain.blockscout.com/tx/',
+    tokenAddresses: {
+      ETH: ZERO_ADDRESS,
+      USDG: process.env.NEXT_PUBLIC_ROBINHOOD_USDG_ADDRESS as Address,
+    },
+  },
+  {
+    key: 'MONAD',
+    label: 'Monad',
+    type: 'satellite',
+    enabled: !!process.env.NEXT_PUBLIC_TSB_MONAD_CONTRACT,
+    chainId: 143,
+    contract: process.env.NEXT_PUBLIC_TSB_MONAD_CONTRACT as Address,
+    explorer: 'https://monadvision.com/tx/',
+    tokenAddresses: {
+      MON: ZERO_ADDRESS,
     },
   },
 ]

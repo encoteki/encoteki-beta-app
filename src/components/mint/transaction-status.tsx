@@ -22,6 +22,9 @@ import BaseIcon from '@/assets/chains/base.jpeg'
 import ArbitrumIcon from '@/assets/chains/arbitrum.svg'
 import LiskIcon from '@/assets/chains/lisk.webp'
 import MantaIcon from '@/assets/chains/manta.png'
+import EthereumIcon from '@/assets/chains/ethereum.svg'
+import RobinhoodIcon from '@/assets/chains/robinhood.svg'
+import MonadIcon from '@/assets/chains/monad.svg'
 import { useReadContract, useAccount } from 'wagmi'
 import { tsbhub_abi } from '@/constants/contracts/abi'
 
@@ -721,6 +724,12 @@ function getChainIcon(key: string) {
       return LiskIcon
     case 'MANTA':
       return MantaIcon
+    case 'ETHEREUM':
+      return EthereumIcon
+    case 'ROBINHOOD':
+      return RobinhoodIcon
+    case 'MONAD':
+      return MonadIcon
     default:
       return null
   }
