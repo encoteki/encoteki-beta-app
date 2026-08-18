@@ -574,6 +574,7 @@ export function WalletSidebar({ isOpen, onClose }: WalletSidebarProps) {
                           alt=""
                           width={20}
                           height={20}
+                          unoptimized
                           className="h-full w-full object-cover"
                         />
                       </figure>
@@ -628,6 +629,7 @@ export function WalletSidebar({ isOpen, onClose }: WalletSidebarProps) {
                                     alt=""
                                     width={24}
                                     height={24}
+                                    unoptimized
                                     className="h-full w-full object-cover"
                                   />
                                 </figure>
@@ -708,6 +710,7 @@ export function WalletSidebar({ isOpen, onClose }: WalletSidebarProps) {
                                 alt={token.name}
                                 width={28}
                                 height={28}
+                                unoptimized
                                 className="h-full w-full object-cover"
                               />
                             </figure>
